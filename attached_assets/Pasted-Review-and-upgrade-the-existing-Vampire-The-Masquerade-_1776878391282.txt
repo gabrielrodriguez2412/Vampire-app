@@ -1,0 +1,257 @@
+Review and upgrade the existing Vampire: The Masquerade app with the following goals:
+
+PRIMARY GOAL
+Turn the app into a clean, scalable, multilingual, edition-aware reference and play companion for Vampire: The Masquerade.
+
+VERY IMPORTANT LANGUAGE REQUIREMENT
+The app currently has a bug where some Spanish text still appears while English is selected. Fix this completely.
+
+You must audit the entire app and ensure that:
+- all visible UI text follows the currently selected language
+- all content text follows the currently selected language
+- no Spanish text appears when English is selected
+- no English text appears when Spanish is selected
+- no mixed-language screen is ever shown
+- all buttons, labels, section titles, placeholders, tooltips, modals, error messages, loading states, empty states, breadcrumbs, tags, and cards are translated through the same language system
+- if a translation is missing in the selected language, do NOT silently fall back to another language if that would create mixed-language output
+- instead show a safe fallback like “Translation not available in this language yet” or hide that specific field until translated
+
+STEP 1 — AUDIT THE CURRENT APP
+Review all currently displayed information and components.
+Find and fix all hardcoded strings.
+Find and fix all cases where text is bypassing the translation system.
+Find and fix all cases where data content is stored in one language only but rendered regardless of selected language.
+Find and fix all places where navigation labels, card titles, or detail page labels are not properly localized.
+
+STEP 2 — REFACTOR FOR A RELIABLE I18N SYSTEM
+Implement a centralized localization system.
+
+Requirements:
+- create a single translation architecture used everywhere
+- use translation keys for UI strings
+- use structured per-language content for game data
+- make all pages reactively update when language changes
+- ensure no stale content remains mounted in the old language after switching
+- ensure search placeholders, filters, tabs, and category labels also update with the selected language
+
+Recommended structure:
+- /locales/en.json
+- /locales/es.json
+- /locales/pt.json
+- /locales/fr.json
+- etc. for supported languages
+- separate game content data from UI strings
+- game content entries should use a translations object per language
+
+Example content shape:
+{
+  "id": "brujah",
+  "editions": ["V5", "V20"],
+  "translations": {
+    "en": {
+      "name": "Brujah",
+      "summary": "Passionate rebels and visionaries..."
+    },
+    "es": {
+      "name": "Brujah",
+      "summary": "Rebeldes apasionados y visionarios..."
+    }
+  }
+}
+
+STEP 3 — MAKE THE APP EDITION-AWARE
+Add or improve an edition selector that affects all relevant displayed content.
+
+Requirements:
+- the user must be able to select the Vampire edition globally
+- content shown in clans, bloodlines, disciplines, powers, rules, and character information must reflect the selected edition
+- if content differs between editions, show only the correct edition version
+- if a clan, bloodline, discipline, or power does not exist in the current edition, do not display it unless clearly marked as unavailable
+- all links between content must preserve the current edition and current language
+
+STEP 4 — IMPROVE THE APP STRUCTURE
+Implement or refactor the UI to follow this structure:
+
+Main navigation:
+- Home
+- Compendium
+- Character
+- Chronicle
+- Search
+- Settings
+
+A. HOME
+Create a dashboard-like Home screen with:
+- currently selected edition
+- currently selected language with language icon
+- quick access cards:
+  - Clans
+  - Bloodlines / Subclans
+  - Disciplines
+  - Powers
+  - Rules
+  - Character
+  - Chronicle
+- recent items or continue where you left off
+- a visible Home button themed for Vampire that remains accessible throughout the app
+
+B. COMPENDIUM
+Add or improve a central compendium section with:
+- Clans
+- Bloodlines / Subclans
+- Disciplines
+- Powers
+- Merits / Flaws
+- Rules
+- Lore / Setting
+- Glossary
+All entries must be filtered by the selected edition and rendered in the selected language.
+
+C. CLAN DETAIL PAGE
+Each clan page must show:
+- clan name
+- icon
+- summary
+- bane / curse / clan weakness depending on edition
+- disciplines
+- bloodlines or subclans when applicable
+- lore
+- cross-links to related disciplines
+
+Important:
+When the user clicks a discipline from a clan page, it must navigate to the discipline detail page for the same selected language and same selected edition.
+
+D. DISCIPLINE DETAIL PAGE
+Each discipline page must show:
+- discipline name
+- icon
+- summary
+- powers organized by level
+- prerequisites if applicable
+- edition-specific notes
+- related clans or bloodlines
+
+Each power entry must show:
+- name
+- level
+- cost
+- mechanics or dice details if available
+- duration
+- description
+- notes
+
+E. CHARACTER SECTION
+Create a structured Character section with:
+- my characters
+- create character
+- active character sheet
+- trackers
+- rolls
+
+The sheet should be designed to support later gameplay features, even if some are placeholders for now:
+- name
+- clan
+- generation or blood potency depending on edition
+- attributes
+- skills
+- disciplines
+- backgrounds / advantages
+- humanity / path
+- health
+- willpower
+- hunger if applicable
+- notes
+
+F. CHRONICLE SECTION
+Create a Chronicle section with:
+- chronicle overview
+- session notes
+- NPCs
+- relationship map placeholder or first version
+- locations
+- timeline
+
+This can be MVP-level visually, but the structure should be there.
+
+G. SEARCH
+Implement or improve global search:
+- search across clans, bloodlines, disciplines, powers, rules, and lore
+- filter by edition
+- filter by category
+- preserve selected language
+- return only correctly localized labels and summaries
+
+H. SETTINGS
+Add or improve settings:
+- language selector with icon
+- edition selector
+- theme selector if available
+- offline/cache settings placeholder if needed
+- import/export placeholder if needed
+- about section
+
+STEP 5 — FIX NAVIGATION AND LINKING
+Ensure all internal references work correctly:
+- clan -> discipline
+- discipline -> powers
+- bloodline -> parent clan or related disciplines
+- search result -> correct detail page
+- all these routes must preserve current language and edition
+
+STEP 6 — VAMPIRE-THEMED ICONOGRAPHY
+Replace generic icons where possible with more thematic ones that fit Vampire: The Masquerade:
+- gothic
+- occult
+- aristocratic
+- nocturnal
+- subtle, not cartoonish
+Keep them readable and elegant.
+
+STEP 7 — ALWAYS-VISIBLE HOME BUTTON
+Add a visible Home button present across the app.
+It should:
+- fit the Vampire theme
+- not block important content
+- work consistently on mobile and desktop
+
+STEP 8 — DATA QUALITY REVIEW
+Review the existing data currently displayed and verify:
+- all currently shown entries belong to the correct category
+- all currently shown entries are rendered in the selected language
+- all currently shown entries match the selected edition when edition-specific
+- all listed disciplines and clan discipline links are correct
+- all known clans, subclans, bloodlines, disciplines, and sub-disciplines currently in scope are linked correctly
+
+STEP 9 — QUALITY CONTROL / TESTING
+Add a verification pass for:
+1. switching language from English to Spanish and back
+2. switching edition and checking filtered content
+3. opening clan pages and clicking disciplines
+4. opening discipline pages and power details
+5. running search in multiple languages
+6. checking that no mixed-language text remains anywhere in the UI
+
+Please include:
+- a summary of what was fixed
+- which files/components were changed
+- any content entries still missing translations
+- any data inconsistencies found during the audit
+- any placeholder sections created for future development
+
+IMPORTANT IMPLEMENTATION RULES
+- do not apply quick patches only; refactor where needed so this is maintainable
+- avoid duplicated translation logic
+- avoid hardcoded language conditionals spread across many components
+- preserve current functionality while improving structure
+- make the codebase easy to extend with more editions, languages, clans, bloodlines, disciplines, and powers later
+- do not mix UI translations with raw game-content data
+- do not silently show the wrong language as fallback
+
+DESIRED OUTPUT
+- improved app architecture
+- fixed multilingual behavior
+- fixed language consistency bug
+- improved navigation structure
+- proper edition-aware content flow
+- verified internal links
+- a cleaner foundation for the next phase: character tools, dice system, and chronicle tools

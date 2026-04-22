@@ -39,9 +39,19 @@ export default function Rules() {
       {/* Sidebar/Top filter for categories */}
       <div className="w-full md:w-64 shrink-0 bg-card border-r border-border p-4 md:p-6 flex flex-col gap-4">
         <div>
-          <h2 className="font-cinzel text-xl font-bold text-primary mb-4">Categorías</h2>
+          <h2 className="font-cinzel text-xl font-bold text-primary mb-4">{strings.categories}</h2>
           <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
-            {categories.map(cat => (
+            <button
+                onClick={() => setActiveCategory("Todas")}
+                className={`text-left px-3 py-2 rounded-md text-sm transition-colors whitespace-nowrap ${
+                  activeCategory === "Todas" 
+                    ? "bg-primary/20 text-primary font-medium border border-primary/30" 
+                    : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
+                }`}
+              >
+                {strings.allCategories}
+              </button>
+            {categories.filter(c => c !== "Todas").map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -61,8 +71,8 @@ export default function Rules() {
       <ScrollArea className="flex-1">
         <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-3xl font-cinzel font-bold text-foreground mb-2">{strings.rules}</h1>
-            <p className="text-muted-foreground mb-6">Las reglas que rigen la noche y la Bestia.</p>
+            <h1 className="text-3xl font-cinzel font-bold text-foreground mb-2">{strings.rulesTitle}</h1>
+            <p className="text-muted-foreground mb-6">{strings.rulesSubtitle}</p>
             
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -98,37 +108,45 @@ export default function Rules() {
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">{rule.category}</Badge>
                                 {isMissingLang && (
                                   <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto shrink-0">
-                                    [ Sin traducción ]
+                                    [ {strings.noTranslation} ]
                                   </Badge>
                                 )}
                               </div>
-                              <span className="text-sm text-muted-foreground font-normal text-left line-clamp-2 pr-4">{getText(rule.shortExplanation, activeLanguage)}</span>
+                              {getText(rule.shortExplanation, activeLanguage) ? (
+                                <span className="text-sm text-muted-foreground font-normal text-left line-clamp-2 pr-4">{getText(rule.shortExplanation, activeLanguage)}</span>
+                              ) : (
+                                <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                              )}
                             </div>
                           </AccordionTrigger>
                           <FavoriteButton id={rule.id} className="shrink-0" />
                         </div>
                         <AccordionContent className="px-4 pb-4 pt-2 border-t border-border bg-background/50">
                           <div className="space-y-4 pt-2">
-                            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                              {getText(rule.fullExplanation, activeLanguage)}
-                            </p>
+                            {getText(rule.fullExplanation, activeLanguage) ? (
+                              <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                                {getText(rule.fullExplanation, activeLanguage)}
+                              </p>
+                            ) : (
+                              <span className="text-xs text-amber-600/80 italic block my-2">[ {strings.noTranslation} ]</span>
+                            )}
                             
-                            {getTextArray(rule.examples, activeLanguage).length > 0 && (
+                            {getTextArray(rule.examples, activeLanguage) && (
                               <div className="bg-black/20 p-4 rounded-md border border-white/5">
-                                <h4 className="text-primary font-cinzel text-sm mb-2">Ejemplos:</h4>
+                                <h4 className="text-primary font-cinzel text-sm mb-2">{strings.examples}</h4>
                                 <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
-                                  {getTextArray(rule.examples, activeLanguage).map((ex, idx) => (
+                                  {getTextArray(rule.examples, activeLanguage)?.map((ex, idx) => (
                                     <li key={idx}>{ex}</li>
                                   ))}
                                 </ul>
                               </div>
                             )}
                             
-                            {getTextArray(rule.quickNotes, activeLanguage).length > 0 && (
+                            {getTextArray(rule.quickNotes, activeLanguage) && (
                               <div>
-                                <h4 className="text-muted-foreground text-xs uppercase tracking-wider mb-2 font-semibold">Notas Rápidas:</h4>
+                                <h4 className="text-muted-foreground text-xs uppercase tracking-wider mb-2 font-semibold">{strings.quickNotes}</h4>
                                 <div className="flex flex-wrap gap-2">
-                                  {getTextArray(rule.quickNotes, activeLanguage).map((note, idx) => (
+                                  {getTextArray(rule.quickNotes, activeLanguage)?.map((note, idx) => (
                                     <span key={idx} className="bg-white/5 border border-border px-3 py-1.5 rounded-md text-xs text-foreground/80">
                                       {note}
                                     </span>

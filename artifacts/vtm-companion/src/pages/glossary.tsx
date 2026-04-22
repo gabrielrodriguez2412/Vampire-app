@@ -26,9 +26,9 @@ export default function Glossary() {
       <div className="mb-8">
         <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-2">
           <BookOpen className="w-8 h-8" />
-          {strings.glossary}
+          {strings.glossaryTitle}
         </h1>
-        <p className="text-muted-foreground mb-6">Términos esenciales de la sociedad de la Sangre.</p>
+        <p className="text-muted-foreground mb-6">{strings.glossarySubtitle}</p>
         
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -57,9 +57,14 @@ export default function Glossary() {
                   <CardTitle className="font-cinzel text-xl text-foreground">{getText(item.term, activeLanguage)}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-foreground/80 leading-relaxed mb-4">
-                    {getText(item.definition, activeLanguage)}
-                  </p>
+                  {getText(item.definition, activeLanguage) ? (
+                    <p className="text-foreground/80 leading-relaxed mb-4">
+                      {getText(item.definition, activeLanguage)}
+                    </p>
+                  ) : (
+                    <span className="text-xs text-amber-600/80 italic block mb-4">[ {strings.noTranslation} ]</span>
+                  )}
+                  
                   {item.related.length > 0 && (
                     <div className="flex flex-wrap gap-2 items-center">
                       <span className="text-xs text-muted-foreground mr-1">Relacionado:</span>

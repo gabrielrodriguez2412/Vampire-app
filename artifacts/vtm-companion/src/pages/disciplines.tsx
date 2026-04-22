@@ -35,13 +35,13 @@ export default function Disciplines() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.disciplines}</h1>
-        <p className="text-muted-foreground mb-6">Poderes místicos inherentes a la Sangre. Filtralos por nombre o clan.</p>
+        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.disciplinesTitle}</h1>
+        <p className="text-muted-foreground mb-6">{strings.disciplinesSubtitle}</p>
         
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Filtrar (ej. Auspex, Brujah)..." 
+            placeholder={strings.filterPlaceholder} 
             className="pl-9 bg-card border-border"
             value={filter}
             onChange={e => setFilter(e.target.value)}
@@ -52,9 +52,9 @@ export default function Disciplines() {
       {filteredDiscs.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-lg mt-8">
           <Flame className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-cinzel text-xl text-foreground mb-2">No hay disciplinas</h3>
+          <h3 className="font-cinzel text-xl text-foreground mb-2">{strings.noDisciplines}</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Intenta cambiar el filtro o la edición actual.
+            {strings.noResults}
           </p>
         </div>
       ) : (
@@ -82,15 +82,19 @@ export default function Disciplines() {
                           </Badge>
                           {isMissingLang && (
                             <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto">
-                              [ Sin traducción ]
+                              [ {strings.noTranslation} ]
                             </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-foreground/80 leading-relaxed max-w-3xl">
-                          {getText(disc.description, activeLanguage)}
-                        </p>
+                        {getText(disc.description, activeLanguage) ? (
+                          <p className="text-sm text-foreground/80 leading-relaxed max-w-3xl">
+                            {getText(disc.description, activeLanguage)}
+                          </p>
+                        ) : (
+                          <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                        )}
                         <div className="flex flex-wrap gap-2 mt-3 items-center">
-                          <span className="text-xs text-muted-foreground">Clanes que la usan:</span>
+                          <span className="text-xs text-muted-foreground">{strings.clansUsing}</span>
                           {disc.clansWhoUse.map(c => (
                             <Badge 
                               key={c} 
@@ -112,12 +116,12 @@ export default function Disciplines() {
                         <AccordionItem value={disc.id} className="border-b-0">
                           <AccordionTrigger className="px-6 py-4 hover:bg-white/[0.02] font-cinzel text-lg" onClick={() => {
                             if (params.id !== disc.id) {
-                              setLocation(`/disciplinas/${disc.id}`);
+                              setLocation(`/compendium/disciplinas/${disc.id}`);
                             } else {
-                              setLocation(`/disciplinas`);
+                              setLocation(`/compendium/disciplinas`);
                             }
                           }}>
-                            Poderes
+                            {strings.powers}
                           </AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
                             <div className="space-y-4 mt-2">
@@ -133,11 +137,18 @@ export default function Disciplines() {
                                       </span>
                                     </h4>
                                   </div>
-                                  <p className="text-sm text-foreground/90 mb-2">{getText(p.description, activeLanguage)}</p>
-                                  <p className="text-xs text-muted-foreground italic bg-black/20 p-2 rounded border border-white/5 mt-3">
-                                    <span className="font-semibold text-foreground/70 not-italic mr-1">Uso táctico:</span> 
-                                    {getText(p.tacticalUse, activeLanguage)}
-                                  </p>
+                                  {getText(p.description, activeLanguage) ? (
+                                    <p className="text-sm text-foreground/90 mb-2">{getText(p.description, activeLanguage)}</p>
+                                  ) : (
+                                    <span className="text-xs text-amber-600/80 italic block mb-2">[ {strings.noTranslation} ]</span>
+                                  )}
+                                  
+                                  {getText(p.tacticalUse, activeLanguage) && (
+                                    <p className="text-xs text-muted-foreground italic bg-black/20 p-2 rounded border border-white/5 mt-3">
+                                      <span className="font-semibold text-foreground/70 not-italic mr-1">{strings.tacticalUse}</span> 
+                                      {getText(p.tacticalUse, activeLanguage)}
+                                    </p>
+                                  )}
                                 </div>
                               ))}
                             </div>

@@ -14,7 +14,11 @@ import {
   BookOpen,
   Feather,
   Globe,
-  Library
+  Library,
+  User,
+  Settings2,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchDialog } from "./search-dialog";
@@ -25,24 +29,41 @@ import { LANGUAGES } from "@/data/languages";
 import { LangCode, EditionId } from "@/types";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [compendiumOpen, setCompendiumOpen] = useState(location.includes('/compendium') || location.includes('/clanes') || location.includes('/disciplinas') || location.includes('/reglas') || location.includes('/roleplay') || location.includes('/herramientas') || location.includes('/glosario'));
   const { activeLanguage, activeEdition, setLanguage, setEdition } = useAppContext();
 
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
-  const navItems = [
+  const mainNavItems = [
     { href: "/", label: strings.home, icon: Landmark },
-    { href: "/reglas", label: strings.rules, icon: ScrollText },
-    { href: "/clanes", label: strings.clans, icon: Crown },
-    { href: "/disciplinas", label: strings.disciplines, icon: Flame },
-    { href: "/roleplay", label: strings.roleplay, icon: Drama },
-    { href: "/herramientas", label: strings.tools, icon: Swords },
-    { href: "/favoritos", label: strings.favorites, icon: Heart },
-    { href: "/glosario", label: strings.glossary, icon: BookOpen },
-    { href: "/notas", label: strings.notes, icon: Feather },
+    { href: "/compendium", label: strings.compendium, icon: BookOpen, isGroup: true },
+    { href: "/personaje", label: strings.character, icon: User },
+    { href: "/cronica", label: strings.chronicle, icon: ScrollText },
+    { href: "/buscar", label: strings.search, icon: Search },
   ];
+
+  const compendiumItems = [
+    { href: "/compendium/clanes", label: strings.clans, icon: Crown },
+    { href: "/compendium/disciplinas", label: strings.disciplines, icon: Flame },
+    { href: "/compendium/reglas", label: strings.rules, icon: ScrollText },
+    { href: "/compendium/roleplay", label: strings.roleplaylabel || strings.roleplay, icon: Drama },
+    { href: "/compendium/herramientas", label: strings.tools, icon: Swords },
+    { href: "/compendium/glosario", label: strings.glossary, icon: BookOpen },
+  ];
+
+  const utilityItems = [
+    { href: "/favoritos", label: strings.favorites, icon: Heart },
+    { href: "/notas", label: strings.notes, icon: Feather },
+    { href: "/ajustes", label: strings.settings, icon: Settings2 },
+  ];
+
+  const isCurrentActive = (href: string) => {
+    if (href === '/') return location === '/';
+    return location === href || location.startsWith(`${href}/`);
+  };
 
   return (
     <div className="flex min-h-[100dvh] bg-background text-foreground overflow-hidden selection:bg-primary/30">
@@ -56,16 +77,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </Link>
         
-        <div className="p-4 space-y-4">
-          <button 
-            onClick={() => setSearchOpen(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-white/5 hover:bg-white/10 rounded-md border border-white/5 transition-colors"
-          >
-            <Search className="w-4 h-4" />
-            <span>{strings.search}</span>
-            <kbd className="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded opacity-70">Cmd K</kbd>
-          </button>
-
+        <div className="p-4 space-y-4 pb-2 border-b border-sidebar-border/50">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -104,8 +116,60 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1">
-          {navItems.map((item) => {
-            const active = location === item.href || location.startsWith(`${item.href}/`);
+          {mainNavItems.map((item) => {
+            const active = isCurrentActive(item.href);
+            if (item.isGroup) {
+              return (
+                <div key={item.href} className="space-y-1">
+                  <div 
+                    className={cn(
+                      "flex items-center justify-between px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer",
+                      active || compendiumOpen
+                        ? "bg-primary/10 text-primary" 
+                        : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground"
+                    )}
+                    onClick={() => {
+                      if (compendiumOpen && active) {
+                        setCompendiumOpen(false);
+                      } else {
+                        setCompendiumOpen(true);
+                        setLocation(item.href);
+                      }
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <item.icon className={cn("w-4 h-4", active || compendiumOpen ? "text-primary" : "opacity-70")} />
+                      {item.label}
+                    </div>
+                    {compendiumOpen ? <ChevronDown className="w-4 h-4 opacity-50" /> : <ChevronRight className="w-4 h-4 opacity-50" />}
+                  </div>
+                  
+                  {compendiumOpen && (
+                    <div className="pl-6 space-y-1 mt-1 mb-2 border-l border-sidebar-border/30 ml-4">
+                      {compendiumItems.map(subItem => {
+                        const subActive = isCurrentActive(subItem.href) || isCurrentActive(subItem.href.replace('/compendium', ''));
+                        return (
+                          <Link key={subItem.href} href={subItem.href}>
+                            <div 
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer",
+                                subActive 
+                                  ? "text-primary bg-primary/5" 
+                                  : "text-sidebar-foreground/60 hover:bg-white/5 hover:text-sidebar-foreground"
+                              )}
+                            >
+                              <subItem.icon className={cn("w-3.5 h-3.5", subActive ? "text-primary" : "opacity-70")} />
+                              {subItem.label}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <Link key={item.href} href={item.href}>
                 <div 
@@ -116,7 +180,6 @@ export function Layout({ children }: { children: ReactNode }) {
                       : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
-                  data-testid={`nav-${item.href.replace('/', '') || 'home'}`}
                 >
                   <item.icon className={cn("w-4 h-4", active ? "text-primary" : "opacity-70")} />
                   {item.label}
@@ -124,12 +187,28 @@ export function Layout({ children }: { children: ReactNode }) {
               </Link>
             );
           })}
-        </nav>
-        <div className="p-4 border-t border-sidebar-border flex flex-col gap-1">
-          <div className="text-xs text-muted-foreground text-center">
-            {EDITIONS.find(e => e.id === activeEdition)?.name}
+
+          <div className="pt-4 mt-2 border-t border-sidebar-border/30">
+            {utilityItems.map((item) => {
+              const active = isCurrentActive(item.href);
+              return (
+                <Link key={item.href} href={item.href}>
+                  <div 
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200 cursor-pointer",
+                      active 
+                        ? "bg-primary/10 text-primary" 
+                        : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    <item.icon className={cn("w-4 h-4", active ? "text-primary" : "opacity-70")} />
+                    {item.label}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
-        </div>
+        </nav>
       </aside>
 
       {/* Mobile Header & Menu */}
@@ -138,7 +217,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <h1 className="font-cinzel font-bold text-lg text-primary cursor-pointer">V<span className="text-foreground">t</span>M</h1>
         </Link>
         <div className="flex items-center gap-2">
-          <button onClick={() => setSearchOpen(true)} className="p-2 text-muted-foreground hover:text-foreground">
+          <button onClick={() => setLocation('/buscar')} className="p-2 text-muted-foreground hover:text-foreground">
             <Search className="w-5 h-5" />
           </button>
           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-2 text-foreground">
@@ -157,7 +236,6 @@ export function Layout({ children }: { children: ReactNode }) {
                 value={activeEdition}
                 onChange={(e) => setEdition(e.target.value as EditionId)}
                 className="w-full bg-card text-sm text-foreground border border-border rounded px-2 py-2"
-                data-testid="mobile-edition-selector"
               >
                 {EDITIONS.map(ed => (
                   <option key={ed.id} value={ed.id}>{ed.shortName}</option>
@@ -170,7 +248,6 @@ export function Layout({ children }: { children: ReactNode }) {
                 value={activeLanguage}
                 onChange={(e) => setLanguage(e.target.value as LangCode)}
                 className="w-full bg-card text-sm text-foreground border border-border rounded px-2 py-2"
-                data-testid="mobile-language-selector"
               >
                 {LANGUAGES.map(lang => (
                   <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
@@ -179,8 +256,8 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
           </div>
           <nav className="p-4 space-y-2">
-            {navItems.map((item) => {
-              const active = location === item.href || location.startsWith(`${item.href}/`);
+            {[...mainNavItems, ...compendiumItems, ...utilityItems].filter(i => !i.isGroup).map((item) => {
+              const active = isCurrentActive(item.href) || isCurrentActive(item.href.replace('/compendium', ''));
               return (
                 <Link key={item.href} href={item.href}>
                   <div 

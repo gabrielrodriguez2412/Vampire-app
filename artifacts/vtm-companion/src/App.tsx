@@ -15,6 +15,11 @@ import Tools from "@/pages/tools";
 import Favorites from "@/pages/favorites";
 import Glossary from "@/pages/glossary";
 import Notes from "@/pages/notes";
+import Compendium from "@/pages/compendium";
+import Character from "@/pages/character";
+import Chronicle from "@/pages/chronicle";
+import Settings from "@/pages/settings";
+import Search from "@/pages/search";
 
 import { AppContextProvider } from "@/context/AppContext";
 import { validateData } from "@/utils/validation";
@@ -26,6 +31,19 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        
+        {/* Compendium Routes */}
+        <Route path="/compendium" component={Compendium} />
+        <Route path="/compendium/clanes" component={Clans} />
+        <Route path="/compendium/clanes/:id" component={Clans} />
+        <Route path="/compendium/disciplinas" component={Disciplines} />
+        <Route path="/compendium/disciplinas/:id" component={Disciplines} />
+        <Route path="/compendium/reglas" component={Rules} />
+        <Route path="/compendium/roleplay" component={Roleplay} />
+        <Route path="/compendium/herramientas" component={Tools} />
+        <Route path="/compendium/glosario" component={Glossary} />
+        
+        {/* Legacy routes for backwards compatibility / internal links */}
         <Route path="/clanes" component={Clans} />
         <Route path="/clanes/:id" component={Clans} />
         <Route path="/disciplinas" component={Disciplines} />
@@ -33,9 +51,18 @@ function Router() {
         <Route path="/reglas" component={Rules} />
         <Route path="/roleplay" component={Roleplay} />
         <Route path="/herramientas" component={Tools} />
-        <Route path="/favoritos" component={Favorites} />
         <Route path="/glosario" component={Glossary} />
+
+        {/* New main sections */}
+        <Route path="/personaje" component={Character} />
+        <Route path="/cronica" component={Chronicle} />
+        <Route path="/ajustes" component={Settings} />
+        <Route path="/buscar" component={Search} />
+        
+        {/* Utilities */}
+        <Route path="/favoritos" component={Favorites} />
         <Route path="/notas" component={Notes} />
+        
         <Route component={NotFound} />
       </Switch>
     </Layout>

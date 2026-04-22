@@ -44,16 +44,16 @@ export default function Clans() {
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.clans}</h1>
-        <p className="text-muted-foreground">La maldición de Caín se divide en linajes, cada uno con sus propios dones y debilidades.</p>
+        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.clansTitle}</h1>
+        <p className="text-muted-foreground">{strings.clansSubtitle}</p>
       </div>
 
       {filteredClans.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-lg mt-8">
           <Crown className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-cinzel text-xl text-foreground mb-2">No hay clanes para esta edición</h3>
+          <h3 className="font-cinzel text-xl text-foreground mb-2">{strings.noClansForEdition}</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Esta edición no tiene clanes registrados.
+            {strings.noClansForEdition}
           </p>
         </div>
       ) : (
@@ -105,7 +105,7 @@ export default function Clans() {
                     </p>
                     {isMissingLang && (
                       <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 mt-auto w-fit text-[10px]">
-                        [ Sin traducción disponible ]
+                        [ {strings.noTranslation} ]
                       </Badge>
                     )}
                   </CardContent>
@@ -139,24 +139,32 @@ export default function Clans() {
                   <div className="space-y-6 text-sm">
                     {!isAvailableInLang(selectedClan.description, activeLanguage) && (
                       <div className="bg-amber-900/20 text-amber-200/80 p-3 rounded text-xs border border-amber-900/30">
-                        {strings.contentUnavailable} - Showing English fallback.
+                        {strings.contentUnavailable}
                       </div>
                     )}
                     
                     <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Descripción</h3>
-                      <p className="leading-relaxed text-foreground/90">{getText(selectedClan.description, activeLanguage)}</p>
+                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.description}</h3>
+                      {getText(selectedClan.description, activeLanguage) ? (
+                        <p className="leading-relaxed text-foreground/90">{getText(selectedClan.description, activeLanguage)}</p>
+                      ) : (
+                        <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                      )}
                     </section>
 
                     <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Debilidad</h3>
-                      <div className="bg-red-950/20 border border-red-900/30 rounded-md p-4 text-red-200/90 leading-relaxed">
-                        {getText(selectedClan.weakness, activeLanguage)}
-                      </div>
+                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.weakness}</h3>
+                      {getText(selectedClan.weakness, activeLanguage) ? (
+                        <div className="bg-red-950/20 border border-red-900/30 rounded-md p-4 text-red-200/90 leading-relaxed">
+                          {getText(selectedClan.weakness, activeLanguage)}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                      )}
                     </section>
 
                     <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Disciplinas</h3>
+                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.disciplinesLabel}</h3>
                       <div className="flex gap-2">
                         {selectedClan.disciplines.map(d => (
                           <Badge 
@@ -171,22 +179,32 @@ export default function Clans() {
                     </section>
 
                     <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Estilo de Juego</h3>
-                      <p className="leading-relaxed text-foreground/90">{getText(selectedClan.playstyle, activeLanguage)}</p>
+                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.playstyle}</h3>
+                      {getText(selectedClan.playstyle, activeLanguage) ? (
+                        <p className="leading-relaxed text-foreground/90">{getText(selectedClan.playstyle, activeLanguage)}</p>
+                      ) : (
+                        <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                      )}
                     </section>
 
-                    <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Ideas para Roleplay</h3>
-                      <ul className="list-disc list-inside space-y-2 text-foreground/90 ml-4 marker:text-primary">
-                        {getTextArray(selectedClan.roleplayIdeas, activeLanguage).map((idea, idx) => (
-                          <li key={idx} className="leading-relaxed">{idea}</li>
-                        ))}
-                      </ul>
-                    </section>
+                    {getTextArray(selectedClan.roleplayIdeas, activeLanguage) && (
+                      <section>
+                        <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.roleplayIdeas}</h3>
+                        <ul className="list-disc list-inside space-y-2 text-foreground/90 ml-4 marker:text-primary">
+                          {getTextArray(selectedClan.roleplayIdeas, activeLanguage)?.map((idea, idx) => (
+                            <li key={idx} className="leading-relaxed">{idea}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
 
                     <section>
-                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">Relaciones</h3>
-                      <p className="leading-relaxed text-foreground/90 italic">{getText(selectedClan.relationships, activeLanguage)}</p>
+                      <h3 className="font-cinzel text-lg text-primary mb-2 border-b border-border pb-1">{strings.relationships}</h3>
+                      {getText(selectedClan.relationships, activeLanguage) ? (
+                        <p className="leading-relaxed text-foreground/90 italic">{getText(selectedClan.relationships, activeLanguage)}</p>
+                      ) : (
+                        <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                      )}
                     </section>
                   </div>
                 </div>

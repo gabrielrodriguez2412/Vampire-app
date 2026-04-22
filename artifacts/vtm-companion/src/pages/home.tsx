@@ -18,11 +18,27 @@ export default function Home() {
   const langName = LANGUAGES.find(l => l.code === activeLanguage)?.name;
 
   const modules = [
-    { title: strings.clans, desc: "Arquetipos, debilidades y disciplinas", icon: Users, href: "/clanes", color: "text-blue-400" },
-    { title: strings.disciplines, desc: "Poderes de la sangre", icon: Droplet, href: "/disciplinas", color: "text-red-500" },
-    { title: strings.rules, desc: "Mecánicas, Hambre y Combate", icon: Book, href: "/reglas", color: "text-amber-400" },
-    { title: strings.tools, desc: "Dados, rastreador de hambre", icon: Wrench, href: "/herramientas", color: "text-emerald-400" },
+    { title: strings.clansTitle, desc: strings.clansSubtitle, icon: Users, href: "/compendium/clanes", color: "text-blue-400" },
+    { title: strings.disciplinesTitle, desc: strings.disciplinesSubtitle, icon: Droplet, href: "/compendium/disciplinas", color: "text-red-500" },
+    { title: strings.rulesTitle, desc: strings.rulesSubtitle, icon: Book, href: "/compendium/reglas", color: "text-amber-400" },
+    { title: strings.character, desc: strings.characterSection, icon: Users, href: "/personaje", color: "text-purple-400" },
+    { title: strings.chronicle, desc: strings.chronicleSubtitle, icon: Book, href: "/cronica", color: "text-orange-400" },
+    { title: strings.compendium, desc: strings.home_tagline, icon: Book, href: "/compendium", color: "text-indigo-400" },
+    { title: strings.toolsTitle, desc: strings.tools, icon: Wrench, href: "/compendium/herramientas", color: "text-emerald-400" },
+    { title: strings.search, desc: strings.searchSubtitle, icon: Search, href: "/buscar", color: "text-slate-400" },
   ];
+
+  // Quick lookup (dummy implementation or fetch from local storage if managed)
+  const recentItems: {title: string, url: string}[] = [];
+  try {
+    const raw = localStorage.getItem('vtm-recent');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        recentItems.push(...parsed.slice(0, 3));
+      }
+    }
+  } catch (e) {}
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
@@ -43,20 +59,26 @@ export default function Home() {
           Vampiro <span className="text-primary block md:inline">La Mascarada</span>
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          El grimorio digital definitivo. Reglas, clanes y herramientas para sobrevivir la noche.
+          {strings.home_tagline}
         </p>
 
-        <button 
-          onClick={() => setSearchOpen(true)}
-          className="mt-8 max-w-md mx-auto w-full flex items-center gap-3 px-4 py-3 bg-card border border-border rounded-full text-muted-foreground hover:bg-white/5 hover:border-primary/50 transition-all group shadow-sm"
-        >
-          <Search className="w-5 h-5 group-hover:text-primary transition-colors" />
-          <span>{strings.search}</span>
-          <kbd className="ml-auto text-xs bg-background px-2 py-1 rounded-md border border-border">Cmd K</kbd>
-        </button>
+        {recentItems.length > 0 && (
+          <div className="mt-8">
+            <p className="text-sm text-muted-foreground mb-3 font-cinzel">Quick Lookup</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {recentItems.map((item, idx) => (
+                <Link key={idx} href={item.url}>
+                  <span className="px-4 py-1.5 bg-card border border-border hover:border-primary/50 hover:text-primary transition-colors rounded-full text-sm cursor-pointer">
+                    {item.title}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnimatePresence>
           {modules.map((mod, i) => (
             <motion.div 
@@ -73,7 +95,7 @@ export default function Home() {
                     </div>
                     <div>
                       <CardTitle className="text-xl group-hover:text-primary transition-colors">{mod.title}</CardTitle>
-                      <CardDescription className="text-muted-foreground mt-1">{mod.desc}</CardDescription>
+                      <CardDescription className="text-muted-foreground mt-1 line-clamp-1">{mod.desc}</CardDescription>
                     </div>
                   </CardHeader>
                 </Card>
@@ -90,7 +112,7 @@ export default function Home() {
         className="mt-16 text-center"
       >
         <p className="text-sm font-cinzel text-muted-foreground italic">
-          "La eternidad es un largo tiempo para estar hambriento."
+          {strings.quote_footer}
         </p>
       </motion.div>
     </div>

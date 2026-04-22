@@ -53,16 +53,16 @@ export default function Notes() {
         <div>
           <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
             <Feather className="w-8 h-8" />
-            {strings.notes}
+            {strings.notesTitle}
           </h1>
-          <p className="text-muted-foreground">Apuntes privados guardados en tu dispositivo.</p>
+          <p className="text-muted-foreground">{strings.notesSubtitle}</p>
         </div>
         {!isCreating && (
           <Button 
             onClick={() => setIsCreating(true)}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
-            <Plus className="w-4 h-4 mr-2" /> Nueva Nota
+            <Plus className="w-4 h-4 mr-2" /> {strings.add}
           </Button>
         )}
       </div>
@@ -73,23 +73,23 @@ export default function Notes() {
             <Card className="bg-card border-primary/30 shadow-lg shadow-primary/5">
               <CardContent className="pt-6 space-y-4">
                 <Input
-                  placeholder="Título de la nota..."
+                  placeholder={strings.sessionTitle}
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
                   className="font-cinzel text-lg bg-background border-border"
                   autoFocus
                 />
                 <Textarea
-                  placeholder="Escribe tus notas aquí..."
+                  placeholder={strings.notesAddPlaceholder}
                   value={newContent}
                   onChange={e => setNewContent(e.target.value)}
                   className="min-h-[150px] bg-background border-border resize-y"
                 />
               </CardContent>
               <CardFooter className="justify-end gap-2">
-                <Button variant="ghost" onClick={() => setIsCreating(false)}>Cancelar</Button>
+                <Button variant="ghost" onClick={() => setIsCreating(false)}>{strings.cancel}</Button>
                 <Button onClick={handleCreate} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                  <Save className="w-4 h-4 mr-2" /> Guardar
+                  <Save className="w-4 h-4 mr-2" /> {strings.save}
                 </Button>
               </CardFooter>
             </Card>
@@ -117,8 +117,8 @@ export default function Notes() {
                       />
                     </CardContent>
                     <CardFooter className="justify-end gap-2 border-t border-border pt-4">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>Cancelar</Button>
-                      <Button size="sm" onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">Guardar</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>{strings.cancel}</Button>
+                      <Button size="sm" onClick={handleSave} className="bg-primary text-primary-foreground hover:bg-primary/90">{strings.save}</Button>
                     </CardFooter>
                   </>
                 ) : (
@@ -141,12 +141,9 @@ export default function Notes() {
                       onClick={() => startEdit(note)}
                     >
                       <p className="text-foreground/80 whitespace-pre-wrap text-sm line-clamp-6">
-                        {note.content || <span className="text-muted-foreground italic">Sin contenido</span>}
+                        {note.content || <span className="text-muted-foreground italic">{strings.noTranslation}</span>}
                       </p>
                     </CardContent>
-                    <CardFooter className="text-xs text-muted-foreground pt-0 pb-4">
-                      Actualizado: {format(note.updatedAt, "dd/MM/yyyy HH:mm")}
-                    </CardFooter>
                   </>
                 )}
               </Card>
@@ -157,7 +154,7 @@ export default function Notes() {
 
       {!isCreating && notes.length === 0 && (
         <div className="text-center py-20 text-muted-foreground">
-          No tienes notas guardadas.
+          {strings.notesEmpty}
         </div>
       )}
     </div>

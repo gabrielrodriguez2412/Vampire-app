@@ -51,12 +51,12 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               value={query}
               onValueChange={setQuery}
               className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Buscar clanes, disciplinas, reglas..."
+              placeholder="Buscar..."
             />
           </div>
           <Command.List className="max-h-[300px] overflow-y-auto overflow-x-hidden">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              {query.length > 1 ? "No se encontraron resultados." : "Escribe al menos 2 caracteres."}
+              {query.length > 1 ? "Sin resultados." : "Escribe al menos 2 caracteres."}
             </Command.Empty>
             {results.length > 0 && (
               <Command.Group heading="Resultados" className="p-2 text-muted-foreground text-xs font-semibold">

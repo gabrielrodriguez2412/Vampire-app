@@ -14,10 +14,10 @@ export default function Roleplay() {
       <div className="mb-8">
         <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
           <Drama className="w-8 h-8" />
-          {strings.roleplay}
+          {strings.roleplaylabel}
         </h1>
         <p className="text-muted-foreground">
-          Consejos para sumergirse en la mentalidad de un depredador no-muerto.
+          {strings.roleplayIdeas}
         </p>
       </div>
 

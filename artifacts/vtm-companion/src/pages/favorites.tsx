@@ -25,16 +25,16 @@ export default function Favorites() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.favorites}</h1>
-        <p className="text-muted-foreground">Tus conocimientos guardados.</p>
+        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.favoritesTitle}</h1>
+        <p className="text-muted-foreground">{strings.favoritesSubtitle}</p>
       </div>
 
       {!hasFavorites ? (
         <div className="text-center py-20 bg-card border border-border rounded-lg mt-8">
           <HeartOff className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-cinzel text-xl text-foreground mb-2">No hay favoritos</h3>
+          <h3 className="font-cinzel text-xl text-foreground mb-2">{strings.favoritesEmpty}</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Marca el corazón en clanes, disciplinas o reglas para guardarlas aquí para acceso rápido durante tus partidas.
+            {strings.favoritesSubtitle}
           </p>
         </div>
       ) : (
@@ -48,7 +48,7 @@ export default function Favorites() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {favClans.map((clan, i) => (
                     <motion.div key={clan.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i*0.05 }}>
-                      <Link href={`/clanes/${clan.id}`}>
+                      <Link href={`/compendium/clanes/${clan.id}`}>
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full relative group">
                           <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: clan.color }} />
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
@@ -76,7 +76,7 @@ export default function Favorites() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {favDisciplines.map((disc, i) => (
                     <motion.div key={disc.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i*0.05 }}>
-                      <Link href={`/disciplinas/${disc.id}`}>
+                      <Link href={`/compendium/disciplinas/${disc.id}`}>
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full">
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
@@ -101,7 +101,7 @@ export default function Favorites() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {favRules.map((rule, i) => (
                     <motion.div key={rule.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i*0.05 }}>
-                      <Link href={`/reglas?id=${rule.id}`}>
+                      <Link href={`/compendium/reglas?id=${rule.id}`}>
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full">
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>

@@ -69,3 +69,21 @@ export interface GlossaryEntry {
   definition: Record<LangCode, string>;
   related: string[];
 }
+
+export interface Character {
+  id: string;
+  name: string;
+  clan: string;
+  concept: string;
+  edition: EditionId;
+  generation?: number;
+  bloodPotency?: number;
+  humanity: number;
+  hunger?: number;
+  attributes: {
+    strength: number; dexterity: number; stamina: number;
+    charisma: number; manipulation: number; composure: number;
+    intelligence: number; wits: number; resolve: number;
+  };
+  createdAt: string;
+}

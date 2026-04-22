@@ -1,0 +1,244 @@
+Quiero que crees una aplicación web completa, moderna y muy fácil de usar para consultar información útil durante partidas de **Vampiro: La Mascarada**.
+
+## Objetivo de la app
+
+La app debe permitir que el usuario acceda de manera **rápida, intuitiva, visual y organizada** a toda la información relevante al momento de jugar, tanto para jugadores como para narradores. Debe sentirse como una herramienta práctica de mesa, no como una wiki desordenada.
+
+## Enfoque general
+
+Desarrolla una app con una interfaz limpia, oscura y elegante, inspirada en un tono gótico / nocturno / urbano moderno, acorde al ambiente de Vampiro: La Mascarada. La experiencia debe priorizar:
+
+* rapidez de consulta
+* navegación simple
+* diseño claro
+* búsqueda eficiente
+* organización por categorías
+* buena visualización tanto en escritorio como en celular
+
+## Funcionalidades principales
+
+### 1. Pantalla principal / dashboard
+
+La pantalla inicial debe mostrar accesos rápidos a las secciones más importantes:
+
+* Reglas básicas
+* Clanes
+* Disciplinas
+* Generación de personaje
+* Sugerencias para roleplay
+* Combate y tiradas
+* Humanidad y bestia
+* Narrador / Storyteller tools
+* Glosario
+* Favoritos
+* Búsqueda global
+
+Debe incluir una barra de búsqueda visible desde el inicio.
+
+### 2. Biblioteca de reglas
+
+Crear una sección de reglas organizada por categorías, por ejemplo:
+
+* Tiradas
+* Atributos
+* Habilidades
+* Hambre
+* Frenesí
+* Daño
+* Combate
+* Cacería
+* Humanidad
+* Resonancia
+* Disciplinas
+* Uso de voluntad
+* Críticos y fallos
+
+Cada regla debe mostrarse en tarjetas o paneles fáciles de leer, con:
+
+* título
+* explicación breve
+* explicación expandida
+* ejemplos prácticos
+* notas rápidas
+* etiquetas o keywords
+
+Agregar un sistema de búsqueda y filtros dentro de reglas.
+
+### 3. Sección de clanes
+
+Crear una sección dedicada a los clanes. Para cada clan, mostrar:
+
+* nombre
+* descripción general
+* identidad / filosofía
+* debilidades
+* disciplinas asociadas
+* estilo de juego sugerido
+* ideas para interpretar al personaje
+* relaciones comunes con otros clanes
+* tono visual o ícono representativo
+
+Mostrar los clanes en tarjetas visuales y permitir abrir una vista detallada.
+
+### 4. Disciplinas
+
+Crear una sección para disciplinas con:
+
+* nombre
+* tipo
+* descripción
+* poderes o efectos principales
+* usos narrativos
+* sugerencias tácticas
+* qué clanes suelen usarlas
+
+Debe ser navegable por lista y también filtrable.
+
+### 5. Ayuda para creación de personaje
+
+Agregar una sección paso a paso para ayudar a crear un personaje, incluyendo:
+
+* concepto
+* clan
+* atributos
+* habilidades
+* disciplinas
+* ventajas / defectos
+* humanidad
+* trasfondo
+* estilo interpretativo
+
+No hace falta hacer una hoja oficial completa si eso complica el MVP, pero sí una guía interactiva bien organizada. Se puede incluir un “constructor básico” donde el usuario vaya seleccionando opciones y viendo un resumen de su personaje.
+
+### 6. Sugerencias de roleplay
+
+Incluir una sección con ideas útiles para interpretar mejor:
+
+* cómo pensar como vampiro
+* cómo interpretar hambre, bestia y humanidad
+* diferencias de actitud entre clanes
+* ideas de conflicto interno
+* frases o tonos comunes
+* sugerencias para escenas sociales, amenazas, manipulación y política
+
+Esta parte debe sentirse útil y dinámica, no demasiado académica.
+
+### 7. Herramientas rápidas de partida
+
+Agregar una sección de consulta rápida para usar durante la sesión:
+
+* referencia rápida de tiradas
+* dificultad sugerida
+* reglas resumidas
+* recordatorios de combate
+* recordatorios de hambre
+* consecuencias narrativas comunes
+* mini guía para improvisar escenas
+
+Esto debe estar optimizado para abrirse rápido durante una partida.
+
+### 8. Favoritos y notas
+
+Permitir que el usuario:
+
+* marque reglas, clanes o disciplinas como favoritos
+* guarde notas personalizadas
+* tenga una sección de acceso rápido a contenido guardado
+
+Usar almacenamiento local para guardar favoritos y notas aunque no haya backend.
+
+### 9. Búsqueda global inteligente
+
+La app debe tener una búsqueda global que permita encontrar rápidamente:
+
+* reglas
+* clanes
+* disciplinas
+* términos del glosario
+* sugerencias
+
+La búsqueda debe devolver resultados organizados por categoría.
+
+### 10. Glosario
+
+Agregar un glosario con términos clave del universo y del sistema, por ejemplo:
+
+* sectas
+* vitae
+* mascarada
+* sire
+* ghoul
+* coterie
+* bestia
+* príncipe
+* elíseo
+* etc.
+
+## Requisitos técnicos
+
+* Construir la app con una arquitectura limpia y escalable.
+* Usar un stack moderno apropiado para Replit.
+* Priorizar frontend funcional y atractivo.
+* Si es posible, usar React o Next.js con TypeScript.
+* Usar componentes reutilizables.
+* Implementar diseño responsive.
+* Usar almacenamiento local para favoritos y notas.
+* Preparar la estructura para que más adelante se pueda conectar a una base de datos.
+* Separar claramente datos, componentes y lógica.
+* Crear datos de ejemplo realistas para demostrar la app.
+
+## UX/UI
+
+Quiero una interfaz:
+
+* oscura
+* elegante
+* moderna
+* clara
+* intuitiva
+* con estética vampírica sobria, sin exagerar
+* con buena jerarquía visual
+* con navegación por sidebar o tabs
+* con tarjetas bien diseñadas
+* con tipografía legible
+* con pequeños detalles visuales temáticos
+
+Evitar una interfaz recargada o confusa.
+
+## MVP prioritario
+
+Primero enfócate en un MVP completamente funcional con estas secciones:
+
+1. Inicio
+2. Reglas
+3. Clanes
+4. Disciplinas
+5. Sugerencias de roleplay
+6. Búsqueda
+7. Favoritos
+
+## Datos iniciales
+
+Incluye contenido de ejemplo suficiente para que la app ya se vea útil desde el principio:
+
+* varios clanes
+* varias disciplinas
+* varias reglas importantes
+* varias sugerencias de roleplay
+* varios términos de glosario
+
+## Importante
+
+* El código debe quedar limpio y bien organizado.
+* Explica la estructura del proyecto.
+* Implementa una app visualmente atractiva desde el inicio.
+* No hagas una landing page vacía: crea una app funcional real.
+* Si hay decisiones de diseño o arquitectura que mejoren la experiencia, tómalas.
+* Prioriza una experiencia que sirva de verdad durante una partida.
+
+Además, al terminar:
+
+1. muéstrame la estructura de carpetas
+2. explica cómo correr la app
+3. explica cómo ampliar el contenido después
+4. deja comentarios claros en el código donde sea útil

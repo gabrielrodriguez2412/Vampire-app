@@ -25,14 +25,14 @@ export default function Favorites() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.favoritesTitle}</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2">{strings.favoritesTitle}</h1>
         <p className="text-muted-foreground">{strings.favoritesSubtitle}</p>
       </div>
 
       {!hasFavorites ? (
         <div className="text-center py-20 bg-card border border-border rounded-lg mt-8">
           <HeartOff className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-cinzel text-xl text-foreground mb-2">{strings.favoritesEmpty}</h3>
+          <h3 className="font-serif text-xl text-foreground mb-2">{strings.favoritesEmpty}</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
             {strings.favoritesSubtitle}
           </p>
@@ -42,7 +42,7 @@ export default function Favorites() {
           <AnimatePresence>
             {favClans.length > 0 && (
               <motion.section layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="font-cinzel text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
+                <h2 className="font-serif text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
                   <Crown className="w-5 h-5 text-primary" /> {strings.clans}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -53,7 +53,7 @@ export default function Favorites() {
                           <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: clan.color }} />
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
-                              <CardTitle className="font-cinzel flex items-center gap-2">
+                              <CardTitle className="font-serif flex items-center gap-2">
                                 {clan.icon} {getText(clan.name, activeLanguage)}
                               </CardTitle>
                               <CardDescription className="mt-1">{getText(clan.identity, activeLanguage)}</CardDescription>
@@ -70,7 +70,7 @@ export default function Favorites() {
 
             {favDisciplines.length > 0 && (
               <motion.section layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="font-cinzel text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
+                <h2 className="font-serif text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
                   <Flame className="w-5 h-5 text-primary" /> {strings.disciplines}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -80,7 +80,7 @@ export default function Favorites() {
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full">
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
-                              <CardTitle className="font-cinzel text-lg">{disc.name}</CardTitle>
+                              <CardTitle className="font-serif text-lg">{disc.name}</CardTitle>
                               <CardDescription className="mt-1">{getText(disc.type, activeLanguage)}</CardDescription>
                             </div>
                             <div onClick={e => e.preventDefault()}><FavoriteButton id={disc.id} /></div>
@@ -95,7 +95,7 @@ export default function Favorites() {
 
             {favRules.length > 0 && (
               <motion.section layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <h2 className="font-cinzel text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
+                <h2 className="font-serif text-2xl text-foreground mb-4 flex items-center gap-2 border-b border-border pb-2">
                   <ScrollText className="w-5 h-5 text-primary" /> {strings.rules}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -105,7 +105,7 @@ export default function Favorites() {
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full">
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
-                              <CardTitle className="font-cinzel text-lg">{getText(rule.title, activeLanguage)}</CardTitle>
+                              <CardTitle className="font-serif text-lg">{getText(rule.title, activeLanguage)}</CardTitle>
                               <CardDescription className="mt-1 line-clamp-2">{getText(rule.shortExplanation, activeLanguage)}</CardDescription>
                             </div>
                             <div onClick={e => e.preventDefault()}><FavoriteButton id={rule.id} /></div>

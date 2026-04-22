@@ -24,7 +24,7 @@ export default function Glossary() {
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-2">
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
           <BookOpen className="w-8 h-8" />
           {strings.glossaryTitle}
         </h1>
@@ -54,7 +54,7 @@ export default function Glossary() {
             >
               <Card className="bg-card border-border">
                 <CardHeader className="pb-2">
-                  <CardTitle className="font-cinzel text-xl text-foreground">{getText(item.term, activeLanguage)}</CardTitle>
+                  <CardTitle className="font-serif text-xl text-foreground">{getText(item.term, activeLanguage)}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {getText(item.definition, activeLanguage) ? (

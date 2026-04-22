@@ -12,7 +12,7 @@ export default function Roleplay() {
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-3">
           <Drama className="w-8 h-8" />
           {strings.roleplaylabel}
         </h1>
@@ -31,7 +31,7 @@ export default function Roleplay() {
           >
             <Card className="bg-card border-border overflow-hidden group">
               <CardHeader className="bg-white/[0.02] border-b border-border">
-                <CardTitle className="font-cinzel text-xl text-foreground group-hover:text-primary transition-colors">
+                <CardTitle className="font-serif text-xl text-foreground group-hover:text-primary transition-colors">
                   {section.title}
                 </CardTitle>
               </CardHeader>

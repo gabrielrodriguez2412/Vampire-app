@@ -35,7 +35,7 @@ export default function Disciplines() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">{strings.disciplinesTitle}</h1>
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2">{strings.disciplinesTitle}</h1>
         <p className="text-muted-foreground mb-6">{strings.disciplinesSubtitle}</p>
         
         <div className="relative max-w-md">
@@ -52,7 +52,7 @@ export default function Disciplines() {
       {filteredDiscs.length === 0 ? (
         <div className="text-center py-20 bg-card border border-border rounded-lg mt-8">
           <Flame className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <h3 className="font-cinzel text-xl text-foreground mb-2">{strings.noDisciplines}</h3>
+          <h3 className="font-serif text-xl text-foreground mb-2">{strings.noDisciplines}</h3>
           <p className="text-muted-foreground max-w-md mx-auto">
             {strings.noResults}
           </p>
@@ -76,7 +76,7 @@ export default function Disciplines() {
                     <CardHeader className="bg-white/[0.02] border-b border-border pb-4 flex flex-row items-start justify-between">
                       <div className="w-full">
                         <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-2xl font-cinzel text-foreground">{disc.name}</CardTitle>
+                          <CardTitle className="text-2xl font-serif text-foreground">{disc.name}</CardTitle>
                           <Badge variant="outline" className="text-xs font-mono text-muted-foreground border-muted-foreground/30">
                             {getText(disc.type, activeLanguage)}
                           </Badge>
@@ -114,7 +114,7 @@ export default function Disciplines() {
                     <CardContent className="p-0">
                       {disc.powers && disc.powers.length > 0 && (
                         <AccordionItem value={disc.id} className="border-b-0">
-                          <AccordionTrigger className="px-6 py-4 hover:bg-white/[0.02] font-cinzel text-lg" onClick={() => {
+                          <AccordionTrigger className="px-6 py-4 hover:bg-white/[0.02] font-serif text-lg" onClick={() => {
                             if (params.id !== disc.id) {
                               setLocation(`/compendium/disciplinas/${disc.id}`);
                             } else {

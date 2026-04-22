@@ -73,7 +73,7 @@ export default function Tools() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-3">
           <Swords className="w-8 h-8" />
           {strings.toolsTitle}
         </h1>
@@ -85,7 +85,7 @@ export default function Tools() {
         {/* Hunger Tracker */}
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="font-cinzel flex items-center gap-2">
+            <CardTitle className="font-serif flex items-center gap-2">
               <Droplet className="w-5 h-5 text-red-500" /> 
               {strings.hungerTracker}
             </CardTitle>
@@ -119,7 +119,7 @@ export default function Tools() {
         {/* Dice Roller */}
         <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="font-cinzel flex items-center gap-2">
+            <CardTitle className="font-serif flex items-center gap-2">
               <Dices className="w-5 h-5" /> 
               {strings.quickRoll}
             </CardTitle>
@@ -195,7 +195,7 @@ export default function Tools() {
          {/* Cheat sheet */}
          <Card className="bg-card border-border">
           <CardHeader>
-            <CardTitle className="font-cinzel text-lg flex items-center gap-2">
+            <CardTitle className="font-serif text-lg flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />
               {strings.combatSummary}
             </CardTitle>

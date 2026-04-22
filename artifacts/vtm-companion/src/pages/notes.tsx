@@ -51,7 +51,7 @@ export default function Notes() {
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
+          <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-3">
             <Feather className="w-8 h-8" />
             {strings.notesTitle}
           </h1>
@@ -76,7 +76,7 @@ export default function Notes() {
                   placeholder={strings.sessionTitle}
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
-                  className="font-cinzel text-lg bg-background border-border"
+                  className="font-serif text-lg bg-background border-border"
                   autoFocus
                 />
                 <Textarea
@@ -108,7 +108,7 @@ export default function Notes() {
                       <Input
                         value={editTitle}
                         onChange={e => setEditTitle(e.target.value)}
-                        className="font-cinzel bg-background border-border"
+                        className="font-serif bg-background border-border"
                       />
                       <Textarea
                         value={editContent}
@@ -125,7 +125,7 @@ export default function Notes() {
                   <>
                     <CardHeader className="pb-2 cursor-pointer" onClick={() => startEdit(note)}>
                       <div className="flex justify-between items-start gap-4">
-                        <CardTitle className="font-cinzel text-xl text-foreground">{note.title}</CardTitle>
+                        <CardTitle className="font-serif text-xl text-foreground">{note.title}</CardTitle>
                         <Button 
                           variant="ghost" 
                           size="icon" 

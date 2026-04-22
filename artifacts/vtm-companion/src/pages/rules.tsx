@@ -39,7 +39,7 @@ export default function Rules() {
       {/* Sidebar/Top filter for categories */}
       <div className="w-full md:w-64 shrink-0 bg-card border-r border-border p-4 md:p-6 flex flex-col gap-4">
         <div>
-          <h2 className="font-cinzel text-xl font-bold text-primary mb-4">{strings.categories}</h2>
+          <h2 className="font-serif text-xl font-bold text-primary mb-4">{strings.categories}</h2>
           <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
             <button
                 onClick={() => setActiveCategory("Todas")}
@@ -71,7 +71,7 @@ export default function Rules() {
       <ScrollArea className="flex-1">
         <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-3xl font-cinzel font-bold text-foreground mb-2">{strings.rulesTitle}</h1>
+            <h1 className="text-3xl font-serif font-bold text-foreground mb-2">{strings.rulesTitle}</h1>
             <p className="text-muted-foreground mb-6">{strings.rulesSubtitle}</p>
             
             <div className="relative max-w-md">
@@ -104,7 +104,7 @@ export default function Rules() {
                           <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-white/[0.02] flex-1 text-left">
                             <div className="flex flex-col items-start gap-1 w-full">
                               <div className="flex items-center gap-3 w-full">
-                                <span className="font-cinzel text-lg text-foreground">{getText(rule.title, activeLanguage)}</span>
+                                <span className="font-serif text-lg text-foreground">{getText(rule.title, activeLanguage)}</span>
                                 <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">{rule.category}</Badge>
                                 {isMissingLang && (
                                   <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto shrink-0">
@@ -133,7 +133,7 @@ export default function Rules() {
                             
                             {getTextArray(rule.examples, activeLanguage) && (
                               <div className="bg-black/20 p-4 rounded-md border border-white/5">
-                                <h4 className="text-primary font-cinzel text-sm mb-2">{strings.examples}</h4>
+                                <h4 className="text-primary font-serif text-sm mb-2">{strings.examples}</h4>
                                 <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
                                   {getTextArray(rule.examples, activeLanguage)?.map((ex, idx) => (
                                     <li key={idx}>{ex}</li>

@@ -104,7 +104,7 @@ export default function CharacterPage() {
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
       <div className="mb-8 flex items-center gap-3">
         <User className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-cinzel font-bold text-foreground">{strings.characterSection}</h1>
+        <h1 className="text-3xl font-serif font-bold text-foreground">{strings.characterSection}</h1>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -131,7 +131,7 @@ export default function CharacterPage() {
                     <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors" onClick={() => viewCharacter(char.id)}>
                       <CardHeader className="pb-2 flex flex-row justify-between items-start">
                         <div>
-                          <CardTitle className="font-cinzel text-xl">{char.name}</CardTitle>
+                          <CardTitle className="font-serif text-xl">{char.name}</CardTitle>
                           <p className="text-sm text-muted-foreground">{getClanName(char.clan)} • {char.edition.toUpperCase()}</p>
                         </div>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive -mt-2" onClick={(e) => deleteCharacter(char.id, e)}>
@@ -151,7 +151,7 @@ export default function CharacterPage() {
 
         <TabsContent value="create">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-cinzel text-xl">{strings.createCharacter}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-xl">{strings.createCharacter}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -205,7 +205,7 @@ export default function CharacterPage() {
               </div>
 
               <div className="border-t border-border pt-6 mt-6">
-                <h3 className="font-cinzel text-lg mb-4 text-primary">{strings.attributes}</h3>
+                <h3 className="font-serif text-lg mb-4 text-primary">{strings.attributes}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   {/* Physical */}
                   <div className="space-y-4 bg-background/50 p-4 rounded border border-white/5">
@@ -252,7 +252,7 @@ export default function CharacterPage() {
               <CardHeader className="border-b border-border pb-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="font-cinzel text-3xl text-primary">{activeChar.name}</CardTitle>
+                    <CardTitle className="font-serif text-3xl text-primary">{activeChar.name}</CardTitle>
                     <p className="text-muted-foreground text-lg mt-1">{getClanName(activeChar.clan)} • {activeChar.concept}</p>
                   </div>
                   <div className="text-right">
@@ -267,29 +267,29 @@ export default function CharacterPage() {
                 <div className="flex flex-wrap gap-4">
                   <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
                     <div className="text-xs text-muted-foreground uppercase">{strings.humanity}</div>
-                    <div className="text-2xl font-cinzel text-foreground mt-1">{activeChar.humanity}</div>
+                    <div className="text-2xl font-serif text-foreground mt-1">{activeChar.humanity}</div>
                   </div>
                   {activeChar.edition === 'v5' ? (
                     <>
                       <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
                         <div className="text-xs text-muted-foreground uppercase">{strings.bloodPotency}</div>
-                        <div className="text-2xl font-cinzel text-foreground mt-1">{activeChar.bloodPotency}</div>
+                        <div className="text-2xl font-serif text-foreground mt-1">{activeChar.bloodPotency}</div>
                       </div>
                       <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
                         <div className="text-xs text-muted-foreground uppercase">{strings.hunger}</div>
-                        <div className="text-2xl font-cinzel text-red-500 mt-1">{activeChar.hunger}</div>
+                        <div className="text-2xl font-serif text-red-500 mt-1">{activeChar.hunger}</div>
                       </div>
                     </>
                   ) : (
                     <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
                       <div className="text-xs text-muted-foreground uppercase">{strings.generation_label}</div>
-                      <div className="text-2xl font-cinzel text-foreground mt-1">{activeChar.generation}ª</div>
+                      <div className="text-2xl font-serif text-foreground mt-1">{activeChar.generation}ª</div>
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="font-cinzel text-xl border-b border-border pb-2 mb-4 text-primary">{strings.attributes}</h3>
+                  <h3 className="font-serif text-xl border-b border-border pb-2 mb-4 text-primary">{strings.attributes}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Physical */}
                     <div className="space-y-2">

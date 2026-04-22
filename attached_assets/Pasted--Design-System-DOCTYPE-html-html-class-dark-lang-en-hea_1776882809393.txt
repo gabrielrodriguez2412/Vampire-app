@@ -1,0 +1,920 @@
+<!-- Design System -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VTM Companion - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .gothic-texture {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3External %3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0e0e0e;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #8b0000;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#0e0e0e",
+                        "tertiary": "#c8c6c6",
+                        "surface": "#131313",
+                        "on-secondary-fixed-variant": "#474746",
+                        "on-primary-fixed-variant": "#920703",
+                        "surface-variant": "#353534",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#c8c6c6",
+                        "secondary": "#c8c6c5",
+                        "surface-tint": "#ffb4a8",
+                        "secondary-fixed-dim": "#c8c6c5",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#353534",
+                        "on-tertiary-fixed-variant": "#474747",
+                        "on-background": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "inverse-primary": "#b52619",
+                        "surface-bright": "#3a3939",
+                        "tertiary-container": "#424242",
+                        "surface-container-low": "#1c1b1b",
+                        "outline-variant": "#5a403c",
+                        "tertiary-fixed": "#e4e2e1",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#474746",
+                        "primary-container": "#8b0000",
+                        "error-container": "#93000a",
+                        "surface-container": "#201f1f",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#e3beb8",
+                        "on-secondary": "#313030",
+                        "on-tertiary": "#303030",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#e5e2e1",
+                        "primary": "#ffb4a8",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed": "#1b1c1c",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary-container": "#ff907f",
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-container": "#b7b5b4",
+                        "outline": "#aa8984",
+                        "on-secondary-fixed": "#1c1b1b",
+                        "on-primary": "#690000",
+                        "background": "#131313",
+                        "on-primary-fixed": "#410000",
+                        "primary-fixed": "#ffdad4",
+                        "on-tertiary-container": "#b0aeae"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-xl": ["Newsreader"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Newsreader"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Newsreader"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                        "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md">
+<div class="fixed inset-0 pointer-events-none gothic-texture z-0"></div>
+<!-- TopAppBar -->
+<header class="bg-black text-red-900 font-newsreader uppercase tracking-widest text-sm docked full-width top-0 border-b border-zinc-800 flat no shadows flex justify-between items-center w-full px-6 py-4 sticky z-50">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined hover:text-red-600 transition-colors cursor-pointer" data-icon="menu">menu</span>
+<h1 class="text-xl font-bold text-red-800 tracking-tighter">VTM COMPANION</h1>
+</div>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined hover:text-red-600 transition-colors cursor-pointer" data-icon="search">search</span>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-gutter py-xl relative z-10 flex flex-col gap-xl pb-24">
+<!-- Quick Search Bar -->
+<section class="w-full">
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-zinc-500 group-focus-within:text-primary-container" data-icon="search">search</span>
+</div>
+<input class="w-full bg-black border-0 border-b border-zinc-800 py-6 pl-16 pr-6 text-on-surface focus:ring-0 focus:border-primary-container font-headline-md placeholder:text-zinc-700 transition-all" placeholder="SEARCH DISCIPLINES, CLANS, OR LORE..." type="text"/>
+<div class="absolute bottom-0 left-0 w-0 h-[1px] bg-primary-container group-focus-within:w-full transition-all duration-500"></div>
+</div>
+</section>
+<!-- Featured Clans (Horizontal Scrolling) -->
+<section>
+<div class="flex items-center justify-between mb-lg">
+<h2 class="font-headline-lg text-on-surface">ANCESTRAL LINEAGES</h2>
+<span class="text-primary-container font-label-md tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-80">VIEW ALL CLANS <span class="material-symbols-outlined text-xs" data-icon="arrow_forward">arrow_forward</span></span>
+</div>
+<div class="flex overflow-x-auto gap-lg pb-6 custom-scrollbar snap-x">
+<!-- Ventrue -->
+<div class="flex-none w-80 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden">
+<div class="h-96 relative">
+<img class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" data-alt="regal man in dark velvet suit standing in a gothic marble library with dramatic high contrast lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnH5jwiVvaJWRyssYJidSSamrg1z0fVQO04n6NcngAx-PPH0ITBObQN27ndX7biWb3IxFUMZh7Jg1orfeY8fq9lmu0fbq2YYRT1xcKavz96SL78FhRc9LCeNw2HzhVe3KEzDkGhZwAhBlgoJQxk3QYDPRBTW7D3exWE1ljVH8Ubrqo7FfJRpc_o4Vti8lGtNFpAALLFGOe5TafUht7ndaKGN3Om3d1LNSNFPILq0HJM1k3L1NmmZoUe5K51IqxnHhYV95_IgYXl40B"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
+</div>
+<div class="absolute bottom-0 p-6 w-full">
+<p class="font-label-md text-primary-container tracking-[0.2em] mb-2">CLAN</p>
+<h3 class="font-headline-xl text-on-surface mb-2">VENTRUE</h3>
+<p class="text-zinc-400 font-body-md line-clamp-2">The Kings. Custodians of the Masquerade and rulers of the undead hierarchy.</p>
+</div>
+</div>
+<!-- Tremere -->
+<div class="flex-none w-80 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden">
+<div class="h-96 relative">
+<img class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" data-alt="mysterious figure holding a glass of dark liquid in a candlelit occult room with old parchment and blood symbols" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8IWgnPaFV0mehzU77j8o4Bp0Zd32aqX1i96hDI5yJ28sngD_P3NrAeL0Ams3Y9EJKGwtVpP1P75yJUskb8BDHd4zEJ1nwlzNTIfuvOG3i-v4IClZY0lft3h-DER7zbAEJHOwFsoCT_BneHrpAvvP8NQvnXmLJQIehYnIoZHAm06l7CBt1pHGYTm_k4Tf2nFDtV8x2FHDXT0825cL0BLp8FGvGSQisKAIJ-WqfBKFMh-OfESeE5_pH-lXuTUsYFnIlx2akqBaE6uSI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
+</div>
+<div class="absolute bottom-0 p-6 w-full">
+<p class="font-label-md text-primary-container tracking-[0.2em] mb-2">CLAN</p>
+<h3 class="font-headline-xl text-on-surface mb-2">TREMERE</h3>
+<p class="text-zinc-400 font-body-md line-clamp-2">The Warlocks. Masters of blood sorcery and seekers of forbidden secrets.</p>
+</div>
+</div>
+<!-- Brujah -->
+<div class="flex-none w-80 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden">
+<div class="h-96 relative">
+<img class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" data-alt="intense figure with shaved head in a dark urban setting with smoke and red neon lighting reflecting on leather jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEwqR9fHor3swJR9_zjQOOu5gCQwuQcmxJal1Wt-vrssr13aADvMBZ_tRiWM06yLqClJ3VzHA3WPhkp_IcdfE1Ir-0b_sSW0P-M4LVZwRKW664I-Aexr486GwJzB727lZ9xvFfdi8LnAqTJW-yZCUxxGDeRyqoMSn9oCG7i72x-fQQro4D6jqWGkqT0k7xBqrbQ7i6ee2AlAlSJjhxsfGa45lDT_7ReJA5TPAMLvKglqsjTvGp0nAyNQd0jfhdHmMBEqfU9S1kx0mz"/>
+<div class="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
+</div>
+<div class="absolute bottom-0 p-6 w-full">
+<p class="font-label-md text-primary-container tracking-[0.2em] mb-2">CLAN</p>
+<h3 class="font-headline-xl text-on-surface mb-2">BRUJAH</h3>
+<p class="text-zinc-400 font-body-md line-clamp-2">The Rabble. Warriors, rebels, and philosophers of the Kindred revolution.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Core Rules Bento Grid -->
+<section>
+<h2 class="font-headline-lg text-on-surface mb-lg">THE DARK PROTOCOLS</h2>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-md md:h-[400px]">
+<div class="md:col-span-2 md:row-span-2 bg-zinc-900 border border-zinc-800 p-lg flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-lg opacity-10 text-8xl material-symbols-outlined" data-icon="swords">swords</div>
+<div>
+<span class="material-symbols-outlined text-primary-container mb-4" data-icon="swords">swords</span>
+<h3 class="font-headline-lg mb-2">COMBAT</h3>
+<p class="text-zinc-400 font-body-md">Physical conflicts, initiative, and damage in the World of Darkness.</p>
+</div>
+<button class="w-fit text-on-surface font-label-md border-b border-zinc-700 pb-1 mt-4 group-hover:border-primary-container">OPEN PROTOCOLS</button>
+</div>
+<div class="bg-zinc-900 border border-zinc-800 p-lg flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-4xl material-symbols-outlined" data-icon="auto_fix_high">auto_fix_high</div>
+<h3 class="font-headline-md">DISCIPLINES</h3>
+<span class="material-symbols-outlined text-primary-container" data-icon="auto_fix_high">auto_fix_high</span>
+</div>
+<div class="bg-zinc-900 border border-zinc-800 p-lg flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 text-4xl material-symbols-outlined" data-icon="opacity">opacity</div>
+<h3 class="font-headline-md">BLOOD POTENCY</h3>
+<span class="material-symbols-outlined text-primary-container" data-icon="opacity">opacity</span>
+</div>
+<div class="md:col-span-2 bg-zinc-900 border border-zinc-800 p-lg flex items-center justify-between hover:border-primary-container transition-colors group">
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-4xl text-primary-container" data-icon="heart_broken">heart_broken</span>
+<div>
+<h3 class="font-headline-md">HUMANITY</h3>
+<p class="text-zinc-400 font-body-md">The struggle against the Inner Beast.</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-zinc-700 group-hover:text-on-surface" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- Storyteller Suggestions -->
+<section class="bg-zinc-950 border border-zinc-900 p-xl relative">
+<div class="flex flex-col items-center mb-lg">
+<div class="h-px w-24 bg-primary-container mb-6"></div>
+<h2 class="font-headline-lg text-on-surface text-center mb-2 italic">STORYTELLER SUGGESTIONS</h2>
+<p class="font-label-md text-zinc-500 tracking-widest">WHISPERS FROM THE VOID</p>
+</div>
+<div class="space-y-6">
+<div class="group cursor-pointer">
+<div class="flex items-start gap-4 pb-6 border-b border-zinc-900 group-hover:border-primary-container transition-colors">
+<span class="font-headline-md text-zinc-800 group-hover:text-primary-container transition-colors">01</span>
+<div>
+<h4 class="font-headline-md text-on-surface mb-1 uppercase tracking-tight">The Scent of Copper</h4>
+<p class="text-zinc-400 italic">"The heavy rain in the alleyway doesn't wash away the metallic tang. Describe the sensory overload of a starving fledgling..."</p>
+</div>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="flex items-start gap-4 pb-6 border-b border-zinc-900 group-hover:border-primary-container transition-colors">
+<span class="font-headline-md text-zinc-800 group-hover:text-primary-container transition-colors">02</span>
+<div>
+<h4 class="font-headline-md text-on-surface mb-1 uppercase tracking-tight">An Invitation of Silk</h4>
+<p class="text-zinc-400 italic">"A Ventrue elder invites the coterie to an opera house. The air is thick with old perfume and ancient secrets. What is the price of a seat?"</p>
+</div>
+</div>
+</div>
+<div class="group cursor-pointer">
+<div class="flex items-start gap-4 pb-6 border-b border-zinc-900 group-hover:border-primary-container transition-colors">
+<span class="font-headline-md text-zinc-800 group-hover:text-primary-container transition-colors">03</span>
+<div>
+<h4 class="font-headline-md text-on-surface mb-1 uppercase tracking-tight">Shadows in the Server Room</h4>
+<p class="text-zinc-400 italic">"The Nosferatu warrens have been breached by a digital threat. The hum of cooling fans mimics the sound of a beating heart..."</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex justify-center mt-xl">
+<button class="bg-primary-container text-white px-10 py-4 font-label-md uppercase tracking-[0.3em] hover:bg-red-700 transition-all active:scale-95">REVEAL MORE</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-16 bg-zinc-950 bg-opacity-95 backdrop-blur-sm border-t border-zinc-800">
+<a class="flex flex-col items-center justify-center text-red-600 font-bold font-newsreader text-[10px] tracking-widest Active: opacity-80 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>DASHBOARD</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-600 font-newsreader text-[10px] tracking-widest hover:bg-zinc-900 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<span>RULES</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-600 font-newsreader text-[10px] tracking-widest hover:bg-zinc-900 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="groups_3">groups_3</span>
+<span>CLANS</span>
+</a>
+<a class="flex flex-col items-center justify-center text-zinc-600 font-newsreader text-[10px] tracking-widest hover:bg-zinc-900 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span>LORE</span>
+</a>
+</nav>
+</body></html>
+
+<!-- VTM Companion Dashboard -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Clan Ventrue - V5 Companion</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#1c1b1b",
+                    "error": "#ffb4ab",
+                    "surface-dim": "#131313",
+                    "primary": "#ffb4a8",
+                    "secondary-container": "#474746",
+                    "on-tertiary-fixed": "#1b1c1c",
+                    "error-container": "#93000a",
+                    "on-secondary": "#313030",
+                    "primary-fixed": "#ffdad4",
+                    "inverse-on-surface": "#313030",
+                    "surface-tint": "#ffb4a8",
+                    "on-tertiary": "#303030",
+                    "on-surface-variant": "#e3beb8",
+                    "surface-container-lowest": "#0e0e0e",
+                    "on-surface": "#e5e2e1",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-highest": "#353534",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "on-error-container": "#ffdad6",
+                    "surface-bright": "#3a3939",
+                    "outline-variant": "#5a403c",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "inverse-primary": "#b52619",
+                    "surface-container": "#201f1f",
+                    "secondary-fixed": "#e5e2e1",
+                    "background": "#131313",
+                    "secondary": "#c8c6c5",
+                    "tertiary-fixed": "#e4e2e1",
+                    "on-primary-fixed-variant": "#920703",
+                    "inverse-surface": "#e5e2e1",
+                    "tertiary-fixed-dim": "#c8c6c6",
+                    "surface-variant": "#353534",
+                    "outline": "#aa8984",
+                    "on-primary": "#690000",
+                    "on-secondary-container": "#b7b5b4",
+                    "on-primary-container": "#ff907f",
+                    "on-background": "#e5e2e1",
+                    "surface": "#131313",
+                    "on-error": "#690005",
+                    "primary-container": "#8b0000",
+                    "tertiary-container": "#424242",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "tertiary": "#c8c6c6",
+                    "on-tertiary-container": "#b0aeae",
+                    "surface-container-high": "#2a2a2a",
+                    "on-secondary-fixed-variant": "#474746"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "40px",
+                    "container-max": "1200px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "gutter": "24px",
+                    "xs": "4px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-xl": ["Newsreader"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Newsreader"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Newsreader"]
+            },
+            "fontSize": {
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>.noise-overlay {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuANVBd8QjP_PzA3f4y024FPhBdNitxBCiqzPjhN_0HtXn6xMKs0m6iP7iKFtRZ1KnshjaMgzHVO5qyG5pKhr6Hya5lWQ9qucb2pgvGn8nBTTNlM2jbCQVbno95t0WpZLw5d1mIfcZeU6IEeTIvSwv0MFCmySEtnf2jW984Yw0a5e7_MBnLDU13Hj1Iqz8yNA70vDLuHJzW1zIWDIb0GVyuZoUZjWrvk713jmIi-fnnCATTOFx4hUJsBLVmraXB365CjanJhbLltethC);
+    opacity: 0.05;
+    pointer-events: none
+    }
+.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-white">
+<!-- TopAppBar Shell -->
+<header class="bg-neutral-950 flex justify-between items-center w-full px-6 py-4 sticky top-0 z-[60] border-b border-neutral-800">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-red-800 cursor-pointer hover:opacity-80 transition-opacity" data-icon="menu">menu</span>
+<h1 class="font-serif text-xl font-bold text-red-800 tracking-tighter">V5 COMPANION</h1>
+</div>
+<div class="w-10 h-10 border border-neutral-800 p-0.5 overflow-hidden">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="heraldic shield icon representing clan ventrue, sharp lines, blood red and black palette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAw7hZthAp8YVPwIzBoOa8l4NcCXWfDh4tKPlUwxF7Xn9M333zzKu8WrHqj6LgSzjd4RC9XZrdhq1B1RaDtMAU9jQtrdQsxHX-HZsxP2Icdmf64RXwcW5J_qvWNa31lxz8HRK9f0mqtXlFHCet2NlA9mbWrSAes6ZqCLcrjOm5EJ-c97gOrh5Htk-l-GbmQX_p7_AmzLU7IF5Cl_w2Wpv60VHSuD3t2CUITqtvxM_4gIgL8Jzo5gf-MPO8PyjqGi8b7EBIKfdDkwIl6"/>
+</div>
+</header>
+<main class="relative min-h-screen pb-24">
+<!-- Hero Section -->
+<section class="relative h-[530px] w-full overflow-hidden">
+<img alt="Clan Ventrue Patriarch" class="w-full h-full object-cover grayscale contrast-125" data-alt="A sophisticated male vampire in a tailored charcoal suit sitting in a massive gothic library with tall mahogany shelves and dim candle lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsvi36a3EV4mAlKH39sDm8FKqgcLNHSYZlFk2bFJvbwKVUM23ok9Tk5KdkU4CAFEHxTYFoipfBjTEJuqmEJDvQdudGxwiuhxZzEbQVhnpU38VYt0wB3BoMdDiaarY9MRLp5woT0D2xH81oW35OyOPLEfmcOraW_Npyxmmsdwth42-tDtSd3-8Jupk1ABW45pdVVPf5g_btp5WcnTm8CNIg9WlMHkN3WA5oAmDDXDoi9rZO30_ysapio_ikTUTqvwobn1jCYfT3L3io"/>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-lg w-full max-w-container-max mx-auto md:px-xl">
+<p class="font-headline-md text-red-800 uppercase tracking-[0.3em] mb-xs">The Kings</p>
+<h2 class="font-headline-xl text-white">CLAN VENTRUE</h2>
+</div>
+</section>
+<div class="max-w-container-max mx-auto px-lg py-xl grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Lore Section -->
+<div class="md:col-span-8 space-y-lg">
+<section>
+<div class="flex items-center gap-sm mb-md">
+<div class="h-px flex-1 bg-outline-variant/30"></div>
+<span class="material-symbols-outlined text-red-800" data-icon="history_edu">history_edu</span>
+<div class="h-px flex-1 bg-outline-variant/30"></div>
+</div>
+<h3 class="font-headline-lg text-white mb-md">History &amp; Lore</h3>
+<div class="space-y-md text-on-surface-variant font-headline-md italic leading-relaxed text-lg border-l-2 border-primary-container pl-lg">
+<p>
+                            The Blue Bloods. The Patricians. The Ventrue have always been the masters of the night, the shepherds of the Kindred, and the architects of the Camarilla. While others hide in the shadows, the Ventrue build the shadows to suit their needs.
+                        </p>
+<p>
+                            Their lineage traces back to the high courts of Rome and the merchant princes of the Renaissance. They do not just seek power; they are power personified. To a Ventrue, leadership is not a choice—it is a biological imperative, a burden they carry for the betterment of all Kindred.
+                        </p>
+</div>
+</section>
+<!-- Disciplines Bento -->
+<section class="pt-lg">
+<h3 class="font-headline-lg text-white mb-md uppercase tracking-widest text-sm">Clan Disciplines</h3>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-md">
+<!-- Dominate -->
+<div class="bg-surface-container p-lg border border-neutral-800 relative group overflow-hidden">
+<div class="absolute top-0 right-0 p-xs opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-red-800 text-4xl" data-icon="visibility">visibility</span>
+</div>
+<h4 class="font-headline-md text-red-800 mb-xs">Dominate</h4>
+<p class="text-label-md text-on-surface-variant uppercase tracking-tighter mb-sm">The Iron Will</p>
+<p class="text-sm text-neutral-400">The power to command the minds of others with a single glance or spoken word.</p>
+</div>
+<!-- Fortitude -->
+<div class="bg-surface-container p-lg border border-neutral-800 relative group overflow-hidden">
+<div class="absolute top-0 right-0 p-xs opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-red-800 text-4xl" data-icon="shield">shield</span>
+</div>
+<h4 class="font-headline-md text-red-800 mb-xs">Fortitude</h4>
+<p class="text-label-md text-on-surface-variant uppercase tracking-tighter mb-sm">Unyielding Skin</p>
+<p class="text-sm text-neutral-400">Supernatural endurance that allows the Ventrue to withstand wounds that would slay others.</p>
+</div>
+<!-- Presence -->
+<div class="bg-surface-container p-lg border border-neutral-800 relative group overflow-hidden">
+<div class="absolute top-0 right-0 p-xs opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-red-800 text-4xl" data-icon="favorite">favorite</span>
+</div>
+<h4 class="font-headline-md text-red-800 mb-xs">Presence</h4>
+<p class="text-label-md text-on-surface-variant uppercase tracking-tighter mb-sm">Divine Majesty</p>
+<p class="text-sm text-neutral-400">An aura of overwhelming awe or terror that forces respect from those in their vicinity.</p>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar -->
+<aside class="md:col-span-4 space-y-lg">
+<!-- The Clan Bane -->
+<div class="bg-surface-container-lowest border border-primary-container p-lg relative">
+<div class="absolute -top-3 left-4 bg-background px-sm text-red-700 font-label-md uppercase">The Clan Bane</div>
+<h4 class="font-headline-md text-white mb-sm">Rarefied Palate</h4>
+<p class="text-on-surface-variant text-sm italic mb-md">
+                        "The blood of the masses is like swill to a king. We require... vintage."
+                    </p>
+<p class="text-sm text-neutral-400">
+                        Ventrue can only feed from a specific type of mortal vessel (e.g., priests, virgins, police, blondes). If they attempt to feed from any other source, the blood tastes like ash and provides no nourishment.
+                    </p>
+</div>
+<!-- Famous Ventrue -->
+<div class="bg-surface-container p-lg border border-neutral-800">
+<h4 class="font-headline-md text-white mb-md border-b border-neutral-800 pb-xs">Notable Bloodlines</h4>
+<ul class="space-y-md">
+<li class="flex items-center gap-md">
+<div class="w-10 h-10 bg-neutral-900 border border-neutral-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-red-800" data-icon="person">person</span>
+</div>
+<div>
+<p class="text-white font-bold leading-none">Hardestadt</p>
+<p class="text-[10px] text-red-700 uppercase tracking-widest">Architect of Camarilla</p>
+</div>
+</li>
+<li class="flex items-center gap-md">
+<div class="w-10 h-10 bg-neutral-900 border border-neutral-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-red-800" data-icon="person">person</span>
+</div>
+<div>
+<p class="text-white font-bold leading-none">Jan Pieterzoon</p>
+<p class="text-[10px] text-red-700 uppercase tracking-widest">The Modern Strategist</p>
+</div>
+</li>
+<li class="flex items-center gap-md">
+<div class="w-10 h-10 bg-neutral-900 border border-neutral-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-red-800" data-icon="person">person</span>
+</div>
+<div>
+<p class="text-white font-bold leading-none">Lucinde</p>
+<p class="text-[10px] text-red-700 uppercase tracking-widest">Justicar of Clan Ventrue</p>
+</div>
+</li>
+</ul>
+</div>
+<!-- Call to Action -->
+<button class="w-full bg-primary-container text-white py-md font-label-md uppercase tracking-[0.2em] hover:bg-red-900 transition-colors border border-red-700/50 shadow-[0_0_15px_rgba(139,0,0,0.3)]">
+                    Pledge Allegiance
+                </button>
+</aside>
+</div>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">
+<div class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-serif text-[10px] uppercase tracking-widest mt-1">Coterie</span>
+</div>
+<div class="flex flex-col items-center justify-center text-red-700 drop-shadow-[0_0_5px_rgba(139,0,0,0.5)] transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="book_5" data-weight="fill" style="font-variation-settings: 'FILL' 1;">book_5</span>
+<span class="font-serif text-[10px] uppercase tracking-widest mt-1">Grimoire</span>
+</div>
+<div class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-serif text-[10px] uppercase tracking-widest mt-1">Character</span>
+</div>
+<div class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all cursor-pointer">
+<span class="material-symbols-outlined" data-icon="history_edu">history_edu</span>
+<span class="font-serif text-[10px] uppercase tracking-widest mt-1">Chronicle</span>
+</div>
+</nav>
+<!-- Texture Overlay -->
+<div class="noise-overlay fixed inset-0 pointer-events-none z-[100]"></div>
+</body></html>
+
+<!-- Clan Detail: Ventrue -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>V5 Companion - Julian Giovanni</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&amp;family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#1c1b1b",
+                    "error": "#ffb4ab",
+                    "surface-dim": "#131313",
+                    "primary": "#ffb4a8",
+                    "secondary-container": "#474746",
+                    "on-tertiary-fixed": "#1b1c1c",
+                    "error-container": "#93000a",
+                    "on-secondary": "#313030",
+                    "primary-fixed": "#ffdad4",
+                    "inverse-on-surface": "#313030",
+                    "surface-tint": "#ffb4a8",
+                    "on-tertiary": "#303030",
+                    "on-surface-variant": "#e3beb8",
+                    "surface-container-lowest": "#0e0e0e",
+                    "on-surface": "#e5e2e1",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-highest": "#353534",
+                    "secondary-fixed-dim": "#c8c6c5",
+                    "on-error-container": "#ffdad6",
+                    "surface-bright": "#3a3939",
+                    "outline-variant": "#5a403c",
+                    "on-secondary-fixed": "#1c1b1b",
+                    "inverse-primary": "#b52619",
+                    "surface-container": "#201f1f",
+                    "secondary-fixed": "#e5e2e1",
+                    "background": "#131313",
+                    "secondary": "#c8c6c5",
+                    "tertiary-fixed": "#e4e2e1",
+                    "on-primary-fixed-variant": "#920703",
+                    "inverse-surface": "#e5e2e1",
+                    "tertiary-fixed-dim": "#c8c6c6",
+                    "surface-variant": "#353534",
+                    "outline": "#aa8984",
+                    "on-primary": "#690000",
+                    "on-secondary-container": "#b7b5b4",
+                    "on-primary-container": "#ff907f",
+                    "on-background": "#e5e2e1",
+                    "surface": "#131313",
+                    "on-error": "#690005",
+                    "primary-container": "#8b0000",
+                    "tertiary-container": "#424242",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#474747",
+                    "tertiary": "#c8c6c6",
+                    "on-tertiary-container": "#b0aeae",
+                    "surface-container-high": "#2a2a2a",
+                    "on-secondary-fixed-variant": "#474746"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "40px",
+                    "container-max": "1200px",
+                    "md": "16px",
+                    "lg": "24px",
+                    "sm": "8px",
+                    "gutter": "24px",
+                    "xs": "4px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-xl": ["Newsreader"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Newsreader"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Newsreader"]
+            },
+            "fontSize": {
+                    "headline-xl": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                    "body-md": ["16px", {"lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>.stone-texture {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuD2OENmJqb-WyaKJFWki9Cel0MKlj1jtnSMSQ8h4VW8juI7n4Wd7nJq2aITstf2PpKaiZPC4k-JaKRifhyddAk4RnK9W0r7T6Q54htTvYhw5ReqJ78mRlvmu9RjbQA2ZSdxQeyHJwmaFrXnS4eScOMm4vnQT3UlQ3eptrcFWxzzoRB4gyCPcJLzgShNwcxPkFz7gEGdCxi4xtKwuJFQ3CSXI8lXC-GWk4TuGyA8UknJ44TrguU1kw7Iot_8dZnKacNBnd1CNtbUAEbR);
+    background-blend-mode: overlay
+    }
+.blood-glow {
+    box-shadow: inset 0 0 15px rgba(139, 0, 0, 0.3)
+    }
+.active-dot {
+    background-color: #8b0000;
+    box-shadow: 0 0 8px rgba(139, 0, 0, 0.8)
+    }
+.inactive-dot {
+    background-color: #353534;
+    border: 1px solid #5a403c
+    }
+.vampire-grid {
+    background-image: linear-gradient(to bottom, transparent 95%, rgba(139, 0, 0, 0.05) 100%), linear-gradient(to right, transparent 95%, rgba(139, 0, 0, 0.05) 100%);
+    background-size: 24px 24px
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-neutral-950 flex justify-between items-center w-full px-6 py-4 fixed top-0 z-50 border-b border-neutral-800">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-red-800 cursor-pointer" data-icon="menu">menu</span>
+<h1 class="font-serif text-xl font-bold text-red-800 tracking-tighter uppercase">V5 COMPANION</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="text-right hidden sm:block">
+<p class="font-serif text-xs tracking-widest text-neutral-500 uppercase">Current Session</p>
+<p class="font-serif text-sm text-red-700">Venetian Shadows</p>
+</div>
+<div class="w-10 h-10 rounded-full border border-red-800/50 overflow-hidden bg-neutral-900">
+<img class="w-full h-full object-cover" data-alt="A moody, high-contrast portrait of a pale man with sharp features, dark slicked back hair, and intense eyes in low red lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD6DLKOaTg0waYwefrgyTiR7plFEjR-ayxb0B4iq-jYpLxnpoxynkXCK6qwyRgX0Ud_1SPRw7fr85uHCz7nT2R2Gke26uIh2WfSpdwu8BVa_k79VcnfLi7J9tWYGynY2BdghsxA4j1pknRsT7dCdBQfgmDKcXlAYQgV4u9mnvX_kXXRHhtzk0mKeMJa81cpXlkH-mFj5TKHKGBU3vYKvwX8PXnlQzzOEBzVMuuIH2HWacQcRvyOW1ZF8t8xtSzOSd0b9_o42lDiL2JT"/>
+</div>
+</div>
+</header>
+<main class="mt-20 px-4 md:px-8 max-w-container-max mx-auto stone-texture pt-8">
+<!-- Character Identity Header -->
+<section class="mb-12 flex flex-col md:flex-row gap-8 items-end justify-between border-b border-neutral-800 pb-8">
+<div class="space-y-2">
+<h2 class="font-headline-xl text-headline-xl text-on-surface">Julian Giovanni</h2>
+<div class="flex items-center gap-4 text-red-800 font-serif tracking-[0.2em] uppercase text-sm">
+<span>Hecata</span>
+<span class="w-1 h-1 bg-neutral-700 rounded-full"></span>
+<span>12th Generation</span>
+</div>
+</div>
+<!-- Quick Tracks (Hunger, Health, Willpower) -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full md:w-auto">
+<!-- Hunger -->
+<div class="bg-surface-container-low p-4 border border-neutral-800 blood-glow">
+<p class="font-serif text-[10px] uppercase tracking-widest text-neutral-500 mb-3 text-center">Hunger</p>
+<div class="flex justify-center gap-2">
+<span class="material-symbols-outlined text-red-700" data-icon="water_drop" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span class="material-symbols-outlined text-red-700" data-icon="water_drop" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+<span class="material-symbols-outlined text-neutral-700" data-icon="water_drop">water_drop</span>
+<span class="material-symbols-outlined text-neutral-700" data-icon="water_drop">water_drop</span>
+<span class="material-symbols-outlined text-neutral-700" data-icon="water_drop">water_drop</span>
+</div>
+</div>
+<!-- Health -->
+<div class="bg-surface-container-low p-4 border border-neutral-800">
+<p class="font-serif text-[10px] uppercase tracking-widest text-neutral-500 mb-3 text-center">Health</p>
+<div class="flex justify-center gap-1">
+<div class="w-3 h-3 border border-red-800/50 bg-red-800"></div>
+<div class="w-3 h-3 border border-red-800/50 bg-red-800"></div>
+<div class="w-3 h-3 border border-red-800/50 bg-red-800"></div>
+<div class="w-3 h-3 border border-red-800/50 bg-neutral-800"></div>
+<div class="w-3 h-3 border border-red-800/50 bg-neutral-800"></div>
+</div>
+</div>
+<!-- Willpower -->
+<div class="bg-surface-container-low p-4 border border-neutral-800">
+<p class="font-serif text-[10px] uppercase tracking-widest text-neutral-500 mb-3 text-center">Willpower</p>
+<div class="flex justify-center gap-1">
+<div class="w-3 h-3 border border-primary/30 bg-primary/20"></div>
+<div class="w-3 h-3 border border-primary/30 bg-primary/20"></div>
+<div class="w-3 h-3 border border-primary/30 bg-primary/20"></div>
+<div class="w-3 h-3 border border-primary/30 bg-primary/20"></div>
+<div class="w-3 h-3 border border-primary/30 bg-neutral-800"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Bento Stats Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Attributes (4 columns on LG) -->
+<div class="lg:col-span-4 space-y-8">
+<div class="bg-neutral-900 border border-neutral-800 p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 bg-red-900/5 blur-3xl -mr-16 -mt-16"></div>
+<h3 class="font-headline-md text-headline-md text-red-800 mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+                        Attributes
+                    </h3>
+<div class="space-y-6">
+<!-- Physical -->
+<div>
+<p class="font-serif text-xs uppercase tracking-widest text-neutral-500 mb-3">Physical</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Strength</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Dexterity</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Stamina</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+</div>
+</div>
+<!-- Social -->
+<div>
+<p class="font-serif text-xs uppercase tracking-widest text-neutral-500 mb-3">Social</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Charisma</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Manipulation</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Composure</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+</div>
+</div>
+<!-- Mental -->
+<div>
+<p class="font-serif text-xs uppercase tracking-widest text-neutral-500 mb-3">Mental</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Intelligence</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Wits</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Resolve</span>
+<div class="flex gap-1.5"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Humanity Track -->
+<div class="bg-neutral-900 border border-neutral-800 p-6">
+<h3 class="font-serif text-xs uppercase tracking-[0.3em] text-neutral-500 mb-6 text-center">Humanity</h3>
+<div class="flex justify-between items-center px-2">
+<div class="flex gap-1">
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full active-dot"></div>
+<div class="w-4 h-4 rounded-full inactive-dot"></div>
+<div class="w-4 h-4 rounded-full inactive-dot"></div>
+<div class="w-4 h-4 rounded-full inactive-dot"></div>
+</div>
+<span class="font-headline-md text-red-800 ml-4">7</span>
+</div>
+</div>
+</div>
+<!-- Skills & Disciplines (8 columns on LG) -->
+<div class="lg:col-span-8 space-y-8">
+<!-- Skills Grid -->
+<div class="bg-surface-container-low border border-neutral-800 p-8 vampire-grid">
+<div class="flex justify-between items-center mb-8 border-b border-neutral-800/30 pb-4">
+<h3 class="font-headline-md text-headline-md text-on-surface uppercase">Skills</h3>
+<span class="material-symbols-outlined text-neutral-600" data-icon="edit_note">edit_note</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Athletics</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Etiquette</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Insight</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Investigation</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Stealth</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Occult</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Subterfuge</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+<div class="flex justify-between items-center group cursor-pointer hover:bg-neutral-800/30 p-1 -m-1 transition-colors">
+<span class="font-body-md">Politics</span>
+<div class="flex gap-1"><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full active-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div><div class="w-2 h-2 rounded-full inactive-dot"></div></div>
+</div>
+</div>
+</div>
+<!-- Disciplines (Custom Section) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-neutral-900 border-l-4 border-l-red-800 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-serif text-lg text-on-surface">Oblivion</h4>
+<p class="text-xs text-neutral-500 uppercase tracking-widest">Clan Discipline</p>
+</div>
+<div class="flex gap-1"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<ul class="text-sm space-y-2 text-neutral-400 font-serif italic">
+<li>• Shadow Perspective</li>
+<li>• Arms of Ahriman</li>
+</ul>
+</div>
+<div class="bg-neutral-900 border-l-4 border-l-red-800/40 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h4 class="font-serif text-lg text-on-surface">Dominate</h4>
+<p class="text-xs text-neutral-500 uppercase tracking-widest">Clan Discipline</p>
+</div>
+<div class="flex gap-1"><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full active-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div><div class="w-2.5 h-2.5 rounded-full inactive-dot"></div></div>
+</div>
+<ul class="text-sm space-y-2 text-neutral-400 font-serif italic">
+<li>• Cloud Memory</li>
+<li>• Mesmerize</li>
+</ul>
+</div>
+</div>
+<!-- Biography/Notes Fragment -->
+<div class="bg-neutral-950 border border-neutral-800 p-8 shadow-2xl relative">
+<span class="absolute top-4 left-4 font-serif text-[40px] text-red-900/20 leading-none">“</span>
+<p class="font-serif text-body-lg italic text-neutral-400 leading-relaxed pl-6">
+                        The Giovanni blood runs cold, even by our standards. Julian has spent the last century navigating the family's labyrinthine politics in Venice, ensuring that the 'family business' remains as profitable as it is discreet.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">
+<a class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="groups">groups</span>
+<span class="font-serif text-[10px] uppercase tracking-widest">Coterie</span>
+</a>
+<a class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="book_5">book_5</span>
+<span class="font-serif text-[10px] uppercase tracking-widest">Grimoire</span>
+</a>
+<a class="flex flex-col items-center justify-center text-red-700 drop-shadow-[0_0_5px_rgba(139,0,0,0.5)] scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-serif text-[10px] uppercase tracking-widest">Character</span>
+</a>
+<a class="flex flex-col items-center justify-center text-neutral-600 hover:text-red-500 transition-all" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="history_edu">history_edu</span>
+<span class="font-serif text-[10px] uppercase tracking-widest">Chronicle</span>
+</a>
+</nav>
+<!-- Decorative Corner Element -->
+<div class="fixed bottom-24 right-8 opacity-20 pointer-events-none hidden lg:block">
+<span class="material-symbols-outlined text-[120px] text-red-900" data-icon="skull">skull</span>
+</div>
+</body></html>

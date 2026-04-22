@@ -1,0 +1,44 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "hz9l3DfGFAfiFm0YUwA10"
+uri = "file://artifacts/vtm-companion/public/images/brujah.png"
+type = "image"
+title = "Brujah clan image"
+
+[[generated]]
+id = "7mBue74dhk3A2E5MOLRfh"
+uri = "file://artifacts/vtm-companion/public/images/ventrue.png"
+type = "image"
+title = "Ventrue clan image"
+
+[[generated]]
+id = "1EJsukWRTob_8xTiTtGn5"
+uri = "file://artifacts/vtm-companion/public/images/tremere.png"
+type = "image"
+title = "Tremere clan image"
+
+[[generated]]
+id = "JtcLVvTsnKzLie3-EVQ47"
+uri = "file://artifacts/vtm-companion/public/images/nosferatu.png"
+type = "image"
+title = "Nosferatu clan image"
+
+[[generated]]
+id = "YRu0KvXRoDIyJPjqKxzug"
+uri = "file://artifacts/vtm-companion/public/images/toreador.png"
+type = "image"
+title = "Toreador clan image"
+
+[[generated]]
+id = "BLu5VnJpFqdNJm8AOmeoz"
+uri = "file://artifacts/vtm-companion/public/images/malkavian.png"
+type = "image"
+title = "Malkavian clan image"
+
+[[generated]]
+id = "pSfxiZDglSOaYvOF7upHC"
+uri = "file://artifacts/vtm-companion/public/images/gangrel.png"
+type = "image"
+title = "Gangrel clan image"

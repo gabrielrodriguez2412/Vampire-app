@@ -34,7 +34,7 @@ export default function Search() {
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
       <div className="mb-8 text-center max-w-2xl mx-auto">
-        <h1 className="text-4xl font-cinzel font-bold text-foreground mb-4">{strings.searchTitle}</h1>
+        <h1 className="text-4xl font-serif font-bold text-foreground mb-4">{strings.searchTitle}</h1>
         <p className="text-muted-foreground mb-8">{strings.searchSubtitle}</p>
         
         <div className="relative">
@@ -83,7 +83,7 @@ export default function Search() {
                   {getIcon(result.type)}
                 </div>
                 <div>
-                  <h3 className="font-cinzel text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                  <h3 className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                     {result.title}
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

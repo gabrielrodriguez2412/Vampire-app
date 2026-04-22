@@ -117,7 +117,7 @@ export default function ChroniclePage() {
       <div className="mb-8 flex items-center gap-3">
         <ScrollText className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-cinzel font-bold text-foreground">{strings.chronicleTitle}</h1>
+          <h1 className="text-3xl font-serif font-bold text-foreground">{strings.chronicleTitle}</h1>
           <p className="text-muted-foreground">{strings.chronicleSubtitle}</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function ChroniclePage() {
         {/* SESSIONS */}
         <TabsContent value="sessions" className="space-y-6">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-cinzel text-lg">{editingId ? strings.edit : strings.addSession}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addSession}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -162,7 +162,7 @@ export default function ChroniclePage() {
                 <Card key={s.id} className="bg-card border-border">
                   <CardHeader className="pb-2 flex flex-row justify-between">
                     <div>
-                      <CardTitle className="font-cinzel text-xl">{s.title}</CardTitle>
+                      <CardTitle className="font-serif text-xl">{s.title}</CardTitle>
                       <p className="text-xs text-muted-foreground">{s.date}</p>
                     </div>
                     <div className="flex gap-2">
@@ -180,7 +180,7 @@ export default function ChroniclePage() {
         {/* NPCs */}
         <TabsContent value="npcs" className="space-y-6">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-cinzel text-lg">{editingId ? strings.edit : strings.addNPC}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addNPC}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-xs mb-1 block">{strings.npcName}</label>
@@ -202,7 +202,7 @@ export default function ChroniclePage() {
               npcs.map(n => (
                 <Card key={n.id} className="bg-card border-border">
                   <CardHeader className="pb-2 flex flex-row justify-between">
-                    <CardTitle className="font-cinzel text-lg">{n.name}</CardTitle>
+                    <CardTitle className="font-serif text-lg">{n.name}</CardTitle>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => { setNpcForm(n); setEditingId(n.id); }}>{strings.edit}</Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={()=>deleteNpc(n.id)}><Trash2 className="w-4 h-4"/></Button>
@@ -218,7 +218,7 @@ export default function ChroniclePage() {
         {/* Locations */}
         <TabsContent value="locations" className="space-y-6">
           <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-cinzel text-lg">{editingId ? strings.edit : strings.addLocation}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addLocation}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <label className="text-xs mb-1 block">{strings.locationName}</label>
@@ -240,7 +240,7 @@ export default function ChroniclePage() {
               locations.map(l => (
                 <Card key={l.id} className="bg-card border-border">
                   <CardHeader className="pb-2 flex flex-row justify-between">
-                    <CardTitle className="font-cinzel text-lg">{l.name}</CardTitle>
+                    <CardTitle className="font-serif text-lg">{l.name}</CardTitle>
                     <div className="flex gap-2">
                       <Button variant="ghost" size="sm" onClick={() => { setLocForm(l); setEditingId(l.id); }}>{strings.edit}</Button>
                       <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={()=>deleteLoc(l.id)}><Trash2 className="w-4 h-4"/></Button>
@@ -264,7 +264,7 @@ export default function ChroniclePage() {
                   </div>
                   <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-border bg-card/50 shadow">
                     <div className="flex flex-col gap-1 mb-2">
-                      <span className="font-cinzel text-lg font-bold text-foreground">{s.title}</span>
+                      <span className="font-serif text-lg font-bold text-foreground">{s.title}</span>
                       <span className="text-xs text-primary">{s.date}</span>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-3">{s.summary}</p>

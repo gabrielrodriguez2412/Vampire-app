@@ -12,9 +12,15 @@ const clanImages: Record<string, string> = {
   toreador: "/images/toreador.png",
   malkavian: "/images/malkavian.png",
   gangrel: "/images/gangrel.png",
+  "banu_haqim": "/images/banu-haquim.png",
+  hecata: "/images/hecata.png",
+  lasombra: "/images/lasombra.png",
+  ministry: "/images/ministry.png",
+  ravnos: "/images/ravnos.png",
+  salubri: "/images/salubri.png",
 };
 
-const FEATURED_CLAN_IDS = ["ventrue", "tremere", "brujah", "toreador", "nosferatu", "gangrel", "malkavian"];
+const FEATURED_CLAN_IDS = ["ventrue", "tremere", "brujah", "toreador", "nosferatu", "gangrel", "malkavian", "banu_haqim", "hecata", "lasombra", "ministry", "ravnos", "salubri"];
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -140,39 +146,6 @@ export default function Home() {
             <span className="material-symbols-outlined text-zinc-700 group-hover:text-on-surface transition-colors">chevron_right</span>
           </div>
 
-        </div>
-      </section>
-
-      {/* Storyteller Suggestions */}
-      <section className="bg-zinc-950 border border-zinc-900 p-8 md:p-12 relative">
-        <div className="flex flex-col items-center mb-10">
-          <div className="h-px w-24 bg-primary-container mb-6"></div>
-          <h2 className="font-serif text-3xl text-on-surface text-center mb-2 italic">{strings.storytellerSuggestions}</h2>
-          <p className="font-sans text-sm text-zinc-500 tracking-[0.2em] uppercase text-center">{strings.whispers}</p>
-        </div>
-
-        <div className="space-y-6 max-w-3xl mx-auto">
-          {[
-            { num: "01", title: strings.storytellerTitle1, desc: strings.storytellerDesc1 },
-            { num: "02", title: strings.storytellerTitle2, desc: strings.storytellerDesc2 },
-            { num: "03", title: strings.storytellerTitle3, desc: strings.storytellerDesc3 },
-          ].map(({ num, title, desc }) => (
-            <div key={num} className="group cursor-pointer">
-              <div className="flex items-start gap-4 pb-6 border-b border-zinc-900 group-hover:border-primary-container transition-colors">
-                <span className="font-serif text-2xl text-zinc-800 group-hover:text-primary-container transition-colors">{num}</span>
-                <div>
-                  <h4 className="font-serif text-2xl text-on-surface mb-1 uppercase tracking-tight">{title}</h4>
-                  <p className="text-zinc-400 italic font-sans">{desc}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-center mt-10">
-          <button className="bg-primary-container text-white px-10 py-4 font-sans text-sm font-semibold uppercase tracking-[0.3em] hover:bg-red-800 transition-all active:scale-95 cursor-pointer">
-            {strings.revealMore}
-          </button>
         </div>
       </section>
 

@@ -1,5 +1,14 @@
 import { LangCode } from '../types';
 
+export const RULE_CATEGORIES: Record<LangCode, Record<string, string>> = {
+  es: { Tiradas: 'Tiradas', Hambre: 'Hambre', Bestia: 'Bestia', Combate: 'Combate', Mecánica: 'Mecánica', Moralidad: 'Moralidad', Sangre: 'Sangre' },
+  en: { Tiradas: 'Rolls', Hambre: 'Hunger', Bestia: 'Beast', Combate: 'Combat', Mecánica: 'Mechanics', Moralidad: 'Morality', Sangre: 'Blood' },
+  pt: { Tiradas: 'Rolagens', Hambre: 'Fome', Bestia: 'Besta', Combate: 'Combate', Mecánica: 'Mecânica', Moralidad: 'Moralidade', Sangre: 'Sangue' },
+  fr: { Tiradas: 'Jets', Hambre: 'Faim', Bestia: 'Bête', Combate: 'Combat', Mecánica: 'Mécanique', Moralidad: 'Moralité', Sangre: 'Sang' },
+  de: { Tiradas: 'Würfe', Hambre: 'Hunger', Bestia: 'Bestie', Combate: 'Kampf', Mecánica: 'Mechanik', Moralidad: 'Moral', Sangre: 'Blut' },
+  it: { Tiradas: 'Tiri', Hambre: 'Fame', Bestia: 'Bestia', Combate: 'Combattimento', Mecánica: 'Meccanica', Moralidad: 'Moralità', Sangre: 'Sangue' }
+};
+
 export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
   es: {
     home: 'Inicio', rules: 'Reglas', clans: 'Clanes', disciplines: 'Disciplinas', roleplay: 'Roleplay',

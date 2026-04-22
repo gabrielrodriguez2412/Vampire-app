@@ -9,19 +9,20 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppContext } from "@/context/AppContext";
-import { UI_STRINGS } from "@/i18n/ui";
+import { UI_STRINGS, RULE_CATEGORIES } from "@/i18n/ui";
 import { getText, getTextArray, filterByEdition, isAvailableInLang } from "@/utils/content";
 
 export default function Rules() {
   const [filter, setFilter] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("Todas");
+  const [activeCategory, setActiveCategory] = useState<string>("__all__");
 
   const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+  const catMap = RULE_CATEGORIES[activeLanguage] || RULE_CATEGORIES['en'];
   
   const editionRules = filterByEdition(rules, activeEdition);
 
-  const categories = ["Todas", ...Array.from(new Set(editionRules.map(r => r.category)))];
+  const categories = ["__all__", ...Array.from(new Set(editionRules.map(r => r.category)))];
 
   const filtered = editionRules.filter(r => {
     const titleText = getText(r.title, activeLanguage);
@@ -30,7 +31,7 @@ export default function Rules() {
     const matchesFilter = titleText.toLowerCase().includes(filter.toLowerCase()) || 
                           shortText.toLowerCase().includes(filter.toLowerCase()) ||
                           r.tags.some(t => t.toLowerCase().includes(filter.toLowerCase()));
-    const matchesCategory = activeCategory === "Todas" || r.category === activeCategory;
+    const matchesCategory = activeCategory === "__all__" || r.category === activeCategory;
     return matchesFilter && matchesCategory;
   });
 
@@ -42,16 +43,16 @@ export default function Rules() {
           <h2 className="font-serif text-xl font-bold text-primary mb-4">{strings.categories}</h2>
           <div className="flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-2 md:pb-0">
             <button
-                onClick={() => setActiveCategory("Todas")}
+                onClick={() => setActiveCategory("__all__")}
                 className={`text-left px-3 py-2 rounded-md text-sm transition-colors whitespace-nowrap ${
-                  activeCategory === "Todas" 
+                  activeCategory === "__all__" 
                     ? "bg-primary/20 text-primary font-medium border border-primary/30" 
                     : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
                 }`}
               >
                 {strings.allCategories}
               </button>
-            {categories.filter(c => c !== "Todas").map(cat => (
+            {categories.filter(c => c !== "__all__").map(cat => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
@@ -61,7 +62,7 @@ export default function Rules() {
                     : "text-muted-foreground hover:bg-white/5 hover:text-foreground border border-transparent"
                 }`}
               >
-                {cat}
+                {catMap[cat] || cat}
               </button>
             ))}
           </div>
@@ -105,7 +106,7 @@ export default function Rules() {
                             <div className="flex flex-col items-start gap-1 w-full">
                               <div className="flex items-center gap-3 w-full">
                                 <span className="font-serif text-lg text-foreground">{getText(rule.title, activeLanguage)}</span>
-                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">{rule.category}</Badge>
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">{catMap[rule.category] || rule.category}</Badge>
                                 {isMissingLang && (
                                   <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto shrink-0">
                                     [ {strings.noTranslation} ]

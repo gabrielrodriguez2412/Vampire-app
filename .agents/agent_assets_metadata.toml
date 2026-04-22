@@ -42,3 +42,39 @@ id = "pSfxiZDglSOaYvOF7upHC"
 uri = "file://artifacts/vtm-companion/public/images/gangrel.png"
 type = "image"
 title = "Gangrel clan image"
+
+[[generated]]
+id = "mDumqRJev8_Fe_wTOgRG1"
+uri = "file://artifacts/vtm-companion/public/images/banu-haquim.png"
+type = "image"
+title = "banu haquim clan portrait"
+
+[[generated]]
+id = "NOpcivfCRo42NWh8ZIYRN"
+uri = "file://artifacts/vtm-companion/public/images/hecata.png"
+type = "image"
+title = "hecata clan portrait"
+
+[[generated]]
+id = "AWZu_PwMTJ1qnjEJxJQTo"
+uri = "file://artifacts/vtm-companion/public/images/lasombra.png"
+type = "image"
+title = "lasombra clan portrait"
+
+[[generated]]
+id = "3LLn3HgtI4Qgy9KXzc_Dn"
+uri = "file://artifacts/vtm-companion/public/images/ministry.png"
+type = "image"
+title = "ministry clan portrait"
+
+[[generated]]
+id = "lVGu9-XfthqXTmRVziuun"
+uri = "file://artifacts/vtm-companion/public/images/ravnos.png"
+type = "image"
+title = "ravnos clan portrait"
+
+[[generated]]
+id = "jHvWhHnp_dmyeODMEzJDw"
+uri = "file://artifacts/vtm-companion/public/images/salubri.png"
+type = "image"
+title = "salubri clan portrait"

@@ -3,6 +3,8 @@ import { clans } from '@/data/clans';
 import { disciplines } from '@/data/disciplines';
 import { rules } from '@/data/rules';
 import { glossary } from '@/data/glossary';
+import { useAppContext } from '@/context/AppContext';
+import { getText, filterByEdition } from '@/utils/content';
 
 export type SearchResult = {
   id: string;
@@ -13,58 +15,67 @@ export type SearchResult = {
 };
 
 export function useSearch(query: string) {
+  const { activeLanguage: lang, activeEdition: edition } = useAppContext();
+
   return useMemo(() => {
     if (!query || query.length < 2) return [];
 
     const lowerQuery = query.toLowerCase();
     const results: SearchResult[] = [];
 
-    // Search Clans
-    clans.forEach(clan => {
-      if (clan.name.toLowerCase().includes(lowerQuery) || clan.description.toLowerCase().includes(lowerQuery)) {
+    const filteredClans = filterByEdition(clans, edition);
+    filteredClans.forEach(clan => {
+      const name = getText(clan.name, lang);
+      const desc = getText(clan.description, lang);
+      if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: clan.id,
-          title: clan.name,
-          description: clan.identity,
+          title: name,
+          description: getText(clan.identity, lang),
           type: 'clan',
           url: `/clanes?id=${clan.id}`
         });
       }
     });
 
-    // Search Disciplines
-    disciplines.forEach(disc => {
-      if (disc.name.toLowerCase().includes(lowerQuery) || disc.description.toLowerCase().includes(lowerQuery)) {
+    const filteredDiscs = filterByEdition(disciplines, edition);
+    filteredDiscs.forEach(disc => {
+      const name = disc.name; // name is string
+      const desc = getText(disc.description, lang);
+      if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: disc.id,
-          title: disc.name,
-          description: disc.type,
+          title: name,
+          description: getText(disc.type, lang),
           type: 'disciplina',
           url: `/disciplinas?id=${disc.id}`
         });
       }
     });
 
-    // Search Rules
-    rules.forEach(rule => {
-      if (rule.title.toLowerCase().includes(lowerQuery) || rule.shortExplanation.toLowerCase().includes(lowerQuery)) {
+    const filteredRules = filterByEdition(rules, edition);
+    filteredRules.forEach(rule => {
+      const title = getText(rule.title, lang);
+      const desc = getText(rule.shortExplanation, lang);
+      if (title.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: rule.id,
-          title: rule.title,
-          description: rule.shortExplanation,
+          title,
+          description: desc,
           type: 'regla',
           url: `/reglas?id=${rule.id}`
         });
       }
     });
 
-    // Search Glossary
     glossary.forEach(term => {
-      if (term.term.toLowerCase().includes(lowerQuery) || term.definition.toLowerCase().includes(lowerQuery)) {
+      const t = getText(term.term, lang);
+      const d = getText(term.definition, lang);
+      if (t.toLowerCase().includes(lowerQuery) || d.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: term.id,
-          title: term.term,
-          description: term.definition.substring(0, 60) + '...',
+          title: t,
+          description: d.substring(0, 60) + '...',
           type: 'glosario',
           url: `/glosario?id=${term.id}`
         });
@@ -72,5 +83,5 @@ export function useSearch(query: string) {
     });
 
     return results;
-  }, [query]);
+  }, [query, lang, edition]);
 }

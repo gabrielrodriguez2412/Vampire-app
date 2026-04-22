@@ -1,15 +1,20 @@
 import { motion } from "framer-motion";
 import { roleplay } from "@/data/roleplay";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { MessageCircle } from "lucide-react";
+import { Drama } from "lucide-react";
+import { useAppContext } from "@/context/AppContext";
+import { UI_STRINGS } from "@/i18n/ui";
 
 export default function Roleplay() {
+  const { activeLanguage } = useAppContext();
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
-          <MessageCircle className="w-8 h-8" />
-          Interpretación
+          <Drama className="w-8 h-8" />
+          {strings.roleplay}
         </h1>
         <p className="text-muted-foreground">
           Consejos para sumergirse en la mentalidad de un depredador no-muerto.

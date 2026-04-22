@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { rules } from "@/data/rules";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -8,16 +8,27 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAppContext } from "@/context/AppContext";
+import { UI_STRINGS } from "@/i18n/ui";
+import { getText, getTextArray, filterByEdition, isAvailableInLang } from "@/utils/content";
 
 export default function Rules() {
   const [filter, setFilter] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todas");
 
-  const categories = ["Todas", ...Array.from(new Set(rules.map(r => r.category)))];
+  const { activeLanguage, activeEdition } = useAppContext();
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+  
+  const editionRules = filterByEdition(rules, activeEdition);
 
-  const filtered = rules.filter(r => {
-    const matchesFilter = r.title.toLowerCase().includes(filter.toLowerCase()) || 
-                          r.shortExplanation.toLowerCase().includes(filter.toLowerCase()) ||
+  const categories = ["Todas", ...Array.from(new Set(editionRules.map(r => r.category)))];
+
+  const filtered = editionRules.filter(r => {
+    const titleText = getText(r.title, activeLanguage);
+    const shortText = getText(r.shortExplanation, activeLanguage);
+    
+    const matchesFilter = titleText.toLowerCase().includes(filter.toLowerCase()) || 
+                          shortText.toLowerCase().includes(filter.toLowerCase()) ||
                           r.tags.some(t => t.toLowerCase().includes(filter.toLowerCase()));
     const matchesCategory = activeCategory === "Todas" || r.category === activeCategory;
     return matchesFilter && matchesCategory;
@@ -50,13 +61,13 @@ export default function Rules() {
       <ScrollArea className="flex-1">
         <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-3xl font-cinzel font-bold text-foreground mb-2">Leyes y Mecánicas</h1>
+            <h1 className="text-3xl font-cinzel font-bold text-foreground mb-2">{strings.rules}</h1>
             <p className="text-muted-foreground mb-6">Las reglas que rigen la noche y la Bestia.</p>
             
             <div className="relative max-w-md">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input 
-                placeholder="Buscar regla o etiqueta..." 
+                placeholder={`${strings.search}`}
                 className="pl-9 bg-card border-border"
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
@@ -66,71 +77,83 @@ export default function Rules() {
 
           <div className="space-y-4">
             <Accordion type="multiple" className="w-full space-y-4">
-              {filtered.map((rule, i) => (
-                <motion.div 
-                  key={rule.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <AccordionItem value={rule.id} className="border border-border rounded-lg bg-card overflow-hidden">
-                    <div className="flex items-center justify-between pr-4 bg-white/[0.01]">
-                      <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-white/[0.02] flex-1 text-left">
-                        <div className="flex flex-col items-start gap-1">
-                          <div className="flex items-center gap-3">
-                            <span className="font-cinzel text-lg text-foreground">{rule.title}</span>
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wider">{rule.category}</Badge>
-                          </div>
-                          <span className="text-sm text-muted-foreground font-normal text-left">{rule.shortExplanation}</span>
+              <AnimatePresence>
+                {filtered.map((rule, i) => {
+                  const isMissingLang = !isAvailableInLang(rule.shortExplanation, activeLanguage);
+                  return (
+                    <motion.div 
+                      key={rule.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ delay: i * 0.05 }}
+                      layout
+                    >
+                      <AccordionItem value={rule.id} className="border border-border rounded-lg bg-card overflow-hidden">
+                        <div className="flex items-center justify-between pr-4 bg-white/[0.01]">
+                          <AccordionTrigger className="px-4 py-4 hover:no-underline hover:bg-white/[0.02] flex-1 text-left">
+                            <div className="flex flex-col items-start gap-1 w-full">
+                              <div className="flex items-center gap-3 w-full">
+                                <span className="font-cinzel text-lg text-foreground">{getText(rule.title, activeLanguage)}</span>
+                                <Badge variant="outline" className="text-[10px] uppercase tracking-wider shrink-0">{rule.category}</Badge>
+                                {isMissingLang && (
+                                  <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto shrink-0">
+                                    [ Sin traducción ]
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-sm text-muted-foreground font-normal text-left line-clamp-2 pr-4">{getText(rule.shortExplanation, activeLanguage)}</span>
+                            </div>
+                          </AccordionTrigger>
+                          <FavoriteButton id={rule.id} className="shrink-0" />
                         </div>
-                      </AccordionTrigger>
-                      <FavoriteButton id={rule.id} className="shrink-0" />
-                    </div>
-                    <AccordionContent className="px-4 pb-4 pt-2 border-t border-border bg-background/50">
-                      <div className="space-y-4 pt-2">
-                        <p className="text-foreground/90 leading-relaxed">
-                          {rule.fullExplanation}
-                        </p>
-                        
-                        {rule.examples.length > 0 && (
-                          <div className="bg-black/20 p-4 rounded-md border border-white/5">
-                            <h4 className="text-primary font-cinzel text-sm mb-2">Ejemplos:</h4>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
-                              {rule.examples.map((ex, idx) => (
-                                <li key={idx}>{ex}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        
-                        {rule.quickNotes.length > 0 && (
-                          <div>
-                            <h4 className="text-muted-foreground text-xs uppercase tracking-wider mb-2 font-semibold">Notas Rápidas:</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {rule.quickNotes.map((note, idx) => (
-                                <span key={idx} className="bg-white/5 border border-border px-3 py-1.5 rounded-md text-xs text-foreground/80">
-                                  {note}
-                                </span>
+                        <AccordionContent className="px-4 pb-4 pt-2 border-t border-border bg-background/50">
+                          <div className="space-y-4 pt-2">
+                            <p className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                              {getText(rule.fullExplanation, activeLanguage)}
+                            </p>
+                            
+                            {getTextArray(rule.examples, activeLanguage).length > 0 && (
+                              <div className="bg-black/20 p-4 rounded-md border border-white/5">
+                                <h4 className="text-primary font-cinzel text-sm mb-2">Ejemplos:</h4>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
+                                  {getTextArray(rule.examples, activeLanguage).map((ex, idx) => (
+                                    <li key={idx}>{ex}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {getTextArray(rule.quickNotes, activeLanguage).length > 0 && (
+                              <div>
+                                <h4 className="text-muted-foreground text-xs uppercase tracking-wider mb-2 font-semibold">Notas Rápidas:</h4>
+                                <div className="flex flex-wrap gap-2">
+                                  {getTextArray(rule.quickNotes, activeLanguage).map((note, idx) => (
+                                    <span key={idx} className="bg-white/5 border border-border px-3 py-1.5 rounded-md text-xs text-foreground/80">
+                                      {note}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 pt-2">
+                              {rule.tags.map(t => (
+                                <span key={t} className="text-[10px] text-muted-foreground bg-background px-2 py-0.5 rounded">#{t}</span>
                               ))}
                             </div>
                           </div>
-                        )}
-
-                        <div className="flex gap-2 pt-2">
-                          {rule.tags.map(t => (
-                            <span key={t} className="text-[10px] text-muted-foreground bg-background px-2 py-0.5 rounded">#{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </motion.div>
-              ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </Accordion>
             
             {filtered.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
-                No se encontraron reglas.
+                {strings.noResults}
               </div>
             )}
           </div>

@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Droplet, Dices, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Droplet, Dices, AlertTriangle, ShieldAlert, Swords } from "lucide-react";
+import { useAppContext } from "@/context/AppContext";
+import { UI_STRINGS } from "@/i18n/ui";
 
 export default function Tools() {
   const [hunger, setHunger] = useState(1);
+  const { activeLanguage } = useAppContext();
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   
   // Dice Roller State
   const [dicePool, setDicePool] = useState(5);
@@ -69,7 +73,10 @@ export default function Tools() {
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full space-y-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2">Herramientas Rápidas</h1>
+        <h1 className="text-3xl font-cinzel font-bold text-primary mb-2 flex items-center gap-3">
+          <Swords className="w-8 h-8" />
+          {strings.tools}
+        </h1>
         <p className="text-muted-foreground">Utilidades para usar durante la sesión de juego.</p>
       </div>
 
@@ -130,51 +137,55 @@ export default function Tools() {
               </Button>
             </div>
 
-            {rollResult && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-black/20 p-4 rounded-lg border border-white/5"
-              >
-                <div className="flex justify-between items-end mb-4 border-b border-border pb-2">
-                  <div>
-                    <span className="text-3xl font-bold text-foreground">{rollResult.successes}</span>
-                    <span className="text-muted-foreground ml-2">Éxitos</span>
+            <AnimatePresence mode="popLayout">
+              {rollResult && (
+                <motion.div 
+                  key="result"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="bg-black/20 p-4 rounded-lg border border-white/5"
+                >
+                  <div className="flex justify-between items-end mb-4 border-b border-border pb-2">
+                    <div>
+                      <span className="text-3xl font-bold text-foreground">{rollResult.successes}</span>
+                      <span className="text-muted-foreground ml-2">Éxitos</span>
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {rollResult.normal.map((v, i) => (
-                    <div key={`n-${i}`} className={`w-8 h-8 flex items-center justify-center rounded-sm font-bold text-sm ${
-                      v === 10 ? 'bg-foreground text-background' : 
-                      v >= 6 ? 'bg-muted text-foreground' : 'bg-background border border-border text-muted-foreground'
-                    }`}>
-                      {v}
-                    </div>
-                  ))}
-                  {rollResult.hunger.map((v, i) => (
-                    <div key={`h-${i}`} className={`w-8 h-8 flex items-center justify-center rounded-sm font-bold text-sm ${
-                      v === 10 ? 'bg-red-500 text-white' : 
-                      v === 1 ? 'bg-red-950 border border-red-500 text-red-500' :
-                      v >= 6 ? 'bg-red-900 text-red-100' : 'bg-background border border-red-900/50 text-red-900/50'
-                    }`}>
-                      {v}
-                    </div>
-                  ))}
-                </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {rollResult.normal.map((v, i) => (
+                      <div key={`n-${i}`} className={`w-8 h-8 flex items-center justify-center rounded-sm font-bold text-sm ${
+                        v === 10 ? 'bg-foreground text-background' : 
+                        v >= 6 ? 'bg-muted text-foreground' : 'bg-background border border-border text-muted-foreground'
+                      }`}>
+                        {v}
+                      </div>
+                    ))}
+                    {rollResult.hunger.map((v, i) => (
+                      <div key={`h-${i}`} className={`w-8 h-8 flex items-center justify-center rounded-sm font-bold text-sm ${
+                        v === 10 ? 'bg-red-500 text-white' : 
+                        v === 1 ? 'bg-red-950 border border-red-500 text-red-500' :
+                        v >= 6 ? 'bg-red-900 text-red-100' : 'bg-background border border-red-900/50 text-red-900/50'
+                      }`}>
+                        {v}
+                      </div>
+                    ))}
+                  </div>
 
-                {(rollResult.messyCritical || rollResult.bestialFailure) && (
-                  <div className={`p-3 rounded-md flex items-center gap-2 text-sm font-bold ${
-                    rollResult.messyCritical ? "bg-red-500/20 text-red-400 border border-red-500/30" :
-                    "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                  }`}>
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {rollResult.messyCritical && "¡CRÍTICO DESASTROSO! (La Bestia actúa)"}
-                    {rollResult.bestialFailure && "¡FALLO BESTIAL! (Compulsión)"}
-                  </div>
-                )}
-              </motion.div>
-            )}
+                  {(rollResult.messyCritical || rollResult.bestialFailure) && (
+                    <div className={`p-3 rounded-md flex items-center gap-2 text-sm font-bold ${
+                      rollResult.messyCritical ? "bg-red-500/20 text-red-400 border border-red-500/30" :
+                      "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                    }`}>
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      {rollResult.messyCritical && "¡CRÍTICO DESASTROSO! (La Bestia actúa)"}
+                      {rollResult.bestialFailure && "¡FALLO BESTIAL! (Compulsión)"}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Card>
 

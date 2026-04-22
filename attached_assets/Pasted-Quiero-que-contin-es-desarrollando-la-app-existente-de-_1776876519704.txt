@@ -1,0 +1,392 @@
+Quiero que continúes desarrollando la app existente de **Vampiro: La Mascarada** y agregues las siguientes mejoras de producto, navegación, estructura de datos y experiencia de usuario.
+
+## Objetivo de esta nueva iteración
+
+La app ya existe, pero ahora debe volverse mucho más completa, consistente y útil como herramienta real de consulta. Quiero que mejores la app actual sin romper lo que ya funciona.
+
+## Prioridades de esta iteración
+
+Implementa estas mejoras con especial atención a:
+
+* consistencia total de idioma
+* navegación más fluida
+* soporte para múltiples ediciones
+* estructura de datos escalable
+* estética mucho más acorde al universo de Vampiro
+* cobertura más completa de contenido
+
+---
+
+## 1. Soporte multi idioma real y bien separado
+
+Agregar soporte para múltiples idiomas seleccionables desde la interfaz.
+
+### Requisitos
+
+* Debe existir un selector de idioma visible y elegante.
+* Cada idioma debe mostrarse con:
+
+  * nombre del idioma
+  * ícono o bandera apropiada
+* Idealmente incluir los idiomas en los que existan manuales de Vampiro: La Mascarada, comenzando al menos por:
+
+  * Español
+  * English
+  * Português
+  * Français
+  * Deutsch
+  * Italiano
+* Si quieres dejar preparada la estructura para más idiomas después, hazlo.
+
+### Muy importante
+
+* **No se deben mezclar idiomas bajo ninguna circunstancia.**
+* Si el usuario selecciona Español, toda la interfaz, labels, textos de navegación, filtros, categorías, fichas, botones, ayudas y contenido cargado deben mostrarse en Español.
+* Si el contenido de una edición o entrada no existe aún en ese idioma, mostrar una indicación clara como:
+
+  * “Contenido no disponible en este idioma”
+* No rellenar huecos mezclando contenido de otro idioma.
+* Toda la arquitectura debe estar preparada para mantener contenido estrictamente separado por idioma.
+
+### Requisito técnico
+
+* Implementar un sistema de internacionalización limpio.
+* Separar:
+
+  * textos de interfaz
+  * contenido del juego
+  * metadatos
+* La app debe poder filtrar contenido por idioma y por edición a la vez.
+* Persistir idioma seleccionado en localStorage.
+
+---
+
+## 2. Íconos mucho más acordes a la temática vampírica
+
+Todos los íconos actuales deben revisarse y reemplazarse por una línea visual más coherente con la ambientación de Vampiro: La Mascarada.
+
+### Quiero una estética más oscura y temática
+
+Usar íconos o símbolos inspirados en:
+
+* sangre
+* colmillos
+* luna
+* rosas
+* castillos
+* vitrales
+* cruces ornamentales
+* pergaminos
+* velas
+* ojos
+* niebla
+* garras
+* corvo / cuervo
+* heráldica gótica
+* sellos antiguos
+
+### Requisitos
+
+* Mantener legibilidad y usabilidad.
+* No volver la app recargada ni kitsch.
+* Debe sentirse sobria, elegante, oscura y temática.
+* También actualizar íconos de:
+
+  * home
+  * clanes
+  * disciplinas
+  * búsqueda
+  * favoritos
+  * ajustes
+  * edición
+  * idioma
+  * glosario
+  * reglas
+
+Si usas una librería de íconos, elige los más cercanos a la temática. Si hace falta, encapsula los íconos en un sistema reusable.
+
+---
+
+## 3. Navegación entre clanes y disciplinas
+
+Actualmente los clanes muestran nombres de disciplinas. Quiero que eso se convierta en navegación real.
+
+### Requisitos
+
+* Cuando el usuario haga clic en el nombre de una disciplina dentro de la ficha de un clan, debe ir directamente a la página o vista detallada de esa disciplina.
+* La navegación debe funcionar correctamente según:
+
+  * idioma seleccionado
+  * edición seleccionada
+* Si la disciplina no existe para esa edición o idioma, mostrar mensaje claro.
+* Idealmente, al navegar a la disciplina:
+
+  * hacer scroll al contenido
+  * resaltar brevemente la disciplina abierta
+  * o abrir directamente su detalle
+
+### Extra deseable
+
+* También permitir navegación inversa:
+
+  * desde una disciplina, ver qué clanes o líneas de sangre la usan
+  * y poder hacer clic en ellos
+
+---
+
+## 4. Selector de edición de Vampiro
+
+La app debe permitir elegir de qué edición de Vampiro: La Mascarada se está consultando la información.
+
+### Requisitos
+
+Agregar un selector de edición visible, claro y persistente.
+
+### Ediciones mínimas sugeridas
+
+Deja la arquitectura preparada para manejar varias, por ejemplo:
+
+* 1st Edition
+* 2nd Edition
+* Revised / 3rd Edition
+* 20th Anniversary Edition (V20)
+* 5th Edition (V5)
+
+No es obligatorio que todas estén completas desde el primer minuto, pero la estructura sí debe soportarlas bien.
+
+### Reglas de funcionamiento
+
+* Al cambiar edición, toda la información relevante debe actualizarse:
+
+  * clanes
+  * líneas de sangre
+  * disciplinas
+  * subdisciplinas
+  * reglas
+  * glosario si aplica
+  * sugerencias si están asociadas a esa edición
+* No mezclar contenido de distintas ediciones.
+* Si un elemento existe en una edición pero no en otra, no debe aparecer erróneamente.
+* Persistir la edición elegida en localStorage.
+
+### UX
+
+* Mostrar siempre con claridad qué edición está activa.
+* La combinación **idioma + edición** debe sentirse central en la app.
+* Puede ir en topbar, barra lateral o panel superior fijo.
+
+---
+
+## 5. Cobertura completa de contenido: clanes, subclanes, líneas de sangre, disciplinas y subdisciplinas
+
+La app debe tener una estructura de datos robusta para cubrir el universo de contenido de forma mucho más completa.
+
+### Quiero asegurar que el modelo soporte correctamente:
+
+* clanes principales
+* subclanes si aplica
+* líneas de sangre
+* variantes asociadas
+* disciplinas principales
+* poderes o ramas
+* subdisciplinas cuando existan
+* relación entre clanes/líneas de sangre y disciplinas
+* relación entre edición e idioma
+
+### Muy importante
+
+No quiero una estructura plana y frágil. Quiero un modelo escalable y ordenado.
+
+### Requisitos técnicos
+
+Diseñar un esquema de datos que permita:
+
+* diferenciar claramente clan vs línea de sangre vs subclan
+* diferenciar disciplina vs subdisciplina
+* asociar cada elemento a una o varias ediciones
+* asociar cada elemento a uno o varios idiomas
+* enlazar relaciones cruzadas entre entidades
+* manejar contenido faltante sin romper la UI
+
+### En el MVP de esta iteración
+
+Aunque no llenes absolutamente todo el lore del mundo si eso hace demasiado pesado el primer paso, sí quiero que:
+
+* la estructura quede preparada para completarlo bien
+* haya bastantes ejemplos representativos
+* se note claramente que el sistema soporta toda la complejidad
+* dejes semillas de datos o placeholders bien organizados para completar más contenido después
+
+### Validación interna
+
+Agrega alguna lógica o utilidades que permitan detectar:
+
+* entradas duplicadas
+* traducciones faltantes
+* relaciones rotas
+* disciplinas enlazadas que no existan
+* clanes sin edición asociada
+* inconsistencias entre idioma y contenido
+
+---
+
+## 6. Botón Home visible en todo momento
+
+Agregar un botón de Home visible en toda la app.
+
+### Requisitos
+
+* Debe estar presente siempre, sin importar la sección.
+* Debe tener un ícono acorde a la temática vampírica.
+* Debe ser fácil de identificar y de usar.
+* Debe llevar al inicio o dashboard principal con un solo clic.
+
+### Estética sugerida
+
+En lugar de una casita genérica, usa una variante visual más temática, por ejemplo algo inspirado en:
+
+* mansión gótica
+* refugio nocturno
+* castillo
+* sello vampírico usado como emblema de inicio
+
+### UX
+
+* Debe integrarse con la navegación global.
+* En móvil también debe estar accesible.
+* Puede estar en topbar fija, sidebar fija o botón flotante elegante, pero sin estorbar.
+
+---
+
+## 7. Arquitectura y refactor recomendados
+
+Quiero que aproveches esta iteración para ordenar mejor el proyecto si hace falta.
+
+### Requisitos de arquitectura
+
+Refactoriza la app actual para que tenga claramente separadas estas capas:
+
+* UI components
+* navegación / rutas
+* estado global o contexto
+* configuración de idioma
+* configuración de edición
+* datasets de contenido
+* utilidades de validación
+* tipos / interfaces
+
+### Sugerencia de estructura
+
+Quiero algo parecido a esto, o una variante mejor si encuentras una más sólida:
+
+* `src/components`
+* `src/pages` o `src/routes`
+* `src/layouts`
+* `src/data`
+* `src/data/languages`
+* `src/data/editions`
+* `src/data/clans`
+* `src/data/disciplines`
+* `src/data/rules`
+* `src/i18n`
+* `src/context`
+* `src/hooks`
+* `src/lib`
+* `src/types`
+* `src/utils`
+
+### Estado global
+
+Implementar estado global claro para:
+
+* idioma activo
+* edición activa
+* favoritos
+* navegación contextual
+
+---
+
+## 8. Mejoras visuales y de experiencia
+
+Aprovecha esta iteración para elevar la calidad visual general.
+
+### Quiero
+
+* topbar o sidebar más pulida
+* mejor jerarquía visual
+* chips o badges para idioma y edición
+* breadcrumbs o indicadores de ubicación si ayudan
+* tarjetas más elegantes
+* hover states temáticos
+* transiciones suaves
+* buena experiencia móvil
+
+### También
+
+* Que las pantallas de detalle de clan y disciplina se sientan más “premium”
+* Que los enlaces clicables se distingan claramente
+* Que los estados vacíos o faltantes tengan diseño, no solo texto suelto
+
+---
+
+## 9. Comportamiento esperado
+
+Al terminar, quiero poder hacer esto:
+
+1. abrir la app
+2. ver siempre un botón Home visible
+3. seleccionar idioma
+4. seleccionar edición
+5. navegar a clanes
+6. abrir un clan
+7. hacer clic en una disciplina del clan
+8. ir a la disciplina correcta dentro del mismo idioma y edición
+9. guardar favoritos sin perder configuración
+10. comprobar que nunca se mezclan idiomas ni ediciones
+
+---
+
+## 10. Implementación práctica
+
+### Quiero que hagas lo siguiente
+
+* Modifica la app existente, no la rehagas desde cero salvo que sea estrictamente necesario.
+* Mantén lo que ya funciona.
+* Refactoriza cuando convenga, pero sin romper la experiencia.
+* Añade datos de ejemplo suficientemente amplios para probar bien:
+
+  * varios idiomas
+  * varias ediciones
+  * varios clanes
+  * varias líneas de sangre
+  * varias disciplinas
+  * algunos casos donde falte traducción o falte contenido para validar estados vacíos
+
+### Importante
+
+* El código debe quedar limpio.
+* Usa TypeScript si ya está disponible.
+* Añade tipos estrictos donde ayude.
+* Deja comentarios útiles en las partes complejas.
+* Evita hardcodear lógica frágil.
+* Prioriza mantenibilidad.
+
+---
+
+## 11. Entregables al finalizar
+
+Cuando termines, muéstrame:
+
+1. qué archivos creaste o modificaste
+2. la nueva estructura de datos
+3. cómo funciona el sistema de idioma
+4. cómo funciona el sistema de edición
+5. cómo se enlazan clanes y disciplinas
+6. cómo ampliar contenido sin romper consistencia
+7. cualquier dato todavía pendiente de completar
+
+## 12. Criterio de calidad
+
+No quiero un parche superficial. Quiero una mejora real del producto, con base sólida para seguir creciendo después.
+
+Haz que la app se sienta como una herramienta seria, elegante y temática para consultar Vampiro: La Mascarada durante una partida.

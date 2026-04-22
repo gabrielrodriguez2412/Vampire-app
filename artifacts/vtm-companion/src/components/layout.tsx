@@ -1,38 +1,48 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { 
-  Home, 
-  Book, 
-  Users, 
-  Droplet, 
+  Landmark, 
+  ScrollText, 
+  Crown, 
+  Flame, 
   Heart, 
   Menu, 
   X, 
   Search,
-  MessageCircle,
-  Wrench,
-  BookText,
-  StickyNote
+  Drama,
+  Swords,
+  BookOpen,
+  Feather,
+  Globe,
+  Library
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SearchDialog } from "./search-dialog";
-
-const navItems = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/reglas", label: "Reglas", icon: Book },
-  { href: "/clanes", label: "Clanes", icon: Users },
-  { href: "/disciplinas", label: "Disciplinas", icon: Droplet },
-  { href: "/roleplay", label: "Roleplay", icon: MessageCircle },
-  { href: "/herramientas", label: "Herramientas", icon: Wrench },
-  { href: "/favoritos", label: "Favoritos", icon: Heart },
-  { href: "/glosario", label: "Glosario", icon: BookText },
-  { href: "/notas", label: "Notas", icon: StickyNote },
-];
+import { useAppContext } from "@/context/AppContext";
+import { UI_STRINGS } from "@/i18n/ui";
+import { EDITIONS } from "@/data/editions";
+import { LANGUAGES } from "@/data/languages";
+import { LangCode, EditionId } from "@/types";
 
 export function Layout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const { activeLanguage, activeEdition, setLanguage, setEdition } = useAppContext();
+
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+
+  const navItems = [
+    { href: "/", label: strings.home, icon: Landmark },
+    { href: "/reglas", label: strings.rules, icon: ScrollText },
+    { href: "/clanes", label: strings.clans, icon: Crown },
+    { href: "/disciplinas", label: strings.disciplines, icon: Flame },
+    { href: "/roleplay", label: strings.roleplay, icon: Drama },
+    { href: "/herramientas", label: strings.tools, icon: Swords },
+    { href: "/favoritos", label: strings.favorites, icon: Heart },
+    { href: "/glosario", label: strings.glossary, icon: BookOpen },
+    { href: "/notas", label: strings.notes, icon: Feather },
+  ];
 
   return (
     <div className="flex min-h-[100dvh] bg-background text-foreground overflow-hidden selection:bg-primary/30">
@@ -40,24 +50,62 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-sidebar-border bg-sidebar shrink-0 relative z-20">
-        <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-          <h1 className="font-cinzel font-bold text-xl tracking-wider text-primary">V<span className="text-foreground">t</span>M <span className="text-muted-foreground text-sm font-sans tracking-normal font-normal">Companion</span></h1>
-        </div>
+        <Link href="/">
+          <div className="h-16 flex items-center px-6 border-b border-sidebar-border cursor-pointer hover:bg-white/5 transition-colors" data-testid="home-button">
+            <h1 className="font-cinzel font-bold text-xl tracking-wider text-primary">V<span className="text-foreground">t</span>M <span className="text-muted-foreground text-sm font-sans tracking-normal font-normal">Companion</span></h1>
+          </div>
+        </Link>
         
-        <div className="p-4">
+        <div className="p-4 space-y-4">
           <button 
             onClick={() => setSearchOpen(true)}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-white/5 hover:bg-white/10 rounded-md border border-white/5 transition-colors"
           >
             <Search className="w-4 h-4" />
-            <span>Buscar...</span>
+            <span>{strings.search}</span>
             <kbd className="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded opacity-70">Cmd K</kbd>
           </button>
+
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Library className="w-3 h-3" />
+                <span>{strings.edition}</span>
+              </div>
+              <select 
+                value={activeEdition}
+                onChange={(e) => setEdition(e.target.value as EditionId)}
+                className="bg-transparent text-xs text-foreground border border-sidebar-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                data-testid="edition-selector"
+              >
+                {EDITIONS.map(ed => (
+                  <option key={ed.id} value={ed.id} className="bg-sidebar">{ed.shortName}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Globe className="w-3 h-3" />
+                <span>{strings.language}</span>
+              </div>
+              <select 
+                value={activeLanguage}
+                onChange={(e) => setLanguage(e.target.value as LangCode)}
+                className="bg-transparent text-xs text-foreground border border-sidebar-border rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                data-testid="language-selector"
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code} className="bg-sidebar">{lang.flag} {lang.nativeName}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-1">
           {navItems.map((item) => {
-            const active = location === item.href;
+            const active = location === item.href || location.startsWith(`${item.href}/`);
             return (
               <Link key={item.href} href={item.href}>
                 <div 
@@ -68,6 +116,7 @@ export function Layout({ children }: { children: ReactNode }) {
                       : "text-sidebar-foreground/70 hover:bg-white/5 hover:text-sidebar-foreground"
                   )}
                   onClick={() => setMobileMenuOpen(false)}
+                  data-testid={`nav-${item.href.replace('/', '') || 'home'}`}
                 >
                   <item.icon className={cn("w-4 h-4", active ? "text-primary" : "opacity-70")} />
                   {item.label}
@@ -76,14 +125,18 @@ export function Layout({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="p-4 border-t border-sidebar-border text-xs text-muted-foreground text-center">
-          V5 Reference Tool
+        <div className="p-4 border-t border-sidebar-border flex flex-col gap-1">
+          <div className="text-xs text-muted-foreground text-center">
+            {EDITIONS.find(e => e.id === activeEdition)?.name}
+          </div>
         </div>
       </aside>
 
       {/* Mobile Header & Menu */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-sidebar border-b border-sidebar-border flex items-center justify-between px-4 z-40">
-        <h1 className="font-cinzel font-bold text-lg text-primary">V<span className="text-foreground">t</span>M</h1>
+        <Link href="/">
+          <h1 className="font-cinzel font-bold text-lg text-primary cursor-pointer">V<span className="text-foreground">t</span>M</h1>
+        </Link>
         <div className="flex items-center gap-2">
           <button onClick={() => setSearchOpen(true)} className="p-2 text-muted-foreground hover:text-foreground">
             <Search className="w-5 h-5" />
@@ -97,9 +150,37 @@ export function Layout({ children }: { children: ReactNode }) {
       {/* Mobile Navigation Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-14 bg-background z-30 overflow-y-auto">
+          <div className="p-4 flex gap-4 border-b border-border">
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">{strings.edition}</label>
+              <select 
+                value={activeEdition}
+                onChange={(e) => setEdition(e.target.value as EditionId)}
+                className="w-full bg-card text-sm text-foreground border border-border rounded px-2 py-2"
+                data-testid="mobile-edition-selector"
+              >
+                {EDITIONS.map(ed => (
+                  <option key={ed.id} value={ed.id}>{ed.shortName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="text-xs text-muted-foreground mb-1 block">{strings.language}</label>
+              <select 
+                value={activeLanguage}
+                onChange={(e) => setLanguage(e.target.value as LangCode)}
+                className="w-full bg-card text-sm text-foreground border border-border rounded px-2 py-2"
+                data-testid="mobile-language-selector"
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code}>{lang.flag} {lang.nativeName}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <nav className="p-4 space-y-2">
             {navItems.map((item) => {
-              const active = location === item.href;
+              const active = location === item.href || location.startsWith(`${item.href}/`);
               return (
                 <Link key={item.href} href={item.href}>
                   <div 

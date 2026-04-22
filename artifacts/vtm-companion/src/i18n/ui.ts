@@ -34,7 +34,18 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Título', sessionDate: 'Fecha', sessionSummary: 'Resumen', npcName: 'Nombre', npcDescription: 'Descripción',
     locationName: 'Nombre', locationDescription: 'Descripción', save: 'Guardar', cancel: 'Cancelar', edit: 'Editar', delete: 'Eliminar', add: 'Añadir', new_entry: 'Nueva entrada',
     edition: 'Edición', language: 'Idioma', noResults: 'Sin resultados', favorites_clan: 'Clan Favorito', favorites_discipline: 'Disciplina Favorita', favorites_rule: 'Regla Favorita', back: 'Volver', home_tagline: 'El grimorio digital definitivo...', quote_footer: '"La eternidad es un largo tiempo para estar hambriento."', active_edition: 'Edición activa', active_language: 'Idioma activo', showAll: 'Mostrar todos', comingSoon: 'Próximamente', placeholder_feature: 'Función no disponible', readMore: 'Leer más', collapse: 'Contraer', expand: 'Expandir', close: 'Cerrar', openSettings: 'Abrir Ajustes',
-    missingData: 'Faltan datos', nameAndClanRequired: 'El nombre y el clan son obligatorios.', saved: 'Guardado', characterCreated: 'Personaje creado con éxito.', favoritesCleared: 'Favoritos borrados', confirmClearFavorites: '¿Estás seguro de borrar todos tus favoritos?'
+    missingData: 'Faltan datos', nameAndClanRequired: 'El nombre y el clan son obligatorios.', saved: 'Guardado', characterCreated: 'Personaje creado con éxito.', favoritesCleared: 'Favoritos borrados', confirmClearFavorites: '¿Estás seguro de borrar todos tus favoritos?',
+    viewAll: 'Ver todos', combatDesc: 'Conflictos físicos, iniciativa y daño en el Mundo de las Tinieblas.', openProtocols: 'Abrir Protocolos',
+    humanityDesc: 'La lucha contra la Bestia Interior', utilities: 'Utilidades',
+    storytellerSuggestions: 'Sugerencias del Narrador', whispers: 'Susurros desde el Vacío',
+    storytellerTitle1: 'El Aroma del Cobre', storytellerDesc1: '"La lluvia en el callejón no borra el sabor metálico. Describe la sobrecarga sensorial de un retoño hambriento..."',
+    storytellerTitle2: 'Una Invitación de Seda', storytellerDesc2: '"Un anciano Ventrue invita a la cotería a la ópera. El aire es denso con perfume antiguo y secretos. ¿Cuál es el precio de un asiento?"',
+    storytellerTitle3: 'Sombras en la Sala de Servidores', storytellerDesc3: '"Las madrigueras Nosferatu han sido infiltradas por una amenaza digital. El zumbido de los ventiladores imita un corazón palpitante..."',
+    revealMore: 'Revelar Más', selectClan: 'Selecciona un clan', selectCharacterHint: 'Selecciona un personaje de la lista',
+    combat_melee: 'Cuerpo a Cuerpo: Tirada enfrentada. Daño = (Éxitos propios − Éxitos del rival) + Modificador del Arma.',
+    combat_ranged: 'A Distancia (con cobertura): Atacante vs Defensa (Dif. fija por cobertura o Destreza + Atletismo).',
+    combat_superficial: 'Daño Superficial: Balas, puños. Se divide a la mitad (redondeo arriba).',
+    combat_aggravated: 'Daño Agravado: Fuego, sol, garras de vampiro. No se divide.'
   },
   en: {
     home: 'Home', rules: 'Rules', clans: 'Clans', disciplines: 'Disciplines', roleplay: 'Roleplay',
@@ -69,7 +80,18 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Title', sessionDate: 'Date', sessionSummary: 'Summary', npcName: 'Name', npcDescription: 'Description',
     locationName: 'Name', locationDescription: 'Description', save: 'Save', cancel: 'Cancel', edit: 'Edit', delete: 'Delete', add: 'Add', new_entry: 'New entry',
     edition: 'Edition', language: 'Language', noResults: 'No results', favorites_clan: 'Favorite Clan', favorites_discipline: 'Favorite Discipline', favorites_rule: 'Favorite Rule', back: 'Back', home_tagline: 'The ultimate digital grimoire...', quote_footer: '"Eternity is a long time to be hungry."', active_edition: 'Active edition', active_language: 'Active language', showAll: 'Show all', comingSoon: 'Coming soon', placeholder_feature: 'Feature not available', readMore: 'Read more', collapse: 'Collapse', expand: 'Expand', close: 'Close', openSettings: 'Open Settings',
-    missingData: 'Missing data', nameAndClanRequired: 'Name and clan are required.', saved: 'Saved', characterCreated: 'Character created successfully.', favoritesCleared: 'Favorites cleared', confirmClearFavorites: 'Are you sure you want to clear all favorites?'
+    missingData: 'Missing data', nameAndClanRequired: 'Name and clan are required.', saved: 'Saved', characterCreated: 'Character created successfully.', favoritesCleared: 'Favorites cleared', confirmClearFavorites: 'Are you sure you want to clear all favorites?',
+    viewAll: 'View All', combatDesc: 'Physical conflicts, initiative, and damage in the World of Darkness.', openProtocols: 'Open Protocols',
+    humanityDesc: 'The struggle against the Inner Beast', utilities: 'Utilities',
+    storytellerSuggestions: 'Storyteller Suggestions', whispers: 'Whispers from the Void',
+    storytellerTitle1: 'The Scent of Copper', storytellerDesc1: '"The heavy rain doesn\'t wash away the metallic tang. Describe the sensory overload of a starving fledgling..."',
+    storytellerTitle2: 'An Invitation of Silk', storytellerDesc2: '"A Ventrue elder invites the coterie to an opera house. The air is thick with old perfume and ancient secrets. What is the price of a seat?"',
+    storytellerTitle3: 'Shadows in the Server Room', storytellerDesc3: '"The Nosferatu warrens have been breached by a digital threat. The hum of cooling fans mimics a beating heart..."',
+    revealMore: 'Reveal More', selectClan: 'Select a clan', selectCharacterHint: 'Select a character from the list',
+    combat_melee: 'Melee: Contested roll. Damage = (Own successes − Opponent successes) + Weapon modifier.',
+    combat_ranged: 'Ranged (with cover): Attacker vs Defense (fixed difficulty by cover or Dexterity + Athletics).',
+    combat_superficial: 'Superficial Damage: Bullets, punches. Halved (round up).',
+    combat_aggravated: 'Aggravated Damage: Fire, sunlight, vampire claws. Not halved.'
   },
   pt: {
     home: 'Início', rules: 'Regras', clans: 'Clãs', disciplines: 'Disciplinas', roleplay: 'Roleplay',
@@ -104,7 +126,18 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Título', sessionDate: 'Data', sessionSummary: 'Resumo', npcName: 'Nome', npcDescription: 'Descrição',
     locationName: 'Nome', locationDescription: 'Descrição', save: 'Salvar', cancel: 'Cancelar', edit: 'Editar', delete: 'Excluir', add: 'Adicionar', new_entry: 'Nova entrada',
     edition: 'Edição', language: 'Idioma', noResults: 'Sem resultados', favorites_clan: 'Clã Favorito', favorites_discipline: 'Disciplina Favorita', favorites_rule: 'Regra Favorita', back: 'Voltar', home_tagline: 'O grimório digital definitivo...', quote_footer: '"A eternidade é muito tempo para ter fome."', active_edition: 'Edição ativa', active_language: 'Idioma ativo', showAll: 'Mostrar todos', comingSoon: 'Em breve', placeholder_feature: 'Recurso indisponível', readMore: 'Ler mais', collapse: 'Recolher', expand: 'Expandir', close: 'Fechar', openSettings: 'Abrir Configurações',
-    missingData: 'Dados incompletos', nameAndClanRequired: 'Nome e clã são obrigatórios.', saved: 'Salvo', characterCreated: 'Personagem criado com sucesso.', favoritesCleared: 'Favoritos apagados', confirmClearFavorites: 'Tem certeza que deseja apagar todos os favoritos?'
+    missingData: 'Dados incompletos', nameAndClanRequired: 'Nome e clã são obrigatórios.', saved: 'Salvo', characterCreated: 'Personagem criado com sucesso.', favoritesCleared: 'Favoritos apagados', confirmClearFavorites: 'Tem certeza que deseja apagar todos os favoritos?',
+    viewAll: 'Ver todos', combatDesc: 'Conflitos físicos, iniciativa e dano no Mundo das Trevas.', openProtocols: 'Abrir Protocolos',
+    humanityDesc: 'A luta contra a Besta Interior', utilities: 'Utilitários',
+    storytellerSuggestions: 'Sugestões do Narrador', whispers: 'Sussurros do Vazio',
+    storytellerTitle1: 'O Aroma do Cobre', storytellerDesc1: '"A chuva pesada não apaga o sabor metálico. Descreva a sobrecarga sensorial de um neófito faminto..."',
+    storytellerTitle2: 'Um Convite de Seda', storytellerDesc2: '"Um ancião Ventrue convida a coterie para a ópera. O ar é denso com perfume antigo e segredos. Qual é o preço de um assento?"',
+    storytellerTitle3: 'Sombras na Sala de Servidores', storytellerDesc3: '"As tocas Nosferatu foram violadas por uma ameaça digital. O zumbido dos ventiladores imita um coração batendo..."',
+    revealMore: 'Revelar Mais', selectClan: 'Selecione um clã', selectCharacterHint: 'Selecione um personagem da lista',
+    combat_melee: 'Corpo a Corpo: Rolagem contestada. Dano = (Sucessos próprios − Sucessos do rival) + Modificador de Arma.',
+    combat_ranged: 'À Distância (com cobertura): Atacante vs Defesa (dificuldade fixa por cobertura ou Destreza + Atletismo).',
+    combat_superficial: 'Dano Superficial: Balas, socos. Dividido pela metade (arredondado para cima).',
+    combat_aggravated: 'Dano Agravado: Fogo, sol, garras de vampiro. Não é dividido.'
   },
   fr: {
     home: 'Accueil', rules: 'Règles', clans: 'Clans', disciplines: 'Disciplines', roleplay: 'Roleplay',
@@ -139,7 +172,18 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Titre', sessionDate: 'Date', sessionSummary: 'Résumé', npcName: 'Nom', npcDescription: 'Description',
     locationName: 'Nom', locationDescription: 'Description', save: 'Sauver', cancel: 'Annuler', edit: 'Éditer', delete: 'Supprimer', add: 'Ajouter', new_entry: 'Nouveau',
     edition: 'Édition', language: 'Langue', noResults: 'Aucun résultat', favorites_clan: 'Clan Favori', favorites_discipline: 'Discipline Favorite', favorites_rule: 'Règle Favorite', back: 'Retour', home_tagline: 'Le grimoire...', quote_footer: '"L\'éternité..."', active_edition: 'Édition', active_language: 'Langue', showAll: 'Tout', comingSoon: 'Bientôt', placeholder_feature: 'Indisponible', readMore: 'Lire plus', collapse: 'Réduire', expand: 'Développer', close: 'Fermer', openSettings: 'Paramètres',
-    missingData: 'Données manquantes', nameAndClanRequired: 'Nom et clan sont obligatoires.', saved: 'Enregistré', characterCreated: 'Personnage créé.', favoritesCleared: 'Favoris effacés', confirmClearFavorites: 'Effacer tous les favoris ?'
+    missingData: 'Données manquantes', nameAndClanRequired: 'Nom et clan sont obligatoires.', saved: 'Enregistré', characterCreated: 'Personnage créé.', favoritesCleared: 'Favoris effacés', confirmClearFavorites: 'Effacer tous les favoris ?',
+    viewAll: 'Voir tout', combatDesc: 'Conflits physiques, initiative et dégâts dans le Monde des Ténèbres.', openProtocols: 'Ouvrir Protocoles',
+    humanityDesc: 'La lutte contre la Bête Intérieure', utilities: 'Utilitaires',
+    storytellerSuggestions: 'Suggestions du Conteur', whispers: 'Murmures du Néant',
+    storytellerTitle1: "L'Odeur du Cuivre", storytellerDesc1: '"La pluie n\'efface pas le goût métallique. Décrivez la surcharge sensorielle d\'un jeune vampire affamé..."',
+    storytellerTitle2: "Une Invitation de Soie", storytellerDesc2: '"Un ancien Ventrue invite la coterie à l\'opéra. L\'air est chargé de vieux parfums et de secrets. Quel est le prix d\'une place?"',
+    storytellerTitle3: 'Ombres dans la Salle des Serveurs', storytellerDesc3: '"Les terriers Nosferatu ont été infiltrés par une menace numérique. Le bourdonnement des ventilateurs imite un cœur battant..."',
+    revealMore: 'Révéler Plus', selectClan: 'Sélectionner un clan', selectCharacterHint: 'Sélectionnez un personnage dans la liste',
+    combat_melee: 'Mêlée : Jet contesté. Dégâts = (Succès propres − Succès adverses) + Modificateur d\'arme.',
+    combat_ranged: 'À distance (avec couverture) : Attaquant vs Défense (difficulté fixe selon couverture ou Dextérité + Athlétisme).',
+    combat_superficial: 'Dégâts superficiels : Balles, coups. Divisés par deux (arrondi supérieur).',
+    combat_aggravated: 'Dégâts aggravés : Feu, soleil, griffes de vampire. Non divisés.'
   },
   de: {
     home: 'Start', rules: 'Regeln', clans: 'Clans', disciplines: 'Disziplinen', roleplay: 'Roleplay',
@@ -174,7 +218,18 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Titel', sessionDate: 'Datum', sessionSummary: 'Zusammenfassung', npcName: 'Name', npcDescription: 'Beschreibung',
     locationName: 'Name', locationDescription: 'Beschreibung', save: 'Speichern', cancel: 'Abbrechen', edit: 'Bearbeiten', delete: 'Löschen', add: 'Hinzufügen', new_entry: 'Neu',
     edition: 'Edition', language: 'Sprache', noResults: 'Keine', favorites_clan: 'Clan', favorites_discipline: 'Disziplin', favorites_rule: 'Regel', back: 'Zurück', home_tagline: 'Das Grimoire...', quote_footer: '"Die Ewigkeit..."', active_edition: 'Edition', active_language: 'Sprache', showAll: 'Alle', comingSoon: 'Bald', placeholder_feature: 'Nicht verfügbar', readMore: 'Mehr', collapse: 'Einklappen', expand: 'Ausklappen', close: 'Schließen', openSettings: 'Einstellungen',
-    missingData: 'Fehlende Daten', nameAndClanRequired: 'Name und Clan erforderlich.', saved: 'Gespeichert', characterCreated: 'Charakter erstellt.', favoritesCleared: 'Favoriten gelöscht', confirmClearFavorites: 'Alle Favoriten löschen?'
+    missingData: 'Fehlende Daten', nameAndClanRequired: 'Name und Clan erforderlich.', saved: 'Gespeichert', characterCreated: 'Charakter erstellt.', favoritesCleared: 'Favoriten gelöscht', confirmClearFavorites: 'Alle Favoriten löschen?',
+    viewAll: 'Alle sehen', combatDesc: 'Körperliche Konflikte, Initiative und Schaden in der Welt der Dunkelheit.', openProtocols: 'Protokolle öffnen',
+    humanityDesc: 'Der Kampf gegen die Innere Bestie', utilities: 'Extras',
+    storytellerSuggestions: 'Erzählervorschläge', whispers: 'Flüstern aus der Leere',
+    storytellerTitle1: 'Der Geruch von Kupfer', storytellerDesc1: '"Der Regen wäscht den metallischen Geschmack nicht weg. Beschreibt die sensorische Überlastung eines hungrigen Neulings..."',
+    storytellerTitle2: 'Eine Einladung aus Seide', storytellerDesc2: '"Ein Ventrue-Ältester lädt die Coterie in die Oper ein. Die Luft ist schwer von altem Parfüm und Geheimnissen. Was kostet ein Platz?"',
+    storytellerTitle3: 'Schatten im Serverraum', storytellerDesc3: '"Die Nosferatu-Höhlen wurden von einer digitalen Bedrohung durchbrochen. Das Summen der Lüfter ahmt einen schlagenden Herzschlag nach..."',
+    revealMore: 'Mehr enthüllen', selectClan: 'Clan auswählen', selectCharacterHint: 'Charakter aus der Liste auswählen',
+    combat_melee: 'Nahkampf: Wettbewerb. Schaden = (Eigene Erfolge − Gegner-Erfolge) + Waffenmodifikator.',
+    combat_ranged: 'Fernkampf (mit Deckung): Angreifer vs. Verteidigung (feste Schwierigkeit nach Deckung oder Geschicklichkeit + Athletik).',
+    combat_superficial: 'Oberflächlicher Schaden: Kugeln, Schläge. Halbiert (aufgerundet).',
+    combat_aggravated: 'Aggravierter Schaden: Feuer, Sonnenlicht, Vampirklauen. Nicht halbiert.'
   },
   it: {
     home: 'Home', rules: 'Regole', clans: 'Clan', disciplines: 'Discipline', roleplay: 'Roleplay',
@@ -209,6 +264,17 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     sessionTitle: 'Titolo', sessionDate: 'Data', sessionSummary: 'Riassunto', npcName: 'Nome', npcDescription: 'Descrizione',
     locationName: 'Nome', locationDescription: 'Descrizione', save: 'Salva', cancel: 'Annulla', edit: 'Modifica', delete: 'Elimina', add: 'Aggiungi', new_entry: 'Nuovo',
     edition: 'Edizione', language: 'Lingua', noResults: 'Nessun risultato', favorites_clan: 'Clan', favorites_discipline: 'Disciplina', favorites_rule: 'Regola', back: 'Indietro', home_tagline: 'Il grimorio...', quote_footer: '"L\'eternità..."', active_edition: 'Edizione', active_language: 'Lingua', showAll: 'Mostra tutto', comingSoon: 'Presto', placeholder_feature: 'Non disponibile', readMore: 'Leggi', collapse: 'Riduci', expand: 'Espandi', close: 'Chiudi', openSettings: 'Impostazioni',
-    missingData: 'Dati mancanti', nameAndClanRequired: 'Nome e clan obbligatori.', saved: 'Salvato', characterCreated: 'Personaggio creato.', favoritesCleared: 'Preferiti cancellati', confirmClearFavorites: 'Cancellare tutti i preferiti?'
+    missingData: 'Dati mancanti', nameAndClanRequired: 'Nome e clan obbligatori.', saved: 'Salvato', characterCreated: 'Personaggio creato.', favoritesCleared: 'Preferiti cancellati', confirmClearFavorites: 'Cancellare tutti i preferiti?',
+    viewAll: 'Vedi tutti', combatDesc: 'Conflitti fisici, iniziativa e danno nel Mondo delle Tenebre.', openProtocols: 'Apri Protocolli',
+    humanityDesc: 'La lotta contro la Bestia Interiore', utilities: 'Utilità',
+    storytellerSuggestions: 'Suggerimenti del Narratore', whispers: 'Sussurri dal Vuoto',
+    storytellerTitle1: "L'Aroma del Rame", storytellerDesc1: '"La pioggia non cancella il sapore metallico. Descrivete il sovraccarico sensoriale di un giovane vampiro affamato..."',
+    storytellerTitle2: 'Un Invito di Seta', storytellerDesc2: '"Un anziano Ventrue invita la coterie all\'opera. L\'aria è densa di profumo antico e segreti. Qual è il prezzo di un posto?"',
+    storytellerTitle3: 'Ombre nella Sala Server', storytellerDesc3: '"Le tane dei Nosferatu sono state violate da una minaccia digitale. Il ronzio delle ventole imita un cuore che batte..."',
+    revealMore: 'Rivela di più', selectClan: 'Seleziona un clan', selectCharacterHint: 'Seleziona un personaggio dalla lista',
+    combat_melee: 'Mischia: Tiro contestato. Danno = (Successi propri − Successi avversari) + Modificatore Arma.',
+    combat_ranged: 'A Distanza (con copertura): Attaccante vs Difesa (difficoltà fissa per copertura o Destrezza + Atletica).',
+    combat_superficial: 'Danno Superficiale: Pallottole, pugni. Dimezzato (arrotondato per eccesso).',
+    combat_aggravated: 'Danno Aggravato: Fuoco, sole, artigli di vampiro. Non dimezzato.'
   }
 };

@@ -110,14 +110,14 @@ export function Layout({ children }: { children: ReactNode }) {
             </div>
             
             <nav className="space-y-4">
-              <div className="text-xs font-sans uppercase tracking-widest text-zinc-500 mb-2">Compendium</div>
+              <div className="text-xs font-sans uppercase tracking-widest text-zinc-500 mb-2">{strings.compendium}</div>
               <Link href="/compendium/disciplinas"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">auto_fix_high</span> {strings.disciplines}</div></Link>
               <Link href="/compendium/reglas"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">book</span> {strings.rules}</div></Link>
               <Link href="/compendium/roleplay"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">theater_comedy</span> {strings.roleplaylabel || strings.roleplay}</div></Link>
               <Link href="/compendium/herramientas"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">construction</span> {strings.tools}</div></Link>
               <Link href="/compendium/glosario"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">dictionary</span> {strings.glossary}</div></Link>
               
-              <div className="text-xs font-sans uppercase tracking-widest text-zinc-500 mb-2 mt-6">Utilities</div>
+              <div className="text-xs font-sans uppercase tracking-widest text-zinc-500 mb-2 mt-6">{strings.utilities}</div>
               <Link href="/favoritos"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">favorite</span> {strings.favorites}</div></Link>
               <Link href="/notas"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">edit_note</span> {strings.notes}</div></Link>
               <Link href="/ajustes"><div className="flex items-center gap-3 text-lg font-serif cursor-pointer hover:text-primary-container transition-colors py-2" onClick={() => setMobileMenuOpen(false)}><span className="material-symbols-outlined">settings</span> {strings.settings}</div></Link>

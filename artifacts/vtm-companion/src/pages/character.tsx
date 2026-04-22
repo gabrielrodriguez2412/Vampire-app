@@ -161,7 +161,7 @@ export default function CharacterPage() {
                 <div>
                   <label className="text-sm font-medium mb-1 block">{strings.clanLabel}</label>
                   <select value={clan} onChange={e=>setClan(e.target.value)} className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="" disabled>Selecciona un clan</option>
+                    <option value="" disabled>{strings.selectClan}</option>
                     {availableClans.map(c => <option key={c.id} value={c.id}>{getText(c.name, activeLanguage)}</option>)}
                   </select>
                 </div>
@@ -339,7 +339,7 @@ export default function CharacterPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="text-center py-10 text-muted-foreground">Selecciona un personaje de la lista</div>
+            <div className="text-center py-10 text-muted-foreground">{strings.selectCharacterHint}</div>
           )}
         </TabsContent>
       </Tabs>

@@ -201,10 +201,10 @@ export default function Tools() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-foreground/80">
-            <p><strong>Cuerpo a Cuerpo:</strong> Tirada enfrentada. Daño = (Éxitos propios - Éxitos del rival) + Modificador del Arma.</p>
-            <p><strong>A Distancia (con cobertura):</strong> Atacante vs Defensa (Dif. fija por cobertura o Destreza + Atletismo).</p>
-            <p><strong>Daño Superficial:</strong> Balas, puños. Se divide a la mitad (redondeo arriba).</p>
-            <p><strong>Daño Agravado:</strong> Fuego, sol, garras de vampiro. No se divide.</p>
+            <p>{strings.combat_melee}</p>
+            <p>{strings.combat_ranged}</p>
+            <p>{strings.combat_superficial}</p>
+            <p>{strings.combat_aggravated}</p>
           </CardContent>
         </Card>
       </div>

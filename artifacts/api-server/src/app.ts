@@ -5,6 +5,18 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+const corsOrigin = process.env["CORS_ORIGIN"];
+const corsOrigins = corsOrigin
+  ?.split(",")
+  .map((origin) => origin.trim())
+  .filter((origin) => origin.length > 0);
+
+const corsOptions = corsOrigins?.length
+  ? {
+      origin: corsOrigins,
+      credentials: true,
+    }
+  : undefined;
 
 app.use(
   pinoHttp({
@@ -25,7 +37,7 @@ app.use(
     },
   }),
 );
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

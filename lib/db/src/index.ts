@@ -18,6 +18,11 @@ function shouldEnableSsl(url: string): boolean {
     const sslMode = parsedUrl.searchParams.get("sslmode");
     if (sslMode === "disable") return false;
     if (sslMode === "require" || sslMode === "verify-ca" || sslMode === "verify-full") {
+    if (
+      sslMode === "require" ||
+      sslMode === "verify-ca" ||
+      sslMode === "verify-full"
+    ) {
       return true;
     }
   } catch {

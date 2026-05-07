@@ -7,3 +7,4 @@ const apiUrl = import.meta.env.VITE_API_URL?.trim();
 setBaseUrl(apiUrl ? apiUrl : null);
 
 createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(<App />);

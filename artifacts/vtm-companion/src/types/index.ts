@@ -1,4 +1,4 @@
-export type EditionId = 'v1' | 'v2' | 'revised' | 'v20' | 'v5';
+export type EditionId = '1ST' | '2ND' | 'REVISED' | 'V20' | 'V5';
 export type LangCode = 'es' | 'en' | 'pt' | 'fr' | 'de' | 'it';
 
 export interface Edition {

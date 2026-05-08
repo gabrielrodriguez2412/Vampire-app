@@ -6,7 +6,7 @@ const fallbackArr = (val: string[]) => ({ es: val, en: val, pt: val, fr: val, de
 export const disciplines: DisciplineEntry[] = [
   {
     id: "animalism",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Animalism",
     type: { es: "Mental", en: "Mental", pt: "Mental", fr: "Mental", de: "Geistig", it: "Mentale" },
     description: {
@@ -27,7 +27,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "auspex",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Auspex",
     type: { es: "Sensorial", en: "Sensory", pt: "Sensorial", fr: "Sensoriel", de: "Sensorisch", it: "Sensoriale" },
     description: {
@@ -48,7 +48,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "blood_sorcery",
-    editions: ["v5"],
+    editions: ["V5"],
     name: "Blood Sorcery",
     type: fallbackStr("Sorcery"),
     description: fallbackStr("The use of vitae for magical effects."),
@@ -60,7 +60,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "thaumaturgy",
-    editions: ["v1", "v2", "revised", "v20"],
+    editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Thaumaturgy",
     type: fallbackStr("Sorcery"),
     description: fallbackStr("Old blood magic."),
@@ -70,7 +70,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "obtenebration",
-    editions: ["v1", "v2", "revised", "v20"],
+    editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Obtenebration",
     type: fallbackStr("Shadow"),
     description: fallbackStr("Control over shadows."),
@@ -80,7 +80,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "celerity",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Celerity",
     type: fallbackStr("Physical"),
     description: fallbackStr("Supernatural speed."),
@@ -93,7 +93,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "dominate",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Dominate",
     type: fallbackStr("Mental"),
     description: fallbackStr("Crush another's mind."),
@@ -106,7 +106,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "obfuscate",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Obfuscate",
     type: fallbackStr("Stealth"),
     description: fallbackStr("Vanish from minds."),
@@ -119,7 +119,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "presence",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Presence",
     type: fallbackStr("Social"),
     description: fallbackStr("Attract and terrify."),
@@ -132,7 +132,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "protean",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Protean",
     type: fallbackStr("Transformation"),
     description: fallbackStr("Alter physical form."),
@@ -145,7 +145,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "fortitude",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Fortitude",
     type: fallbackStr("Physical"),
     description: fallbackStr("Unearthly toughness."),
@@ -158,7 +158,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "potence",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Potence",
     type: fallbackStr("Physical"),
     description: fallbackStr("Supernatural strength."),
@@ -171,7 +171,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "oblivion",
-    editions: ["v5"],
+    editions: ["V5"],
     name: "Oblivion",
     type: fallbackStr("Shadow/Death"),
     description: fallbackStr("Shadows and necromancy merged in V5."),
@@ -181,7 +181,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "valeren",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Valeren",
     type: fallbackStr("Healing/Combat"),
     description: fallbackStr("The discipline of the Salubri."),
@@ -191,7 +191,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "thin_blood_alchemy",
-    editions: ["v5"],
+    editions: ["V5"],
     name: "Thin-Blood Alchemy",
     type: fallbackStr("Alchemy"),
     description: fallbackStr("Counterfeit disciplines via alchemy."),

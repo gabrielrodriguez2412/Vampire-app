@@ -62,10 +62,10 @@ export default function CharacterPage() {
       id: crypto.randomUUID(),
       name, clan, concept,
       edition: activeEdition,
-      generation: activeEdition !== 'v5' ? generation : undefined,
-      bloodPotency: activeEdition === 'v5' ? bloodPotency : undefined,
+      generation: activeEdition !== 'V5' ? generation : undefined,
+      bloodPotency: activeEdition === 'V5' ? bloodPotency : undefined,
       humanity,
-      hunger: activeEdition === 'v5' ? hunger : undefined,
+      hunger: activeEdition === 'V5' ? hunger : undefined,
       attributes,
       createdAt: new Date().toISOString()
     };
@@ -184,7 +184,7 @@ export default function CharacterPage() {
                   <Slider value={[humanity]} onValueChange={v=>setHumanity(v[0])} min={1} max={10} step={1} />
                 </div>
                 
-                {activeEdition === 'v5' ? (
+                {activeEdition === 'V5' ? (
                   <>
                     <div>
                       <label className="text-sm font-medium mb-2 block flex justify-between">
@@ -274,7 +274,7 @@ export default function CharacterPage() {
                     <div className="text-xs text-muted-foreground uppercase">{strings.humanity}</div>
                     <div className="text-2xl font-serif text-foreground mt-1">{activeChar.humanity}</div>
                   </div>
-                  {activeChar.edition === 'v5' ? (
+                  {activeChar.edition === 'V5' ? (
                     <>
                       <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
                         <div className="text-xs text-muted-foreground uppercase">{strings.bloodPotency}</div>

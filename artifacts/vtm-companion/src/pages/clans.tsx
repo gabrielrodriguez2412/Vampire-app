@@ -62,11 +62,11 @@ export default function Clans() {
             onChange={(e) => setEdition(e.target.value as EditionId)}
             className="bg-zinc-950 border border-zinc-800 text-on-surface px-4 py-2 font-serif uppercase text-sm focus:outline-none focus:border-zinc-500"
           >
-            <option value="1st">1st Edition</option>
-            <option value="2nd">2nd Edition</option>
-            <option value="revised">Revised Edition</option>
-            <option value="v20">V20</option>
-            <option value="v5">V5</option>
+            <option value="1ST">1st Edition</option>
+            <option value="2ND">2nd Edition</option>
+            <option value="REVISED">Revised Edition</option>
+            <option value="V20">V20</option>
+            <option value="V5">V5</option>
           </select>
         </div>
       </div>

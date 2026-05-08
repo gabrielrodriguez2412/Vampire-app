@@ -1,17 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Trash2, Plus, Users, Save } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character } from "@/types";
+import { Character, EditionId } from "@/types";
 import { clans } from "@/data/clans";
-import { getText, filterByEdition, normalizeEditionId } from "@/utils/content";
+import { EDITION_LIST } from "@/data/editions";
+import { getText, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter } from "@/services/characterStorage";
+import { DynamicSheet } from "@/components/character/DynamicSheet";
+import { getSchemaForEdition } from "@/data/characterSheets/editions";
 
 export default function CharacterPage() {
   const { activeLanguage, activeEdition } = useAppContext();
@@ -19,342 +21,196 @@ export default function CharacterPage() {
   const { toast } = useToast();
 
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [activeTab, setActiveTab] = useState("list");
-  const [activeCharId, setActiveCharId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'list' | 'create' | 'sheet'>('list');
+  const [activeChar, setActiveChar] = useState<Character | null>(null);
 
-  // Form state
-  const [name, setName] = useState("");
-  const [clan, setClan] = useState("");
-  const [concept, setConcept] = useState("");
-  const [generation, setGeneration] = useState(13);
-  const [bloodPotency, setBloodPotency] = useState(1);
-  const [humanity, setHumanity] = useState(7);
-  const [hunger, setHunger] = useState(1);
-  const [attributes, setAttributes] = useState({
-    strength: 1, dexterity: 1, stamina: 1,
-    charisma: 1, manipulation: 1, composure: 1,
-    intelligence: 1, wits: 1, resolve: 1
-  });
+  // Create Form State
+  const [newName, setNewName] = useState("");
+  const [newClan, setNewClan] = useState("");
+  const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
 
-  const availableClans = clans.filter(c => c.editionAvailability.includes(activeEdition));
+  const availableClans = useMemo(() => filterByEdition(clans, newEdition), [newEdition]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('vtm-characters');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const normalized = parsed.map((c: any) => ({
-            ...c,
-            edition: normalizeEditionId(c.edition)
-          }));
-          setCharacters(normalized);
-        }
-      } catch(e) {}
-    }
+    setCharacters(getCharacters());
   }, []);
 
-  const saveCharacters = (chars: Character[]) => {
-    setCharacters(chars);
-    localStorage.setItem('vtm-characters', JSON.stringify(chars));
-  };
-
-  const handleSave = () => {
-    if (!name || !clan) {
-      toast({ title: strings.missingData, description: strings.nameAndClanRequired, variant: "destructive" });
+  const handleCreate = () => {
+    if (!newName.trim() || !newClan) {
+      toast({
+        title: strings.missingData,
+        description: strings.nameAndClanRequired,
+        variant: "destructive"
+      });
       return;
     }
-
-    const newChar: Character = {
-      id: crypto.randomUUID(),
-      name, clan, concept,
-      edition: activeEdition,
-      generation: activeEdition !== 'V5' ? generation : undefined,
-      bloodPotency: activeEdition === 'V5' ? bloodPotency : undefined,
-      humanity,
-      hunger: activeEdition === 'V5' ? hunger : undefined,
-      attributes,
-      createdAt: new Date().toISOString()
-    };
-
-    saveCharacters([...characters, newChar]);
-    setActiveCharId(newChar.id);
-    setActiveTab("sheet");
-    toast({ title: strings.saved, description: strings.characterCreated });
-    
-    // reset
-    setName(""); setClan(""); setConcept("");
+    const char = createEmptyCharacter(newEdition, newClan, newName);
+    const saved = saveCharacter(char);
+    setCharacters(getCharacters());
+    setActiveChar(saved);
+    setActiveView('sheet');
+    setNewName("");
+    setNewClan("");
+    toast({
+      title: strings.characterCreated,
+    });
   };
 
-  const deleteCharacter = (id: string, e: React.MouseEvent) => {
+  const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    saveCharacters(characters.filter(c => c.id !== id));
-    if (activeCharId === id) setActiveCharId(null);
+    deleteCharacter(id);
+    setCharacters(getCharacters());
   };
 
-  const viewCharacter = (id: string) => {
-    setActiveCharId(id);
-    setActiveTab("sheet");
+  const handleOpenSheet = (char: Character) => {
+    setActiveChar(char);
+    setActiveView('sheet');
   };
 
-  const updateAttr = (attr: keyof typeof attributes, val: number[]) => {
-    setAttributes(prev => ({...prev, [attr]: val[0]}));
-  };
+  // Debounced auto-save handler wrapper essentially
+  const handleSheetUpdate = useCallback((updatedChar: Character) => {
+    setActiveChar(updatedChar);
+    saveCharacter(updatedChar);
+  }, []);
 
-  const activeChar = characters.find(c => c.id === activeCharId);
-  const getClanName = (id: string) => {
-    const c = clans.find(x => x.id === id);
-    if (!c) return id;
-    if (c.alternateNames?.[activeEdition]) {
-      const altName = getText(c.alternateNames[activeEdition] as any, activeLanguage);
-      if (altName) return altName;
-    }
-    return getText(c.name, activeLanguage) || id;
+  const getClanIcon = (clanId: string) => {
+    const clan = clans.find(c => c.id === clanId);
+    return clan?.icon || "🦇";
+  };
+  const getClanName = (clanId: string) => {
+    const clan = clans.find(c => c.id === clanId);
+    return clan ? getText(clan.name, activeLanguage) : clanId;
   };
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
-      <div className="mb-8 flex items-center gap-3">
-        <User className="w-8 h-8 text-primary" />
-        <h1 className="text-3xl font-serif font-bold text-foreground">{strings.characterSection}</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
+          <User className="w-8 h-8" />
+          {strings.character}
+        </h1>
+        <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-card border border-border mb-6">
-          <TabsTrigger value="list" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"><Users className="w-4 h-4 mr-2"/> {strings.myCharacters}</TabsTrigger>
-          <TabsTrigger value="create" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"><Plus className="w-4 h-4 mr-2"/> {strings.createCharacter}</TabsTrigger>
-          <TabsTrigger value="sheet" disabled={!activeCharId} className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"><User className="w-4 h-4 mr-2"/> {strings.characterSheet}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="space-y-4">
-          {characters.length === 0 ? (
-            <div className="text-center py-20 text-muted-foreground border border-border rounded-lg bg-card/50">
-              <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p>{strings.noCharacters}</p>
-              <Button variant="outline" className="mt-4" onClick={() => setActiveTab("create")}>
-                {strings.createCharacter}
+      <AnimatePresence mode="wait">
+        {activeView === 'list' && (
+          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-serif">{strings.myCharacters}</h2>
+              <Button onClick={() => setActiveView('create')} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <Plus className="w-4 h-4" /> {strings.createCharacter}
               </Button>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <AnimatePresence>
+            
+            {characters.length === 0 ? (
+              <div className="text-center py-16 bg-card border border-border rounded-lg">
+                <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground">{strings.noCharacters}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {characters.map(char => (
-                  <motion.div key={char.id} layout initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                    <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors" onClick={() => viewCharacter(char.id)}>
-                      <CardHeader className="pb-2 flex flex-row justify-between items-start">
+                  <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors" onClick={() => handleOpenSheet(char)}>
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="font-serif text-xl">{char.name}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{getClanName(char.clan)} • {char.edition.toUpperCase()}</p>
+                          <CardTitle className="font-serif text-xl mb-1">{char.name}</CardTitle>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>{getClanIcon(char.clan)} {getClanName(char.clan)}</span>
+                            <span>•</span>
+                            <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
+                          </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive -mt-2" onClick={(e) => deleteCharacter(char.id, e)}>
+                        <Button variant="ghost" size="icon" onClick={(e) => handleDelete(char.id, e)} className="text-muted-foreground hover:text-red-400 hover:bg-red-950/30 -mt-2 -mr-2">
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm line-clamp-1">{char.concept || "Sin concepto"}</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                      </div>
+                    </CardHeader>
+                  </Card>
                 ))}
-              </AnimatePresence>
-            </div>
-          )}
-        </TabsContent>
+              </div>
+            )}
+          </motion.div>
+        )}
 
-        <TabsContent value="create">
-          <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-serif text-xl">{strings.createCharacter}</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-1 block">{strings.nameLabel}</label>
-                  <Input value={name} onChange={e=>setName(e.target.value)} className="bg-background" />
+        {activeView === 'create' && (
+          <motion.div key="create" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <Button variant="ghost" onClick={() => setActiveView('list')} className="mb-6 gap-2 text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
+            </Button>
+            
+            <Card className="bg-card border-border max-w-lg mx-auto">
+              <CardHeader>
+                <CardTitle className="font-serif text-2xl">{strings.sheet_create_new}</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{strings.sheet_name}</label>
+                  <Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-background border-border" placeholder="e.g. Jeanette Voerman" />
                 </div>
-                <div>
-                  <label className="text-sm font-medium mb-1 block">{strings.clanLabel}</label>
-                  <select value={clan} onChange={e=>setClan(e.target.value)} className="w-full flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm">
-                    <option value="" disabled>{strings.selectClan}</option>
-                    {availableClans.map(c => <option key={c.id} value={c.id}>{getText(c.name, activeLanguage)}</option>)}
+                
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{strings.sheet_select_edition}</label>
+                  <select 
+                    value={newEdition} 
+                    onChange={e => {
+                      setNewEdition(e.target.value as EditionId);
+                      setNewClan(""); // Reset clan when edition changes
+                    }}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                  >
+                    {EDITION_LIST.map(ed => (
+                      <option key={ed.id} value={ed.id}>{ed.name}</option>
+                    ))}
                   </select>
                 </div>
-                <div className="md:col-span-2">
-                  <label className="text-sm font-medium mb-1 block">{strings.conceptLabel}</label>
-                  <Input value={concept} onChange={e=>setConcept(e.target.value)} className="bg-background" />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm font-medium mb-2 block flex justify-between">
-                    {strings.humanity} <span>{humanity}</span>
-                  </label>
-                  <Slider value={[humanity]} onValueChange={v=>setHumanity(v[0])} min={1} max={10} step={1} />
-                </div>
-                
-                {activeEdition === 'V5' ? (
-                  <>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex justify-between">
-                        {strings.bloodPotency} <span>{bloodPotency}</span>
-                      </label>
-                      <Slider value={[bloodPotency]} onValueChange={v=>setBloodPotency(v[0])} min={0} max={10} step={1} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex justify-between">
-                        {strings.hunger} <span>{hunger}</span>
-                      </label>
-                      <Slider value={[hunger]} onValueChange={v=>setHunger(v[0])} min={0} max={5} step={1} />
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <label className="text-sm font-medium mb-2 block flex justify-between">
-                      {strings.generation_label} <span>{generation}ª</span>
-                    </label>
-                    <Slider value={[generation]} onValueChange={v=>setGeneration(v[0])} min={4} max={15} step={1} />
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t border-border pt-6 mt-6">
-                <h3 className="font-serif text-lg mb-4 text-primary">{strings.attributes}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {/* Physical */}
-                  <div className="space-y-4 bg-background/50 p-4 rounded border border-white/5">
-                    <h4 className="text-xs uppercase text-muted-foreground text-center tracking-widest font-bold border-b border-border pb-2">Físicos</h4>
-                    {['strength', 'dexterity', 'stamina'].map(attr => (
-                      <div key={attr}>
-                        <label className="text-xs flex justify-between mb-1 text-foreground/80">{strings[attr as keyof typeof strings] || attr} <span>{attributes[attr as keyof typeof attributes]}</span></label>
-                        <Slider value={[attributes[attr as keyof typeof attributes]]} onValueChange={v=>updateAttr(attr as any, v)} min={1} max={5} step={1} />
-                      </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{strings.sheet_select_clan}</label>
+                  <select 
+                    value={newClan} 
+                    onChange={e => setNewClan(e.target.value)}
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                  >
+                    <option value="" disabled>{strings.selectClan}</option>
+                    {availableClans.map(clan => (
+                      <option key={clan.id} value={clan.id}>{getText(clan.name, activeLanguage)}</option>
                     ))}
-                  </div>
-                  {/* Social */}
-                  <div className="space-y-4 bg-background/50 p-4 rounded border border-white/5">
-                    <h4 className="text-xs uppercase text-muted-foreground text-center tracking-widest font-bold border-b border-border pb-2">Sociales</h4>
-                    {['charisma', 'manipulation', 'composure'].map(attr => (
-                      <div key={attr}>
-                        <label className="text-xs flex justify-between mb-1 text-foreground/80">{strings[attr as keyof typeof strings] || attr} <span>{attributes[attr as keyof typeof attributes]}</span></label>
-                        <Slider value={[attributes[attr as keyof typeof attributes]]} onValueChange={v=>updateAttr(attr as any, v)} min={1} max={5} step={1} />
-                      </div>
-                    ))}
-                  </div>
-                  {/* Mental */}
-                  <div className="space-y-4 bg-background/50 p-4 rounded border border-white/5">
-                    <h4 className="text-xs uppercase text-muted-foreground text-center tracking-widest font-bold border-b border-border pb-2">Mentales</h4>
-                    {['intelligence', 'wits', 'resolve'].map(attr => (
-                      <div key={attr}>
-                        <label className="text-xs flex justify-between mb-1 text-foreground/80">{strings[attr as keyof typeof strings] || attr} <span>{attributes[attr as keyof typeof attributes]}</span></label>
-                        <Slider value={[attributes[attr as keyof typeof attributes]]} onValueChange={v=>updateAttr(attr as any, v)} min={1} max={5} step={1} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end bg-black/20 border-t border-border pt-4">
-              <Button onClick={handleSave} className="bg-primary hover:bg-primary/90 text-white"><Save className="w-4 h-4 mr-2"/> {strings.save}</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sheet">
-          {activeChar ? (
-            <Card className="bg-card border-border">
-              <CardHeader className="border-b border-border pb-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="font-serif text-3xl text-primary">{activeChar.name}</CardTitle>
-                    <p className="text-muted-foreground text-lg mt-1">{getClanName(activeChar.clan)} • {activeChar.concept}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                      {activeChar.edition.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-8">
-                
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
-                    <div className="text-xs text-muted-foreground uppercase">{strings.humanity}</div>
-                    <div className="text-2xl font-serif text-foreground mt-1">{activeChar.humanity}</div>
-                  </div>
-                  {activeChar.edition === 'V5' ? (
-                    <>
-                      <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
-                        <div className="text-xs text-muted-foreground uppercase">{strings.bloodPotency}</div>
-                        <div className="text-2xl font-serif text-foreground mt-1">{activeChar.bloodPotency}</div>
-                      </div>
-                      <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
-                        <div className="text-xs text-muted-foreground uppercase">{strings.hunger}</div>
-                        <div className="text-2xl font-serif text-red-500 mt-1">{activeChar.hunger}</div>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex-1 bg-background/50 p-4 rounded border border-white/5 text-center">
-                      <div className="text-xs text-muted-foreground uppercase">{strings.generation_label}</div>
-                      <div className="text-2xl font-serif text-foreground mt-1">{activeChar.generation}ª</div>
-                    </div>
-                  )}
+                  </select>
                 </div>
 
-                <div>
-                  <h3 className="font-serif text-xl border-b border-border pb-2 mb-4 text-primary">{strings.attributes}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Physical */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs uppercase text-muted-foreground border-b border-border/50 pb-1 mb-2">Físicos</h4>
-                      {['strength', 'dexterity', 'stamina'].map(attr => (
-                        <div key={attr} className="flex justify-between items-center text-sm">
-                          <span>{strings[attr as keyof typeof strings] || attr}</span>
-                          <div className="flex gap-1">
-                            {Array.from({length: 5}).map((_, i) => (
-                              <div key={i} className={`w-3 h-3 rounded-full ${i < activeChar.attributes[attr as keyof typeof activeChar.attributes] ? 'bg-primary' : 'bg-background border border-border'}`} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Social */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs uppercase text-muted-foreground border-b border-border/50 pb-1 mb-2">Sociales</h4>
-                      {['charisma', 'manipulation', 'composure'].map(attr => (
-                        <div key={attr} className="flex justify-between items-center text-sm">
-                          <span>{strings[attr as keyof typeof strings] || attr}</span>
-                          <div className="flex gap-1">
-                            {Array.from({length: 5}).map((_, i) => (
-                              <div key={i} className={`w-3 h-3 rounded-full ${i < activeChar.attributes[attr as keyof typeof activeChar.attributes] ? 'bg-primary' : 'bg-background border border-border'}`} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Mental */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs uppercase text-muted-foreground border-b border-border/50 pb-1 mb-2">Mentales</h4>
-                      {['intelligence', 'wits', 'resolve'].map(attr => (
-                        <div key={attr} className="flex justify-between items-center text-sm">
-                          <span>{strings[attr as keyof typeof strings] || attr}</span>
-                          <div className="flex gap-1">
-                            {Array.from({length: 5}).map((_, i) => (
-                              <div key={i} className={`w-3 h-3 rounded-full ${i < activeChar.attributes[attr as keyof typeof activeChar.attributes] ? 'bg-primary' : 'bg-background border border-border'}`} />
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
+                <Button onClick={handleCreate} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-4">
+                  {strings.createCharacter}
+                </Button>
               </CardContent>
             </Card>
-          ) : (
-            <div className="text-center py-10 text-muted-foreground">{strings.selectCharacterHint}</div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </motion.div>
+        )}
+
+        {activeView === 'sheet' && activeChar && (
+          <motion.div key="sheet" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
+            <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+              <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
+                <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
+              </Button>
+              <div className="flex items-center gap-4">
+                <div className="text-xs uppercase tracking-widest text-muted-foreground hidden sm:block">
+                  {strings.saved}
+                </div>
+                <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
+                  {activeChar.edition}
+                </div>
+              </div>
+            </div>
+
+            <DynamicSheet 
+              character={activeChar} 
+              schema={getSchemaForEdition(activeChar.edition)} 
+              onChange={handleSheetUpdate} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

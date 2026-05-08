@@ -69,20 +69,63 @@ export interface GlossaryEntry {
   related: string[];
 }
 
-export interface Character {
+export interface BaseCharacter {
   id: string;
   name: string;
-  clan: string;
-  concept: string;
+  playerName?: string;
+  chronicle?: string;
+  concept?: string;
   edition: EditionId;
-  generation?: number;
-  bloodPotency?: number;
-  humanity: number;
-  hunger?: number;
-  attributes: {
-    strength: number; dexterity: number; stamina: number;
-    charisma: number; manipulation: number; composure: number;
-    intelligence: number; wits: number; resolve: number;
-  };
+  clan: string;
+  sire?: string;
+  sect?: string;
+  notes?: string;
   createdAt: string;
+  updatedAt: string;
 }
+
+export interface V5Character extends BaseCharacter {
+  edition: 'V5';
+  bloodPotency: number;
+  hunger: number;
+  humanity: number;
+  ambition?: string;
+  desire?: string;
+  predatorType?: string;
+  attributes: Record<string, number>;
+  skills: Record<string, number>;
+  disciplines: Record<string, number>;
+  advantages?: string;
+  flaws?: string;
+  touchstones?: string;
+  convictions?: string;
+  resonance?: string;
+  health: { damage: number, aggravated: number, max: number };
+  willpower: { damage: number, aggravated: number, max: number };
+  experience: number;
+}
+
+export interface ClassicCharacter extends BaseCharacter {
+  edition: Exclude<EditionId, 'V5'>;
+  generation: number;
+  nature?: string;
+  demeanor?: string;
+  attributes: Record<string, number>;
+  abilities: Record<string, number>;
+  disciplines: Record<string, number>;
+  backgrounds: Record<string, number>;
+  virtues: {
+    conscience: number;
+    selfControl: number;
+    courage: number;
+  };
+  humanity: number;
+  bloodPool: { current: number, max: number };
+  willpower: { current: number, max: number };
+  health: number;
+  merits?: string;
+  flaws?: string;
+  experience: number;
+}
+
+export type Character = V5Character | ClassicCharacter;

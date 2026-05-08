@@ -41,6 +41,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Root health check for Railway deployment checks
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.use("/api", router);
 
 export default app;

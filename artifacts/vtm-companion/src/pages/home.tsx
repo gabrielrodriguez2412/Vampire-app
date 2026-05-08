@@ -70,7 +70,7 @@ export default function Home() {
         <div className="flex overflow-x-auto gap-6 pb-6 snap-x snap-mandatory [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-track]:bg-[#0e0e0e] [&::-webkit-scrollbar-thumb]:bg-[#8b0000]">
           {featuredClans.map(clan => {
             const clanName = getTextWithFallback(clan.name, activeLanguage);
-            const clanDesc = getTextWithFallback(clan.description, activeLanguage);
+            const clanDesc = getTextWithFallback(clan.summary, activeLanguage);
             return (
               <Link key={clan.id} href={`/compendium/clanes/${clan.id}`}>
                 <div className="flex-none w-72 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">

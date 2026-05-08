@@ -46,12 +46,12 @@ export function useSearch(query: string) {
     const filteredDiscs = filterByEdition(disciplines, edition);
     filteredDiscs.forEach(disc => {
       const name = disc.name; // name is string
-      const desc = getText(disc.description, lang);
+      const desc = getText(disc.description, lang) || '';
       if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: disc.id,
           title: name,
-          description: getText(disc.type, lang),
+          description: getText(disc.type, lang) || '',
           type: 'disciplina',
           url: `/disciplinas?id=${disc.id}`
         });
@@ -60,8 +60,8 @@ export function useSearch(query: string) {
 
     const filteredRules = filterByEdition(rules, edition);
     filteredRules.forEach(rule => {
-      const title = getText(rule.title, lang);
-      const desc = getText(rule.shortExplanation, lang);
+      const title = getText(rule.title, lang) || '';
+      const desc = getText(rule.shortExplanation, lang) || '';
       if (title.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: rule.id,
@@ -74,13 +74,13 @@ export function useSearch(query: string) {
     });
 
     glossary.forEach(term => {
-      const t = getText(term.term, lang);
-      const d = getText(term.definition, lang);
+      const t = getText(term.term, lang) || '';
+      const d = getText(term.definition, lang) || '';
       if (t.toLowerCase().includes(lowerQuery) || d.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: term.id,
           title: t,
-          description: d.substring(0, 60) + '...',
+          description: d.length > 60 ? d.substring(0, 60) + '...' : d,
           type: 'glosario',
           url: `/glosario?id=${term.id}`
         });

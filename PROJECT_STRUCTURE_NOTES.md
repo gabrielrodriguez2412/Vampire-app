@@ -55,8 +55,17 @@ To add minor bloodlines in the future:
 5. Provide a `.png` banner image in `artifacts/vtm-companion/public/images/`.
 
 ## 6. Deployment Workflow
-This project uses **Railway** via Nixpacks, as defined in `nixpacks.frontend.toml` and root `package.json`.
-When deploying the frontend service, Railway runs:
-- **Build command:** `pnpm run railway:frontend:build` (which delegates to `vtm-companion`)
+This project uses **Railway** via Nixpacks, as defined in `nixpacks.toml` (for backend) and `nixpacks.frontend.toml` (for frontend), alongside the root `package.json`.
+
+### Frontend Deployment
+- **Build command:** `pnpm run railway:frontend:build` (delegates to `artifacts/vtm-companion`)
 - **Start command:** `pnpm run railway:frontend:start`
-No Replit-specific configurations are required for deployment. You can safely deploy this repo to Vercel, Netlify, or Railway by pointing the build settings to `artifacts/vtm-companion`.
+- **Output Directory:** `artifacts/vtm-companion/dist`
+
+### Backend Deployment
+- **Build command:** `pnpm --filter @workspace/api-server run build`
+- **Start command:** `pnpm --filter @workspace/api-server run start`
+- **Health Endpoint:** The backend automatically binds to `0.0.0.0` and exposes a `GET /health` root endpoint. Railway requires this binding and a 200 OK response from the health endpoint to mark the deployment as successful.
+
+## 7. Known Quirks and History
+- **Edition IDs:** Earlier iterations of the codebase used lowercase strings like `"v1"`, `"v2"`, `"v5"`. These have all been migrated to strict uppercase constants (`"1ST"`, `"2ND"`, `"V5"`) to prevent magic string typos. A helper `normalizeEditionId` exists in `src/utils/content.ts` to ensure backwards compatibility with any old localStorage data.

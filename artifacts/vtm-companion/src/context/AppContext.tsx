@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { LangCode, EditionId } from '../types';
+import { normalizeEditionId } from '../utils/content';
 
 interface AppContextType {
   activeLanguage: LangCode;
@@ -16,15 +17,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   });
 
   const [activeEdition, setActiveEdition] = useState<EditionId>(() => {
-    const saved = localStorage.getItem('vtm-edition');
-    if (!saved) return 'V5';
-    const normalized = saved.toUpperCase();
-    if (normalized === 'V1' || normalized === '1ST') return '1ST';
-    if (normalized === 'V2' || normalized === '2ND') return '2ND';
-    if (normalized === 'REVISED') return 'REVISED';
-    if (normalized === 'V20') return 'V20';
-    if (normalized === 'V5') return 'V5';
-    return 'V5';
+    return normalizeEditionId(localStorage.getItem('vtm-edition'));
   });
 
   useEffect(() => {

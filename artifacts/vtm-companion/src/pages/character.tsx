@@ -10,7 +10,7 @@ import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character } from "@/types";
 import { clans } from "@/data/clans";
-import { getText, filterByEdition } from "@/utils/content";
+import { getText, filterByEdition, normalizeEditionId } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CharacterPage() {
@@ -42,7 +42,14 @@ export default function CharacterPage() {
     const saved = localStorage.getItem('vtm-characters');
     if (saved) {
       try {
-        setCharacters(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const normalized = parsed.map((c: any) => ({
+            ...c,
+            edition: normalizeEditionId(c.edition)
+          }));
+          setCharacters(normalized);
+        }
       } catch(e) {}
     }
   }, []);

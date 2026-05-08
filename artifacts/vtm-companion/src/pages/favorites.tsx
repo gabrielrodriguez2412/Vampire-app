@@ -50,13 +50,13 @@ export default function Favorites() {
                     <motion.div key={clan.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i*0.05 }}>
                       <Link href={`/compendium/clanes/${clan.id}`}>
                         <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full relative group">
-                          <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: clan.color }} />
+                          <div className="absolute top-0 left-0 right-0 h-1 bg-primary/20" />
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
                               <CardTitle className="font-serif flex items-center gap-2">
                                 {clan.icon} {getText(clan.name, activeLanguage)}
                               </CardTitle>
-                              <CardDescription className="mt-1">{getText(clan.identity, activeLanguage)}</CardDescription>
+                              <CardDescription className="mt-1">{getText(clan.sect, activeLanguage)}</CardDescription>
                             </div>
                             <div onClick={e => e.preventDefault()}><FavoriteButton id={clan.id} /></div>
                           </CardHeader>

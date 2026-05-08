@@ -17,20 +17,19 @@ export interface Language {
 
 export interface ClanEntry {
   id: string;
-  editions: EditionId[];
   name: Record<LangCode, string>;
-  description: Record<LangCode, string>;
-  identity: Record<LangCode, string>;
+  alternateNames?: Partial<Record<EditionId, Record<LangCode, string>>>;
+  editionAvailability: EditionId[];
+  sect: Record<LangCode, string>;
+  summary: Record<LangCode, string>;
   weakness: Record<LangCode, string>;
   disciplines: string[];
-  bloodlines?: string[];
-  playstyle: Record<LangCode, string>;
-  roleplayIdeas: Record<LangCode, string[]>;
-  relationships: Record<LangCode, string>;
-  color: string;
   icon: string;
-  type: 'clan' | 'bloodline';
-  parentClan?: string;
+  bannerImage: string;
+  colorTheme: string;
+  lore: Record<LangCode, string>;
+  playableStatus: Partial<Record<EditionId, boolean>>;
+  sourceEdition: EditionId;
 }
 
 export interface DisciplineEntry {

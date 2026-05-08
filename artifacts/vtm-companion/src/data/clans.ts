@@ -1,298 +1,265 @@
-import { ClanEntry } from "../types";
+import { ClanEntry, LangCode } from "../types";
 
-const fallbackStr = (val: string) => ({ es: val, en: val, pt: val, fr: val, de: val, it: val });
-const fallbackArr = (val: string[]) => ({ es: val, en: val, pt: val, fr: val, de: val, it: val });
+const en = (text: string): Record<LangCode, string> => ({
+  en: text,
+  es: "",
+  pt: "",
+  fr: "",
+  de: "",
+  it: ""
+});
 
 export const clans: ClanEntry[] = [
   {
     id: "brujah",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Brujah"),
-    description: {
-      es: "Los Brujah son rebeldes, idealistas y luchadores que defienden causas nobles y caóticas. Históricamente fueron reyes filósofos, pero en las noches modernas son más conocidos por su temperamento explosivo y su tendencia a la subversión de las estructuras de poder.",
-      en: "The Brujah are rebels, idealists, and fighters who champion causes both noble and chaotic. Historically they were philosopher-kings, but in modern nights they are better known for their explosive temper and their tendency to subvert power structures.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    identity: {
-      es: "La Chusma, Idealistas, Filósofos",
-      en: "The Rabble, Idealists, Philosophers",
-      pt: "", fr: "", de: "", it: ""
-    },
-    weakness: {
-      es: "Temperamento violento: Su bestia es provocada fácilmente. Tienen mayor dificultad para resistir el frenesí en cualquier situación que provoque ira.",
-      en: "Violent Temper: Their beast is easily provoked. They have a higher difficulty resisting frenzy in any situation that provokes anger.",
-      pt: "", fr: "", de: "", it: ""
-    },
+    name: en("Brujah"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla / Anarch"),
+    summary: en("Rebels, idealists, and fighters who champion causes both noble and chaotic. Historically they were philosopher-kings, but in modern nights they are known for their explosive temper."),
+    weakness: en("Violent Temper: Their beast is easily provoked. They have a higher difficulty resisting frenzy in any situation that provokes anger."),
     disciplines: ["celerity", "potence", "presence"],
-    playstyle: {
-      es: "Agresivo, social e imponente físicamente. Excelentes para liderar movimientos de masas o en combate directo.",
-      en: "Aggressive, social, and physically imposing. Excellent at leading mass movements or in direct combat.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    roleplayIdeas: {
-      es: ["Un rockero punk antiautoritario.", "Un excapitán de debate convertido en activista.", "Un veterano desilusionado de un conflicto reciente.", "Un sindicalista radical.", "Un líder estudiantil extremista."],
-      en: ["An anti-authoritarian punk rocker.", "A former debate team captain turned activist.", "A disillusioned veteran of a recent conflict.", "A radical union leader.", "An extremist student leader."],
-      pt: [], fr: [], de: [], it: []
-    },
-    relationships: {
-      es: "Desconfían de los Ventrue, se relacionan con los Gangrel por su mentalidad de forasteros. Odian a los Tremere por rencores ancestrales.",
-      en: "Distrust Ventrue, relate to Gangrel due to their outsider mentality. Hate Tremere due to ancient grudges.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    color: "#8B0000",
-    icon: "🔥"
+    icon: "🔥",
+    bannerImage: "/images/brujah.png",
+    colorTheme: "#8B0000",
+    lore: en("The Brujah are a clan of passionate idealists and fierce rebels. In nights past, they were the philosopher-kings of Carthage, ruling openly alongside humanity. However, their utopia was destroyed by the Ventrue, a betrayal they have never forgotten or forgiven. Today, they are the most prominent supporters of the Anarch Movement, constantly fighting against the oppressive structure of the Camarilla and the elders who seek to control them."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "gangrel",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Gangrel"),
-    description: fallbackStr("Feral survivors."),
-    identity: fallbackStr("Outcasts, Wanderers"),
-    weakness: fallbackStr("Animal Features."),
+    name: en("Gangrel"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent / Anarch"),
+    summary: en("Feral wanderers and shapeshifters who are closer to the Beast than any other clan."),
+    weakness: en("Animal Features: Every time a Gangrel frenzies, they gain an animalistic feature, which permanently reduces their Social attributes."),
     disciplines: ["animalism", "fortitude", "protean"],
-    playstyle: fallbackStr("Independent."),
-    roleplayIdeas: fallbackArr(["Urban explorer."]),
-    relationships: fallbackStr("Respect Brujah."),
-    color: "#556B2F",
-    icon: "🐺"
+    icon: "🐺",
+    bannerImage: "/images/gangrel.png",
+    colorTheme: "#556B2F",
+    lore: en("The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, the Gangrel embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself. They formally left the Camarilla shortly before the modern nights, choosing to forge their own paths independent of the sect's politics."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "malkavian",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Malkavian"),
-    description: fallbackStr("Seers and mad prophets."),
-    identity: fallbackStr("Oracles, Lunatics"),
-    weakness: fallbackStr("Affliction."),
+    name: en("Malkavian"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla"),
+    summary: en("Oracles, seers, and lunatics blessed (and cursed) with uncontrollable insights."),
+    weakness: en("Affliction: Every Malkavian suffers from an incurable derangement or psychological condition that permanently alters their perception of reality."),
     disciplines: ["auspex", "dominate", "obfuscate"],
-    playstyle: fallbackStr("Mysterious."),
-    roleplayIdeas: fallbackArr(["Conspiracy theorist."]),
-    relationships: fallbackStr("Fascinate Toreador."),
-    color: "#4B0082",
-    icon: "👁️"
+    icon: "👁️",
+    bannerImage: "/images/malkavian.png",
+    colorTheme: "#4B0082",
+    lore: en("The Malkavians are a deeply fractured clan, bound together by the Madness Network (the Cobweb) that constantly feeds them whispers, visions, and shared hallucinations. Other Kindred view them as unpredictable lunatics or dangerous wildcards, but the Malkavians possess an undeniable connection to truth and prophecy that others cannot see. Their insights make them valuable to the Camarilla, even as their madness terrifies their allies."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "nosferatu",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Nosferatu"),
-    description: {
-      es: "Horriblemente deformados por el Abrazo, los Nosferatu se ven obligados a esconderse en las sombras y las cloacas. Se han convertido en los principales corredores de información y espías de la Estirpe, sabiendo más de los secretos de la ciudad que cualquier otro clan.",
-      en: "Horrifically deformed by the Embrace, the Nosferatu are forced to hide in the shadows and sewers. They have become the premier information brokers and spies of the Kindred, knowing more of the city's secrets than any other clan.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    identity: {
-      es: "Ratas de Alcantarilla, Corredores de Información",
-      en: "Sewer Rats, Information Brokers",
-      pt: "", fr: "", de: "", it: ""
-    },
-    weakness: {
-      es: "Apariencia Hedionda: Su apariencia es repulsiva para los mortales y la Estirpe por igual. Automáticamente fallan las tiradas sociales que involucren apariencia o primeras impresiones.",
-      en: "Hideous Appearance: Their appearance is repulsive to mortals and Kindred alike. They automatically fail social rolls involving appearance or first impressions.",
-      pt: "", fr: "", de: "", it: ""
-    },
+    name: en("Nosferatu"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla"),
+    summary: en("Hideously deformed information brokers who rule the underground and the shadows."),
+    weakness: en("Hideous Appearance: The Embrace twists their bodies into monstrous forms. They automatically fail social rolls involving appearance or first impressions, and their existence is a walking masquerade breach."),
     disciplines: ["animalism", "obfuscate", "potence"],
-    playstyle: {
-      es: "Sigiloso, investigativo, enfocado en recopilar y vender información. Fuertes aliados en las sombras.",
-      en: "Stealthy, investigative, focused on gathering and selling information. Strong allies in the shadows.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    roleplayIdeas: {
-      es: ["Un hacker que opera desde túneles abandonados.", "Un antiguo mendigo que ahora controla una red de espías.", "Un monstruo trágico que protege a los marginados.", "Un recolector de secretos corporativos."],
-      en: ["A hacker who operates from abandoned tunnels.", "A former beggar who now controls a spy network.", "A tragic monster who protects the marginalized.", "A collector of corporate secrets."],
-      pt: [], fr: [], de: [], it: []
-    },
-    relationships: {
-      es: "Comercian con todos pero confían en pocos. Mantienen relaciones pragmáticas con los Tremere.",
-      en: "Trade with all but trust few. Maintain pragmatic relationships with Tremere.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    color: "#2F4F4F",
-    icon: "🦇"
+    icon: "🦇",
+    bannerImage: "/images/nosferatu.png",
+    colorTheme: "#2F4F4F",
+    lore: en("Forced to hide from mortal society due to their horrific visages, the Nosferatu dwell in sewers, crypts, and abandoned tunnels. They compensate for their inability to move openly by becoming the premier spies and information brokers of the Kindred world. What a Nosferatu knows can topple princes. Despite their monstrous appearance, they often display more humanity and camaraderie than the so-called 'beautiful' clans."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "toreador",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Toreador"),
-    description: fallbackStr("Aesthetes and social manipulators."),
-    identity: fallbackStr("Degenerates, Artists, Divas"),
-    weakness: fallbackStr("Aesthetic Fixation."),
+    name: en("Toreador"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla"),
+    summary: en("Aesthetes, artists, and social manipulators addicted to beauty and sensation."),
+    weakness: en("Aesthetic Fixation: When confronted with true beauty, they can become completely enraptured and incapacitated for hours, oblivious to their surroundings."),
     disciplines: ["auspex", "celerity", "presence"],
-    playstyle: fallbackStr("Charming, perceptive."),
-    roleplayIdeas: fallbackArr(["Struggling artist."]),
-    relationships: fallbackStr("Adore Brujah's passion."),
-    color: "#C71585",
-    icon: "🌹"
+    icon: "🌹",
+    bannerImage: "/images/toreador.png",
+    colorTheme: "#C71585",
+    lore: en("The Toreador consider themselves the connoisseurs of human passion, art, and beauty. They effortlessly navigate mortal high society, pulling the strings of cultural icons, politicians, and socialites. To a Toreador, unlife is a performance, and boredom is the true enemy. Their deep connection to human emotion allows them to feign life better than most, but their obsession with beauty can easily become a deadly distraction."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "tremere",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Tremere"),
-    description: {
-      es: "Hechiceros de sangre secretos y usurpadores, los Tremere son un clan de eruditos y ocultistas. Robaron la inmortalidad a través de la magia y desde entonces han luchado por asegurar su posición en la Camarilla con sus poderes esotéricos inigualables.",
-      en: "Secretive blood sorcerers and usurpers, the Tremere are a clan of scholars and occultists. They stole immortality through magic and have since fought to secure their position in the Camarilla with their unparalleled esoteric powers.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    identity: {
-      es: "Brujos, Usurpadores",
-      en: "Warlocks, Usurpers",
-      pt: "", fr: "", de: "", it: ""
-    },
-    weakness: {
-      es: "Sangre Deficiente / Vínculo Sanguíneo: En V5, su sangre ya no puede vincular a otros vástagos. En ediciones anteriores, estaban fácilmente vinculados a los ancianos de su clan.",
-      en: "Deficient Blood / Blood Bond: In V5, their blood can no longer blood bond other Kindred. In earlier editions, they were easily bound to the elders of their clan.",
-      pt: "", fr: "", de: "", it: ""
-    },
+    name: en("Tremere"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla"),
+    summary: en("Secretive warlocks and scholars who stole immortality through dark blood magic."),
+    weakness: en("Blood Defect: In earlier editions, they were easily bound to clan elders. In V5, their blood is too weak to blood bond other Kindred."),
     disciplines: ["auspex", "blood_sorcery", "dominate"],
-    playstyle: {
-      es: "Místico, académico, centrado en el control, el ocultismo y la magia ritual. Poderosos pero a menudo desconfiados.",
-      en: "Mystical, academic, focused on control, the occult, and ritual magic. Powerful but often distrusted.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    roleplayIdeas: {
-      es: ["Un anticuario ocultista.", "Un ex profesor universitario despedido por prácticas poco éticas.", "Un investigador corporativo sin escrúpulos.", "Un mago hermético obsesionado con el poder."],
-      en: ["An occult antiquarian.", "A former university professor fired for unethical practices.", "An unscrupulous corporate researcher.", "An hermetic mage obsessed with power."],
-      pt: [], fr: [], de: [], it: []
-    },
-    relationships: {
-      es: "Rivales de los Ventrue por la influencia en la Camarilla. Odiados por los Salubri y los Gangrel.",
-      en: "Rivals of the Ventrue for influence in the Camarilla. Hated by the Salubri and Gangrel.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    color: "#800000",
-    icon: "🩸"
+    icon: "🩸",
+    bannerImage: "/images/tremere.png",
+    colorTheme: "#800000",
+    lore: en("Originally a cabal of mortal hermetic mages, the Tremere stole the Embrace in the Dark Ages to escape their fading magic. They quickly adapted, developing Blood Sorcery (Thaumaturgy) to defend themselves against enraged clans like the Tzimisce and Salubri. For centuries, the Tremere operated under a rigid, pyramidal hierarchy from Vienna. However, the destruction of the Prime Chantry in modern nights shattered the pyramid, leaving the clan fractured but fiercely independent."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "ventrue",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Ventrue"),
-    description: {
-      es: "Los gobernantes autoproclamados de la Estirpe, los Ventrue han reclamado la cima de la jerarquía vampírica durante milenios. Se mueven en los círculos de la alta sociedad, las finanzas y el poder corporativo, exigiendo respeto y sumisión.",
-      en: "The self-proclaimed rulers of the Kindred, the Ventrue have claimed the top of the vampiric hierarchy for millennia. They move in the circles of high society, finance, and corporate power, demanding respect and submission.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    identity: {
-      es: "Sangres Azules, Tiranos",
-      en: "Blue Bloods, Tyrants",
-      pt: "", fr: "", de: "", it: ""
-    },
-    weakness: {
-      es: "Gustos Exquisitos: Los Ventrue solo pueden alimentarse de un tipo específico de mortal (por ejemplo, sacerdotes, vírgenes, banqueros) y vomitarán cualquier otra sangre.",
-      en: "Rarefied Tastes: Ventrue can only feed from a specific type of mortal (e.g., priests, virgins, bankers) and will vomit any other blood.",
-      pt: "", fr: "", de: "", it: ""
-    },
+    name: en("Ventrue"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Camarilla"),
+    summary: en("The self-proclaimed kings and aristocratic rulers of the vampiric hierarchy."),
+    weakness: en("Rarefied Tastes: A Ventrue can only feed from a highly specific type of mortal (e.g., priests, virgins, bankers). They will vomit any other blood."),
     disciplines: ["dominate", "fortitude", "presence"],
-    playstyle: {
-      es: "Líderes natos, imponentes, resistentes y centrados en controlar mentes e instituciones mortales.",
-      en: "Born leaders, commanding, resilient, and focused on controlling mortal minds and institutions.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    roleplayIdeas: {
-      es: ["Un implacable saqueador corporativo.", "Un político carismático con una agenda oculta.", "Un viejo aristócrata aferrado a su legado.", "Un jefe del crimen organizado con modales exquisitos."],
-      en: ["A ruthless corporate raider.", "A charismatic politician with a hidden agenda.", "An old aristocrat clinging to their legacy.", "An organized crime boss with exquisite manners."],
-      pt: [], fr: [], de: [], it: []
-    },
-    relationships: {
-      es: "Gobiernan la Camarilla. Esperan obediencia de los Toreador y compiten con los Tremere.",
-      en: "Rule the Camarilla. Expect obedience from the Toreador and compete with Tremere.",
-      pt: "", fr: "", de: "", it: ""
-    },
-    color: "#000080",
-    icon: "👑"
-  },
-  {
-    id: "banu_haqim",
-    editions: ["v5"],
-    type: "clan",
-    name: fallbackStr("Banu Haqim"),
-    description: fallbackStr("Assassins, judges, and scholars of the blood."),
-    identity: fallbackStr("Assassins, Judges"),
-    weakness: fallbackStr("Blood Addiction."),
-    disciplines: ["blood_sorcery", "celerity", "obfuscate"],
-    playstyle: fallbackStr("Lethal, disciplined."),
-    roleplayIdeas: fallbackArr(["Street vigilante."]),
-    relationships: fallbackStr("Judge Tremere."),
-    color: "#2E2B5F",
-    icon: "⚖️"
-  },
-  {
-    id: "hecata",
-    editions: ["v5"],
-    type: "clan",
-    name: fallbackStr("Hecata"),
-    description: fallbackStr("A twisted family of necromancers."),
-    identity: fallbackStr("Necromancers, The Clan of Death"),
-    weakness: fallbackStr("Painful Kiss."),
-    disciplines: ["auspex", "fortitude", "oblivion"],
-    playstyle: fallbackStr("Morbid, wealthy."),
-    roleplayIdeas: fallbackArr(["Mortician."]),
-    relationships: fallbackStr("Isolate from Camarilla."),
-    color: "#4A4A4A",
-    icon: "💀"
+    icon: "👑",
+    bannerImage: "/images/ventrue.png",
+    colorTheme: "#000080",
+    lore: en("The Ventrue believe they are destined to rule. Since the days of Rome and the formation of the Camarilla, they have been the undisputed leaders of Kindred society, shaping policy and enforcing the Masquerade. They embrace politicians, CEOs, military leaders, and aristocrats. While their arrogance makes them many enemies, their unparalleled discipline and power base make them difficult to overthrow. A Ventrue's word is law."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "lasombra",
-    editions: ["v5"],
-    type: "clan",
-    name: fallbackStr("Lasombra"),
-    description: fallbackStr("Ruthless social Darwinists."),
-    identity: fallbackStr("Keepers, Shadow Manipulators"),
-    weakness: fallbackStr("Defective Reflection."),
+    name: en("Lasombra"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Sabbat / Camarilla"),
+    summary: en("Ruthless social Darwinists who manipulate shadows and dominate the church and state."),
+    weakness: en("Defective Reflection: They cast no reflection in mirrors or modern recording devices, and modern technology actively glitches in their presence."),
     disciplines: ["dominate", "oblivion", "potence"],
-    playstyle: fallbackStr("Ambitious, manipulative."),
-    roleplayIdeas: fallbackArr(["Corrupt priest."]),
-    relationships: fallbackStr("Compete with Ventrue."),
-    color: "#1A1A1A",
-    icon: "🌑"
+    icon: "🌑",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#1A1A1A",
+    lore: en("Once the proud leaders of the Sabbat, the Lasombra are masters of manipulation who see the world purely in terms of power and control. They have historically controlled religious institutions and noble families, shaping them from the shadows. Following the Beckoning and internal schisms, a large portion of the clan defected to the Camarilla, seeking stability over the increasingly fanatical crusade of the Sabbat."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
-    id: "ministry",
-    editions: ["v5"],
-    type: "clan",
-    name: fallbackStr("Ministry"),
-    description: fallbackStr("Tempters, liberators, and cult leaders."),
-    identity: fallbackStr("Followers of Set"),
-    weakness: fallbackStr("Light Sensitivity."),
+    id: "tzimisce",
+    name: en("Tzimisce"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Sabbat / Independent"),
+    summary: en("Inhuman fleshcrafters and territorial tyrants who have forsaken their humanity."),
+    weakness: en("Territorial Dependance: A Tzimisce must rest near earth from their birthplace or their domain. Failing to do so halves their dice pools."),
+    disciplines: ["animalism", "auspex", "protean"],
+    icon: "🐉",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#3E000F",
+    lore: en("The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
+  },
+  {
+    id: "assamite",
+    name: en("Assamite"),
+    alternateNames: {
+      v5: en("Banu Haqim")
+    },
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent / Camarilla"),
+    summary: en("Assassins, judges, and scholars of the blood from the Middle East."),
+    weakness: en("Blood Curse/Addiction: In earlier editions, they were cursed to take damage from Kindred blood. In V5, they have a terrible addiction to vampiric vitae."),
+    disciplines: ["blood_sorcery", "celerity", "obfuscate"],
+    icon: "⚖️",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#2E2B5F",
+    lore: en("Historically an independent clan of assassins and viziers from Alamut, the Assamites exacted their own form of justice on the Kindred world. Known as the Banu Haqim in modern nights, a massive schism has split the clan. While the traditionalist warriors remain independent or join the Ashirra, a significant sect of judges and scholars have officially joined the Camarilla, offering their services as sheriffs and enforcers."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
+  },
+  {
+    id: "followers_of_set",
+    name: en("Followers of Set"),
+    alternateNames: {
+      v5: en("The Ministry")
+    },
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent / Anarch"),
+    summary: en("Tempters, liberators, and religious zealots who seek to corrupt through vice."),
+    weakness: en("Light Sensitivity: They suffer far greater damage from sunlight than other vampires, and bright lights cause physical pain and subtract from dice pools."),
     disciplines: ["obfuscate", "presence", "protean"],
-    playstyle: fallbackStr("Seductive, subversive."),
-    roleplayIdeas: fallbackArr(["Charismatic self-help guru."]),
-    relationships: fallbackStr("Tempt Toreador."),
-    color: "#B8860B",
-    icon: "🐍"
+    icon: "🐍",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#B8860B",
+    lore: en("Traditionally an independent cult worshipping the dark god Set, they offer forbidden knowledge and earthly pleasures to ensnare mortals and Kindred alike. To them, corruption is a tool of spiritual liberation. Rebranding themselves as 'The Ministry' in modern nights, they have shifted their focus to a broader message of freedom and self-actualization, recently allying with the Anarch Movement after being rejected by the Camarilla."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
+  },
+  {
+    id: "giovanni",
+    name: en("Giovanni"),
+    alternateNames: {
+      v5: en("Hecata")
+    },
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent"),
+    summary: en("A twisted, incestuous Venetian family of necromancers and merchants."),
+    weakness: en("Painful Kiss: Their bite is excruciatingly painful, causing damage rather than the ecstatic pleasure associated with the vampiric Kiss."),
+    disciplines: ["auspex", "fortitude", "oblivion"],
+    icon: "💀",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#4A4A4A",
+    lore: en("The Giovanni were unique among clans for exclusively Embracing within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance. In recent times, devastating losses forced the Giovanni to merge with the remnants of the Cappadocians, Samedi, and other death-cults to form the Hecata—the united Clan of Death."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "ravnos",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Ravnos"),
-    description: fallbackStr("Doomed wanderers and masters of illusion."),
-    identity: fallbackStr("Deceivers, Rogues"),
-    weakness: fallbackStr("Doomed to Wander."),
+    name: en("Ravnos"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent"),
+    summary: en("Doomed wanderers, rogues, and masters of illusion from the East."),
+    weakness: en("Doomed to Wander / Vice: If they sleep in the same place more than once, they risk burning. They also suffer from a specific criminal vice they must indulge."),
     disciplines: ["animalism", "obfuscate", "presence"],
-    playstyle: fallbackStr("Tricky, mobile."),
-    roleplayIdeas: fallbackArr(["Grifter."]),
-    relationships: fallbackStr("Evade Ventrue."),
-    color: "#CD5C5C",
-    icon: "🃏"
+    icon: "🃏",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#CD5C5C",
+    lore: en("The Ravnos were a sprawling clan of wanderers, thieves, and tricksters with deep ties to the East and mastery over illusions (Chimerstry). Their numbers were absolutely decimated during the Week of Nightmares when their Antediluvian awakened in India and frenzied before being destroyed. Today, the Ravnos are a nearly extinct, tragic bloodline fleeing a constant, supernatural doom that hunts them if they ever stop running."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
   },
   {
     id: "salubri",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
-    type: "clan",
-    name: fallbackStr("Salubri"),
-    description: fallbackStr("Hunted healers with three eyes."),
-    identity: fallbackStr("Cyclops, Healers"),
-    weakness: fallbackStr("Prey Exclusion."),
-    disciplines: ["auspex", "fortitude", "valeren"],
-    playstyle: fallbackStr("Altruistic."),
-    roleplayIdeas: fallbackArr(["Hunted saint."]),
-    relationships: fallbackStr("Hunted by Tremere."),
-    color: "#F0E68C",
-    icon: "👁️‍🗨️"
+    name: en("Salubri"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Independent"),
+    summary: en("A nearly extinct, three-eyed bloodline of hunted healers and soul-gazers."),
+    weakness: en("Prey Exclusion: They can only feed from mortals who offer their blood willingly. Forcing the Kiss causes severe spiritual and physical backlash."),
+    disciplines: ["auspex", "fortitude", "obfuscate"],
+    icon: "👁️‍🗨️",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#F0E68C",
+    lore: en("Once a respected clan of healers and holy warriors, the Salubri were driven to the brink of extinction by the Tremere, who usurped their Antediluvian and systematically branded them as soul-stealing infernalists. The few Salubri who remain exist in complete secrecy. Their most striking feature is a third eye that opens on their forehead whenever they use their unique disciplines."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
+  },
+  {
+    id: "caitiff",
+    name: en("Caitiff"),
+    editionAvailability: ["v1", "v2", "revised", "v20", "v5"],
+    sect: en("Anarch"),
+    summary: en("Clanless vampires abandoned by their sires, lacking the specific traits of any lineage."),
+    weakness: en("Clanless: They have no clan weakness, but they also have no clan disciplines. They learn all disciplines at a higher experience cost and face severe social prejudice."),
+    disciplines: [],
+    icon: "🗑️",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#888888",
+    lore: en("Caitiff are the clanless trash of Kindred society. Whether they were abandoned by their sires before learning their heritage, or whether the Blood simply failed to transmit a clan's curse and gifts, the Caitiff belong nowhere. The Camarilla treats them as second-class citizens or immediate Masquerade threats, pushing the vast majority of Caitiff into the welcoming arms of the Anarchs."),
+    playableStatus: { v1: true, v2: true, revised: true, v20: true, v5: true },
+    sourceEdition: "v1"
+  },
+  {
+    id: "thin_blood",
+    name: en("Thin-Blood"),
+    alternateNames: {
+      v5: en("Thin-Blood")
+    },
+    editionAvailability: ["revised", "v20", "v5"],
+    sect: en("Anarch / Independent"),
+    summary: en("Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath."),
+    weakness: en("Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food."),
+    disciplines: ["thin_blood_alchemy"],
+    icon: "🩸💧",
+    bannerImage: "/images/opengraph.jpg",
+    colorTheme: "#5C5C5C",
+    lore: en("The Thin-Bloods are the ultimate heralds of Gehenna. Born of generations so far removed from Caine that they are barely vampires, they exist in a twilight state between life and undeath. They are hunted mercilessly by the Camarilla and the Sabbat, forcing them to hide in the fringes of society. In modern nights, they have developed Thin-Blood Alchemy, using their mixed blood to replicate powers they cannot naturally learn."),
+    playableStatus: { revised: false, v20: true, v5: true },
+    sourceEdition: "revised"
   }
 ];

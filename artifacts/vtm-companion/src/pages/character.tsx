@@ -36,7 +36,7 @@ export default function CharacterPage() {
     intelligence: 1, wits: 1, resolve: 1
   });
 
-  const availableClans = filterByEdition(clans, activeEdition);
+  const availableClans = clans.filter(c => c.editionAvailability.includes(activeEdition));
 
   useEffect(() => {
     const saved = localStorage.getItem('vtm-characters');
@@ -97,7 +97,12 @@ export default function CharacterPage() {
   const activeChar = characters.find(c => c.id === activeCharId);
   const getClanName = (id: string) => {
     const c = clans.find(x => x.id === id);
-    return c ? getText(c.name, activeLanguage) : id;
+    if (!c) return id;
+    if (c.alternateNames?.[activeEdition]) {
+      const altName = getText(c.alternateNames[activeEdition] as any, activeLanguage);
+      if (altName) return altName;
+    }
+    return getText(c.name, activeLanguage) || id;
   };
 
   return (

@@ -23,17 +23,22 @@ export function useSearch(query: string) {
     const lowerQuery = query.toLowerCase();
     const results: SearchResult[] = [];
 
-    const filteredClans = filterByEdition(clans, edition);
+    const filteredClans = clans.filter(c => c.editionAvailability.includes(edition));
     filteredClans.forEach(clan => {
-      const name = getText(clan.name, lang);
-      const desc = getText(clan.description, lang);
+      let name = getText(clan.name, lang) || '';
+      if (clan.alternateNames?.[edition]) {
+        const altName = getText(clan.alternateNames[edition] as any, lang);
+        if (altName) name = altName;
+      }
+      
+      const desc = getText(clan.summary, lang) || '';
       if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: clan.id,
           title: name,
-          description: getText(clan.identity, lang),
+          description: getText(clan.sect, lang) || "Unknown Sect",
           type: 'clan',
-          url: `/clanes?id=${clan.id}`
+          url: `/compendium/clanes/${clan.id}`
         });
       }
     });

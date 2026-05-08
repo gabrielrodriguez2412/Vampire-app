@@ -1,10 +1,12 @@
 import { LangCode, EditionId } from '../types';
 
-// Returns text in lang. If not available, returns null (no silent fallback).
+// Returns text in lang. If not available, falls back to 'en'. If still not available, returns null.
 export function getText(record: Record<LangCode, string> | undefined, lang: LangCode): string | null {
   if (!record) return null;
   const val = record[lang];
-  return (val && val.trim() !== '') ? val : null;
+  if (val && val.trim() !== '') return val;
+  const fallback = record['en'];
+  return (fallback && fallback.trim() !== '') ? fallback : null;
 }
 
 // Returns array in lang. If not available, returns null.

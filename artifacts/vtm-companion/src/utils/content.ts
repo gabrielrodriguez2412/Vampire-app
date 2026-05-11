@@ -1,10 +1,12 @@
 import { LangCode, EditionId } from '../types';
 
-// Returns text in lang. If not available, returns null (no silent fallback).
+// Returns text in lang. If not available, falls back to 'en'. If still not available, returns null.
 export function getText(record: Record<LangCode, string> | undefined, lang: LangCode): string | null {
   if (!record) return null;
   const val = record[lang];
-  return (val && val.trim() !== '') ? val : null;
+  if (val && val.trim() !== '') return val;
+  const fallback = record['en'];
+  return (fallback && fallback.trim() !== '') ? fallback : null;
 }
 
 // Returns array in lang. If not available, returns null.
@@ -28,3 +30,15 @@ export function isAvailableInLang(record: Record<LangCode, string> | undefined, 
   if (!record) return false;
   return !!(record[lang] && record[lang].trim() !== '');
 }
+
+export function normalizeEditionId(value: string | null | undefined): EditionId {
+  if (!value) return 'V5';
+  const normalized = value.toString().toUpperCase();
+  if (normalized === 'V1' || normalized === '1ST' || normalized === 'FIRST') return '1ST';
+  if (normalized === 'V2' || normalized === '2ND' || normalized === 'SECOND') return '2ND';
+  if (normalized === 'REVISED') return 'REVISED';
+  if (normalized === 'V20') return 'V20';
+  if (normalized === 'V5') return 'V5';
+  return 'V5';
+}
+

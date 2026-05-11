@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { LangCode, EditionId } from '../types';
+import { normalizeEditionId } from '../utils/content';
 
 interface AppContextType {
   activeLanguage: LangCode;
@@ -16,7 +17,7 @@ export function AppContextProvider({ children }: { children: ReactNode }) {
   });
 
   const [activeEdition, setActiveEdition] = useState<EditionId>(() => {
-    return (localStorage.getItem('vtm-edition') as EditionId) || 'v5';
+    return normalizeEditionId(localStorage.getItem('vtm-edition'));
   });
 
   useEffect(() => {

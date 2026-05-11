@@ -6,7 +6,7 @@ const fallbackArr = (val: string[]) => ({ es: val, en: val, pt: val, fr: val, de
 export const rules: RuleEntry[] = [
   {
     id: "dice-pools",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Reserva de Dados (Dice Pools)", en: "Dice Pools", pt: "", fr: "", de: "", it: "" },
     category: "Tiradas",
     shortExplanation: { es: "Tira d10s (Atributo + Habilidad).", en: "Roll d10s (Attribute + Skill).", pt: "", fr: "", de: "", it: "" },
@@ -29,7 +29,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "hunger-dice",
-    editions: ["v5"],
+    editions: ["V5"],
     title: { es: "Dados de Hambre", en: "Hunger Dice", pt: "", fr: "", de: "", it: "" },
     category: "Hambre",
     shortExplanation: { es: "Reemplaza dados normales por Dados de Hambre.", en: "Replace normal dice with Hunger Dice.", pt: "", fr: "", de: "", it: "" },
@@ -52,7 +52,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "rouse-check",
-    editions: ["v5"],
+    editions: ["V5"],
     title: { es: "Chequeo de Enardecimiento", en: "Rouse Check", pt: "", fr: "", de: "", it: "" },
     category: "Hambre",
     shortExplanation: { es: "Tira 1 dado. 1-5 aumentas el hambre, 6-10 nada cambia.", en: "Roll 1 die. 1-5 hunger increases, 6-10 no change.", pt: "", fr: "", de: "", it: "" },
@@ -75,7 +75,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "frenzy",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Frenesí", en: "Frenzy", pt: "", fr: "", de: "", it: "" },
     category: "Bestia",
     shortExplanation: { es: "La pérdida de control ante ira, miedo o hambre.", en: "Loss of control to anger, fear, or hunger.", pt: "", fr: "", de: "", it: "" },
@@ -98,7 +98,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "aggravated-damage",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Daño Agravado", en: "Aggravated Damage", pt: "", fr: "", de: "", it: "" },
     category: "Combate",
     shortExplanation: { es: "Daño letal para vampiros (fuego, luz solar, disciplinas).", en: "Lethal damage for vampires (fire, sunlight, disciplines).", pt: "", fr: "", de: "", it: "" },
@@ -121,7 +121,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "superficial-damage",
-    editions: ["v5"],
+    editions: ["V5"],
     title: { es: "Daño Superficial", en: "Superficial Damage", pt: "", fr: "", de: "", it: "" },
     category: "Combate",
     shortExplanation: { es: "Daño contundente y cortante estándar (se divide a la mitad).", en: "Standard blunt/slashing damage (halved).", pt: "", fr: "", de: "", it: "" },
@@ -144,7 +144,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "willpower",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Fuerza de Voluntad", en: "Willpower", pt: "", fr: "", de: "", it: "" },
     category: "Mecánica",
     shortExplanation: { es: "Repetir tiradas u oponerse a dominación.", en: "Reroll dice or oppose domination.", pt: "", fr: "", de: "", it: "" },
@@ -167,7 +167,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "humanity-loss",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Pérdida de Humanidad", en: "Humanity Loss", pt: "", fr: "", de: "", it: "" },
     category: "Moralidad",
     shortExplanation: { es: "Tirar Remordimiento tras violar dogmas.", en: "Roll Remorse after violating tenets.", pt: "", fr: "", de: "", it: "" },
@@ -190,7 +190,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "resonance",
-    editions: ["v5"],
+    editions: ["V5"],
     title: { es: "Resonancia y Discracia", en: "Resonance and Dyscrasia", pt: "", fr: "", de: "", it: "" },
     category: "Sangre",
     shortExplanation: { es: "El estado emocional de la víctima altera la Sangre.", en: "Victim's emotional state alters the Blood.", pt: "", fr: "", de: "", it: "" },
@@ -213,7 +213,7 @@ export const rules: RuleEntry[] = [
   },
   {
     id: "blood-bond",
-    editions: ["v1", "v2", "revised", "v20", "v5"],
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     title: { es: "Vínculo de Sangre", en: "Blood Bond", pt: "", fr: "", de: "", it: "" },
     category: "Sangre",
     shortExplanation: { es: "Beber la sangre de un vampiro crea lealtad artificial.", en: "Drinking vampire blood creates artificial loyalty.", pt: "", fr: "", de: "", it: "" },

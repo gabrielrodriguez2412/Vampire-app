@@ -23,17 +23,22 @@ export function useSearch(query: string) {
     const lowerQuery = query.toLowerCase();
     const results: SearchResult[] = [];
 
-    const filteredClans = filterByEdition(clans, edition);
+    const filteredClans = clans.filter(c => c.editionAvailability.includes(edition));
     filteredClans.forEach(clan => {
-      const name = getText(clan.name, lang);
-      const desc = getText(clan.description, lang);
+      let name = getText(clan.name, lang) || '';
+      if (clan.alternateNames?.[edition]) {
+        const altName = getText(clan.alternateNames[edition] as any, lang);
+        if (altName) name = altName;
+      }
+      
+      const desc = getText(clan.summary, lang) || '';
       if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: clan.id,
           title: name,
-          description: getText(clan.identity, lang),
+          description: getText(clan.sect, lang) || "Unknown Sect",
           type: 'clan',
-          url: `/clanes?id=${clan.id}`
+          url: `/compendium/clanes/${clan.id}`
         });
       }
     });
@@ -41,12 +46,12 @@ export function useSearch(query: string) {
     const filteredDiscs = filterByEdition(disciplines, edition);
     filteredDiscs.forEach(disc => {
       const name = disc.name; // name is string
-      const desc = getText(disc.description, lang);
+      const desc = getText(disc.description, lang) || '';
       if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: disc.id,
           title: name,
-          description: getText(disc.type, lang),
+          description: getText(disc.type, lang) || '',
           type: 'disciplina',
           url: `/disciplinas?id=${disc.id}`
         });
@@ -55,8 +60,8 @@ export function useSearch(query: string) {
 
     const filteredRules = filterByEdition(rules, edition);
     filteredRules.forEach(rule => {
-      const title = getText(rule.title, lang);
-      const desc = getText(rule.shortExplanation, lang);
+      const title = getText(rule.title, lang) || '';
+      const desc = getText(rule.shortExplanation, lang) || '';
       if (title.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: rule.id,
@@ -69,13 +74,13 @@ export function useSearch(query: string) {
     });
 
     glossary.forEach(term => {
-      const t = getText(term.term, lang);
-      const d = getText(term.definition, lang);
+      const t = getText(term.term, lang) || '';
+      const d = getText(term.definition, lang) || '';
       if (t.toLowerCase().includes(lowerQuery) || d.toLowerCase().includes(lowerQuery)) {
         results.push({
           id: term.id,
           title: t,
-          description: d.substring(0, 60) + '...',
+          description: d.length > 60 ? d.substring(0, 60) + '...' : d,
           type: 'glosario',
           url: `/glosario?id=${term.id}`
         });

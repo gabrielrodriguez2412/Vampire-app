@@ -15,11 +15,11 @@ export default function Glossary() {
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
   const filtered = glossary.filter(term => {
-    const termText = getText(term.term, activeLanguage);
-    const defText = getText(term.definition, activeLanguage);
+    const termText = getText(term.term, activeLanguage) || '';
+    const defText = getText(term.definition, activeLanguage) || '';
     return termText.toLowerCase().includes(filter.toLowerCase()) || 
            defText.toLowerCase().includes(filter.toLowerCase());
-  }).sort((a, b) => getText(a.term, activeLanguage).localeCompare(getText(b.term, activeLanguage)));
+  }).sort((a, b) => (getText(a.term, activeLanguage) || '').localeCompare(getText(b.term, activeLanguage) || ''));
 
   return (
     <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">

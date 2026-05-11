@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Settings2, Globe, Library, Trash2, Download, Upload } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { EDITIONS } from "@/data/editions";
+import { EDITION_LIST } from "@/data/editions";
 import { LANGUAGES } from "@/data/languages";
 import { LangCode, EditionId } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -66,7 +66,7 @@ export default function SettingsPage() {
             <CardTitle className="font-serif text-xl flex items-center gap-2"><Library className="w-5 h-5"/> {strings.edition}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {EDITIONS.map(ed => (
+            {EDITION_LIST.map(ed => (
               <button 
                 key={ed.id}
                 onClick={() => setEdition(ed.id as EditionId)}

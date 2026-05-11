@@ -2,22 +2,22 @@ import { clans } from "../data/clans";
 import { disciplines } from "../data/disciplines";
 import { rules } from "../data/rules";
 import { glossary } from "../data/glossary";
-import { EDITIONS } from "../data/editions";
+import { EDITION_LIST } from "../data/editions";
 import { LANGUAGES } from "../data/languages";
 
 export function validateData(): string[] {
   const warnings: string[] = [];
   
   // Create sets for fast lookup
-  const editionIds = new Set(EDITIONS.map(e => e.id));
+  const editionIds = new Set(EDITION_LIST.map(e => e.id));
   const langCodes = new Set(LANGUAGES.map(l => l.code));
   const disciplineIds = new Set(disciplines.map(d => d.id));
   const clanIds = new Set(clans.map(c => c.id));
   
   // Validate Clans
   clans.forEach(clan => {
-    if (clan.editions.length === 0) warnings.push(`Clan ${clan.id} has no editions.`);
-    clan.editions.forEach(ed => {
+    if (clan.editionAvailability.length === 0) warnings.push(`Clan ${clan.id} has no editions.`);
+    clan.editionAvailability.forEach(ed => {
       if (!editionIds.has(ed)) warnings.push(`Clan ${clan.id} references unknown edition: ${ed}`);
     });
     clan.disciplines.forEach(d => {

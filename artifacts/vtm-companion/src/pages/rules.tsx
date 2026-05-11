@@ -25,8 +25,8 @@ export default function Rules() {
   const categories = ["__all__", ...Array.from(new Set(editionRules.map(r => r.category)))];
 
   const filtered = editionRules.filter(r => {
-    const titleText = getText(r.title, activeLanguage);
-    const shortText = getText(r.shortExplanation, activeLanguage);
+    const titleText = getText(r.title, activeLanguage) || '';
+    const shortText = getText(r.shortExplanation, activeLanguage) || '';
     
     const matchesFilter = titleText.toLowerCase().includes(filter.toLowerCase()) || 
                           shortText.toLowerCase().includes(filter.toLowerCase()) ||

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { SearchDialog } from "./search-dialog";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { EDITIONS } from "@/data/editions";
+import { EDITIONS, EDITION_LIST } from "@/data/editions";
 import { LANGUAGES } from "@/data/languages";
 import { LangCode, EditionId } from "@/types";
 
@@ -55,7 +55,7 @@ export function Layout({ children }: { children: ReactNode }) {
               onChange={(e) => setEdition(e.target.value as EditionId)}
               className="bg-transparent text-xs text-foreground border border-zinc-700 rounded-none px-1 py-0.5 focus:outline-none focus:border-primary-container"
             >
-              {EDITIONS.map(ed => (
+              {EDITION_LIST.map(ed => (
                 <option key={ed.id} value={ed.id} className="bg-neutral-950">{ed.shortName}</option>
               ))}
             </select>
@@ -90,7 +90,7 @@ export function Layout({ children }: { children: ReactNode }) {
                   onChange={(e) => setEdition(e.target.value as EditionId)}
                   className="w-full bg-zinc-900 text-sm text-foreground border border-zinc-800 rounded-none px-2 py-2 focus:border-primary-container focus:outline-none"
                 >
-                  {EDITIONS.map(ed => (
+                  {EDITION_LIST.map(ed => (
                     <option key={ed.id} value={ed.id}>{ed.name}</option>
                   ))}
                 </select>

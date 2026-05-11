@@ -54,7 +54,15 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Cuerpo a Cuerpo: Tirada enfrentada. Daño = (Éxitos propios − Éxitos del rival) + Modificador del Arma.',
     combat_ranged: 'A Distancia (con cobertura): Atacante vs Defensa (Dif. fija por cobertura o Destreza + Atletismo).',
     combat_superficial: 'Daño Superficial: Balas, puños. Se divide a la mitad (redondeo arriba).',
-    combat_aggravated: 'Daño Agravado: Fuego, sol, garras de vampiro. No se divide.'
+    combat_aggravated: 'Daño Agravado: Fuego, sol, garras de vampiro. No se divide.',
+    player: 'Jugador', appearance: 'Apariencia', alertness: 'Alerta', empathy: 'Empatía', expression: 'Expresión',
+    nature: 'Naturaleza', demeanor: 'Conducta', sire: 'Sire', conscience: 'Conciencia', self_control: 'Autocontrol',
+    courage: 'Valor', talents: 'Talentos', knowledges: 'Conocimientos', backgrounds: 'Trasfondo', virtues: 'Virtudes',
+    disciplines: 'Disciplinas', advantages: 'Ventajas', clan_bane: 'Marca del Clan', compulsion: 'Compulsión',
+    blood_pool: 'Reserva de Sangre', merits_flaws: 'Méritos y Defectos', flaws: 'Defectos', convictions: 'Convicciones',
+    touchstones: 'Puntos de Ancla', alertness_skill: 'Alerta', animalism: 'Animalismo', auspex: 'Auspex',
+    celerity: 'Celeridad', dominate: 'Dominar', fortitude: 'Fortaleza', obfuscate: 'Ofuscación',
+    potence: 'Potencia', presence: 'Presencia', protean: 'Protomagia', blood_sorcery: 'Hechicería de Sangre'
   },
   en: {
     home: 'Home', rules: 'Rules', clans: 'Clans', disciplines: 'Disciplines', roleplay: 'Roleplay',
@@ -100,7 +108,15 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Melee: Contested roll. Damage = (Own successes − Opponent successes) + Weapon modifier.',
     combat_ranged: 'Ranged (with cover): Attacker vs Defense (fixed difficulty by cover or Dexterity + Athletics).',
     combat_superficial: 'Superficial Damage: Bullets, punches. Halved (round up).',
-    combat_aggravated: 'Aggravated Damage: Fire, sunlight, vampire claws. Not halved.'
+    combat_aggravated: 'Aggravated Damage: Fire, sunlight, vampire claws. Not halved.',
+    player: 'Player', appearance: 'Appearance', alertness: 'Alertness', empathy: 'Empathy', expression: 'Expression',
+    nature: 'Nature', demeanor: 'Demeanor', sire: 'Sire', conscience: 'Conscience', self_control: 'Self-Control',
+    courage: 'Courage', talents: 'Talents', knowledges: 'Knowledges', backgrounds: 'Backgrounds', virtues: 'Virtues',
+    disciplines: 'Disciplines', advantages: 'Advantages', clan_bane: 'Clan Bane', compulsion: 'Compulsion',
+    blood_pool: 'Blood Pool', merits_flaws: 'Merits and Flaws', flaws: 'Flaws', convictions: 'Convictions',
+    touchstones: 'Touchstones', alertness_skill: 'Alertness', animalism: 'Animalism', auspex: 'Auspex',
+    celerity: 'Celerity', dominate: 'Dominate', fortitude: 'Fortitude', obfuscate: 'Obfuscate',
+    potence: 'Potence', presence: 'Presence', protean: 'Protean', blood_sorcery: 'Blood Sorcery'
   },
   pt: {
     home: 'Início', rules: 'Regras', clans: 'Clãs', disciplines: 'Disciplinas', roleplay: 'Roleplay',
@@ -146,7 +162,15 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Corpo a Corpo: Rolagem contestada. Dano = (Sucessos próprios − Sucessos do rival) + Modificador de Arma.',
     combat_ranged: 'À Distância (com cobertura): Atacante vs Defesa (dificuldade fixa por cobertura ou Destreza + Atletismo).',
     combat_superficial: 'Dano Superficial: Balas, socos. Dividido pela metade (arredondado para cima).',
-    combat_aggravated: 'Dano Agravado: Fogo, sol, garras de vampiro. Não é dividido.'
+    combat_aggravated: 'Dano Agravado: Fogo, sol, garras de vampiro. Não é dividido.',
+    player: 'Jogador', appearance: 'Aparência', alertness: 'Vigilância', empathy: 'Empatia', expression: 'Expressão',
+    nature: 'Natureza', demeanor: 'Comportamento', sire: 'Sire', conscience: 'Consciência', self_control: 'Autocontrole',
+    courage: 'Coragem', talents: 'Talentos', knowledges: 'Conhecimentos', backgrounds: 'Origens', virtues: 'Virtudes',
+    disciplines: 'Disciplinas', advantages: 'Vantagens', clan_bane: 'Marca do Clã', compulsion: 'Compulsão',
+    blood_pool: 'Reserva de Sangue', merits_flaws: 'Méritos e Falhas', flaws: 'Falhas', convictions: 'Convicções',
+    touchstones: 'Pontos de Ancla', alertness_skill: 'Vigilância', animalism: 'Animalismo', auspex: 'Auspex',
+    celerity: 'Celeridade', dominate: 'Dominar', fortitude: 'Fortaleza', obfuscate: 'Ofuscação',
+    potence: 'Potência', presence: 'Presença', protean: 'Protomagia', blood_sorcery: 'Feitiçaria de Sangue'
   },
   fr: {
     home: 'Accueil', rules: 'Règles', clans: 'Clans', disciplines: 'Disciplines', roleplay: 'Roleplay',
@@ -192,7 +216,15 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Mêlée : Jet contesté. Dégâts = (Succès propres − Succès adverses) + Modificateur d\'arme.',
     combat_ranged: 'À distance (avec couverture) : Attaquant vs Défense (difficulté fixe selon couverture ou Dextérité + Athlétisme).',
     combat_superficial: 'Dégâts superficiels : Balles, coups. Divisés par deux (arrondi supérieur).',
-    combat_aggravated: 'Dégâts aggravés : Feu, soleil, griffes de vampire. Non divisés.'
+    combat_aggravated: 'Dégâts aggravés : Feu, soleil, griffes de vampire. Non divisés.',
+    player: 'Joueur', appearance: 'Apparence', alertness: 'Vigilance', empathy: 'Empathie', expression: 'Expression',
+    nature: 'Nature', demeanor: 'Comportement', sire: 'Sire', conscience: 'Conscience', self_control: 'Maîtrise de soi',
+    courage: 'Courage', talents: 'Talents', knowledges: 'Connaissances', backgrounds: 'Antécédents', virtues: 'Vertus',
+    disciplines: 'Disciplines', advantages: 'Avantages', clan_bane: 'Malédiction du Clan', compulsion: 'Compulsion',
+    blood_pool: 'Réserve de Sang', merits_flaws: 'Mérites et Défauts', flaws: 'Défauts', convictions: 'Convictions',
+    touchstones: 'Points d\'Ancrage', alertness_skill: 'Vigilance', animalism: 'Animalisme', auspex: 'Auspex',
+    celerity: 'Célérité', dominate: 'Domination', fortitude: 'Forteresse', obfuscate: 'Offuscation',
+    potence: 'Puissance', presence: 'Présence', protean: 'Protomagie', blood_sorcery: 'Sorcellerie de Sang'
   },
   de: {
     home: 'Start', rules: 'Regeln', clans: 'Clans', disciplines: 'Disziplinen', roleplay: 'Roleplay',
@@ -238,7 +270,15 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Nahkampf: Wettbewerb. Schaden = (Eigene Erfolge − Gegner-Erfolge) + Waffenmodifikator.',
     combat_ranged: 'Fernkampf (mit Deckung): Angreifer vs. Verteidigung (feste Schwierigkeit nach Deckung oder Geschicklichkeit + Athletik).',
     combat_superficial: 'Oberflächlicher Schaden: Kugeln, Schläge. Halbiert (aufgerundet).',
-    combat_aggravated: 'Aggravierter Schaden: Feuer, Sonnenlicht, Vampirklauen. Nicht halbiert.'
+    combat_aggravated: 'Aggravierter Schaden: Feuer, Sonnenlicht, Vampirklauen. Nicht halbiert.',
+    player: 'Spieler', appearance: 'Aussehen', alertness: 'Aufmerksamkeit', empathy: 'Einfühlungsvermögen', expression: 'Ausdruck',
+    nature: 'Natur', demeanor: 'Verhalten', sire: 'Sire', conscience: 'Gewissen', self_control: 'Selbstbeherrschung',
+    courage: 'Mut', talents: 'Talente', knowledges: 'Wissen', backgrounds: 'Hintergründe', virtues: 'Tugenden',
+    disciplines: 'Disziplinen', advantages: 'Vorteile', clan_bane: 'Clan-Bane', compulsion: 'Zwang',
+    blood_pool: 'Blutreserve', merits_flaws: 'Verdienste und Fehler', flaws: 'Fehler', convictions: 'Überzeugungen',
+    touchstones: 'Ankerplätze', alertness_skill: 'Aufmerksamkeit', animalism: 'Animalismus', auspex: 'Auspex',
+    celerity: 'Celerität', dominate: 'Dominanz', fortitude: 'Fortiude', obfuscate: 'Verborgenheit',
+    potence: 'Potenz', presence: 'Gegenwart', protean: 'Proteus', blood_sorcery: 'Bluthexerei'
   },
   it: {
     home: 'Home', rules: 'Regole', clans: 'Clan', disciplines: 'Discipline', roleplay: 'Roleplay',
@@ -284,6 +324,14 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     combat_melee: 'Mischia: Tiro contestato. Danno = (Successi propri − Successi avversari) + Modificatore Arma.',
     combat_ranged: 'A Distanza (con copertura): Attaccante vs Difesa (difficoltà fissa per copertura o Destrezza + Atletica).',
     combat_superficial: 'Danno Superficiale: Pallottole, pugni. Dimezzato (arrotondato per eccesso).',
-    combat_aggravated: 'Danno Aggravato: Fuoco, sole, artigli di vampiro. Non dimezzato.'
+    combat_aggravated: 'Danno Aggravato: Fuoco, sole, artigli di vampiro. Non dimezzato.',
+    player: 'Giocatore', appearance: 'Aspetto', alertness: 'Prontezza', empathy: 'Empatia', expression: 'Espressione',
+    nature: 'Natura', demeanor: 'Comportamento', sire: 'Sire', conscience: 'Coscienza', self_control: 'Autocontrollo',
+    courage: 'Coraggio', talents: 'Talenti', knowledges: 'Conoscenze', backgrounds: 'Antefatti', virtues: 'Virtù',
+    disciplines: 'Discipline', advantages: 'Vantaggi', clan_bane: 'Rovina del Clan', compulsion: 'Compulsione',
+    blood_pool: 'Riserva di Sangue', merits_flaws: 'Meriti e Difetti', flaws: 'Difetti', convictions: 'Convinzioni',
+    touchstones: 'Punti di Ancoraggio', alertness_skill: 'Prontezza', animalism: 'Animalismo', auspex: 'Auspex',
+    celerity: 'Celerità', dominate: 'Dominazione', fortitude: 'Forte', obfuscate: 'Offuscamento',
+    potence: 'Potenza', presence: 'Presenza', protean: 'Protomagia', blood_sorcery: 'Stregoneria di Sangue'
   }
 };

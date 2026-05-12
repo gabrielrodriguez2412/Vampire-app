@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, Component, ErrorInfo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,39 @@ import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getText, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
+
+class CharacterErrorBoundary extends Component<{ onReset: () => void }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Character page render error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
+          <div className="mb-8">
+            <h1 className="text-3xl font-serif font-bold text-primary mb-2">{UI_STRINGS['en'].character}</h1>
+            <p className="text-muted-foreground mb-6">Character sheet could not be loaded. Reset character data or create a new character.</p>
+          </div>
+          <div className="rounded-lg border border-red-500/40 bg-red-950/10 p-6">
+            <p className="text-sm text-red-300 mb-4">An unrecoverable error occurred while rendering the character sheet.</p>
+            <Button onClick={this.props.onReset} className="bg-red-500 text-white">Reset Character Data</Button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export default function CharacterPage() {
   const { activeLanguage, activeEdition } = useAppContext();
@@ -23,6 +53,7 @@ export default function CharacterPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [activeView, setActiveView] = useState<'list' | 'create' | 'sheet'>('list');
   const [activeChar, setActiveChar] = useState<Character | null>(null);
+  const [boundaryKey, setBoundaryKey] = useState(0);
 
   // Create Form State
   const [newName, setNewName] = useState("");
@@ -32,8 +63,23 @@ export default function CharacterPage() {
   const availableClans = useMemo(() => filterByEdition(clans, newEdition), [newEdition]);
 
   useEffect(() => {
-    setCharacters(getCharacters());
-  }, []);
+    try {
+      const chars = getCharacters();
+      setCharacters(Array.isArray(chars) ? chars : []);
+    } catch (error) {
+      console.error('Failed to load characters', error);
+      setCharacters([]);
+    }
+  }, [boundaryKey]);
+
+  const resetCharacterData = () => {
+    clearCharacterStorage();
+    setCharacters([]);
+    setActiveChar(null);
+    setActiveView('list');
+    setBoundaryKey(prev => prev + 1);
+    toast({ title: strings.saved, description: 'Character data reset.' });
+  };
 
   const handleCreate = () => {
     if (!newName.trim() || !newClan) {
@@ -83,8 +129,9 @@ export default function CharacterPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
-      <div className="mb-8">
+    <CharacterErrorBoundary key={boundaryKey} onReset={resetCharacterData}>
+      <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
+        <div className="mb-8">
         <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
           <User className="w-8 h-8" />
           {strings.character}
@@ -187,30 +234,40 @@ export default function CharacterPage() {
           </motion.div>
         )}
 
-        {activeView === 'sheet' && activeChar && (
+        {activeView === 'sheet' && (
           <motion.div key="sheet" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
-            <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
-              <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
-                <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
-              </Button>
-              <div className="flex items-center gap-4">
-                <div className="text-xs uppercase tracking-widest text-muted-foreground hidden sm:block">
-                  {strings.saved}
+            {activeChar ? (
+              <>
+                <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+                  <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
+                    <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
+                  </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="text-xs uppercase tracking-widest text-muted-foreground hidden sm:block">
+                      {strings.saved}
+                    </div>
+                    <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
+                      {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
+                    </div>
+                  </div>
                 </div>
-                <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
-                  {activeChar.edition}
-                </div>
-              </div>
-            </div>
 
-            <DynamicSheet 
-              character={activeChar} 
-              schema={getSchemaForEdition(activeChar.edition)} 
-              onChange={handleSheetUpdate} 
-            />
+                <DynamicSheet 
+                  character={activeChar} 
+                  schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)} 
+                  onChange={handleSheetUpdate} 
+                />
+              </>
+            ) : (
+              <div className="rounded-lg border border-yellow-500/40 bg-yellow-950/10 p-6">
+                <p className="text-sm text-yellow-200 mb-4">Character sheet could not be loaded. Reset character data or create a new character.</p>
+                <Button onClick={resetCharacterData} className="bg-yellow-500 text-black">Reset Character Data</Button>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+    </CharacterErrorBoundary>
   );
 }

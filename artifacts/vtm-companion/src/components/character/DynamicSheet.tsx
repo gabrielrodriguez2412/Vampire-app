@@ -156,14 +156,19 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
           </div>
         );
       default:
-        return null;
+        return (
+          <div key={field.id || field.labelKey || Math.random()} className="flex flex-col gap-1 border-b border-zinc-800/30 py-2">
+            <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
+            <div className="text-sm text-muted-foreground">Unsupported field type: {field.type || 'unknown'}</div>
+          </div>
+        );
     }
   };
 
   return (
     <div className="space-y-8">
-      {(Array.isArray(schema.sections) ? schema.sections : []).map(section => (
-        <section key={section.id} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6">
+      {(Array.isArray(schema.sections) ? schema.sections : []).map((section, sectionIndex) => (
+        <section key={section.id || section.labelKey || sectionIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6">
           <h2 className="font-serif text-xl text-primary mb-6 uppercase tracking-widest border-b border-zinc-800 pb-2">
             {strings[section.labelKey] || section.labelKey}
           </h2>

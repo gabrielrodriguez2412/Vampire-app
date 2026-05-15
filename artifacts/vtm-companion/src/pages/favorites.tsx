@@ -9,11 +9,11 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { Crown, Flame, ScrollText, HeartOff } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { getText } from "@/utils/content";
+import { getText, getClanDisplayName } from "@/utils/content";
 
 export default function Favorites() {
   const { favorites } = useFavorites();
-  const { activeLanguage } = useAppContext();
+  const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   
   const favClans = clans.filter(c => favorites[c.id]);
@@ -54,7 +54,7 @@ export default function Favorites() {
                           <CardHeader className="flex flex-row justify-between items-start pb-4">
                             <div>
                               <CardTitle className="font-serif flex items-center gap-2">
-                                {clan.icon} {getText(clan.name, activeLanguage)}
+                                {clan.icon} {getClanDisplayName(clan, activeEdition, activeLanguage)}
                               </CardTitle>
                               <CardDescription className="mt-1">{getText(clan.sect, activeLanguage)}</CardDescription>
                             </div>

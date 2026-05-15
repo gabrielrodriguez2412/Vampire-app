@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Flame } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { getText, filterByEdition, isAvailableInLang } from "@/utils/content";
+import { getText, filterByEdition, isAvailableInLang, getClanDisplayNameById } from "@/utils/content";
 
 export default function Disciplines() {
   const [filter, setFilter] = useState("");
@@ -28,8 +28,7 @@ export default function Disciplines() {
   });
 
   const getClanName = (clanId: string) => {
-    const clan = clans.find(c => c.id === clanId);
-    return clan ? getText(clan.name, activeLanguage) : clanId;
+    return getClanDisplayNameById(clanId, activeEdition, activeLanguage);
   };
 
   return (

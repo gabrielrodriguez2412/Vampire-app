@@ -4,7 +4,7 @@ import { disciplines } from '@/data/disciplines';
 import { rules } from '@/data/rules';
 import { glossary } from '@/data/glossary';
 import { useAppContext } from '@/context/AppContext';
-import { getText, filterByEdition } from '@/utils/content';
+import { getText, filterByEdition, getClanDisplayName } from '@/utils/content';
 
 export type SearchResult = {
   id: string;
@@ -25,11 +25,7 @@ export function useSearch(query: string) {
 
     const filteredClans = clans.filter(c => c.editionAvailability.includes(edition));
     filteredClans.forEach(clan => {
-      let name = getText(clan.name, lang) || '';
-      if (clan.alternateNames?.[edition]) {
-        const altName = getText(clan.alternateNames[edition] as any, lang);
-        if (altName) name = altName;
-      }
+      let name = getClanDisplayName(clan, edition, lang);
       
       const desc = getText(clan.summary, lang) || '';
       if (name.toLowerCase().includes(lowerQuery) || desc.toLowerCase().includes(lowerQuery)) {

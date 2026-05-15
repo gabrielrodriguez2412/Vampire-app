@@ -1,4 +1,5 @@
-import { LangCode, EditionId } from '../types';
+import { LangCode, EditionId, ClanEntry } from '../types';
+import { clans } from '../data/clans';
 
 // Returns text in lang. If not available, falls back to 'en'. If still not available, returns null.
 export function getText(record: Record<LangCode, string> | undefined, lang: LangCode): string | null {
@@ -42,3 +43,16 @@ export function normalizeEditionId(value: string | null | undefined): EditionId 
   return 'V20';
 }
 
+export function getClanDisplayName(clan: ClanEntry, edition: EditionId, lang: LangCode): string {
+  if (clan.alternateNames && clan.alternateNames[edition]) {
+    const altName = getText(clan.alternateNames[edition], lang);
+    if (altName) return altName;
+  }
+  return getText(clan.name, lang) || clan.id;
+}
+
+export function getClanDisplayNameById(clanId: string, edition: EditionId, lang: LangCode): string {
+  const clan = clans.find(c => c.id === clanId);
+  if (!clan) return clanId;
+  return getClanDisplayName(clan, edition, lang);
+}

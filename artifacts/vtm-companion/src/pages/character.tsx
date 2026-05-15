@@ -9,7 +9,7 @@ import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
-import { getText, filterByEdition } from "@/utils/content";
+import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
@@ -123,9 +123,8 @@ export default function CharacterPage() {
     const clan = clans.find(c => c.id === clanId);
     return clan?.icon || "🦇";
   };
-  const getClanName = (clanId: string) => {
-    const clan = clans.find(c => c.id === clanId);
-    return clan ? getText(clan.name, activeLanguage) : clanId;
+  const getClanName = (clanId: string, charEdition?: EditionId) => {
+    return getClanDisplayNameById(clanId, charEdition || activeEdition, activeLanguage);
   };
 
   return (
@@ -163,7 +162,7 @@ export default function CharacterPage() {
                         <div>
                           <CardTitle className="font-serif text-xl mb-1">{char.name}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{getClanIcon(char.clan)} {getClanName(char.clan)}</span>
+                            <span>{getClanIcon(char.clan)} {getClanName(char.clan, char.edition as EditionId)}</span>
                             <span>•</span>
                             <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
                           </div>
@@ -221,7 +220,7 @@ export default function CharacterPage() {
                   >
                     <option value="" disabled>{strings.selectClan}</option>
                     {availableClans.map(clan => (
-                      <option key={clan.id} value={clan.id}>{getText(clan.name, activeLanguage)}</option>
+                      <option key={clan.id} value={clan.id}>{getClanDisplayName(clan, newEdition, activeLanguage)}</option>
                     ))}
                   </select>
                 </div>

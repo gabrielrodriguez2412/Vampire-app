@@ -9,6 +9,15 @@ const en = (text: string): Record<LangCode, string> => ({
   it: ""
 });
 
+const trans = (enStr: string, esStr: string, ptStr: string, frStr: string, deStr: string, itStr: string): Record<LangCode, string> => ({
+  en: enStr,
+  es: esStr,
+  pt: ptStr,
+  fr: frStr,
+  de: deStr,
+  it: itStr
+});
+
 export const clans: ClanEntry[] = [
   {
     id: "brujah",
@@ -165,9 +174,9 @@ export const clans: ClanEntry[] = [
   },
   {
     id: "followers_of_set",
-    name: en("Followers of Set"),
+    name: trans("Followers of Set", "Seguidores de Set", "Seguidores de Set", "Disciples de Seth", "Jünger des Set", "Seguaci di Set"),
     alternateNames: {
-      "V5": en("The Ministry")
+      "V5": trans("The Ministry", "El Ministerio", "O Ministério", "Le Ministère", "Das Ministerium", "Il Ministero")
     },
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: en("Independent / Anarch"),
@@ -246,9 +255,9 @@ export const clans: ClanEntry[] = [
   },
   {
     id: "thin_blood",
-    name: en("Thin-Blood"),
+    name: trans("Thin-Blood", "Sangre Débil", "Sangue-Fraco", "Sang-Clair", "Dünnblütige", "Sangue Debole"),
     alternateNames: {
-      "V5": en("Thin-Blood")
+      "V5": trans("Thin-Blood", "Sangre Débil", "Sangue-Fraco", "Sang-Clair", "Dünnblütige", "Sangue Debole")
     },
     editionAvailability: ["REVISED", "V20", "V5"],
     sect: en("Anarch / Independent"),

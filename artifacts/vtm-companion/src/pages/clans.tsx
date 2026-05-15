@@ -8,15 +8,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { getText, isAvailableInLang } from "@/utils/content";
-
-const getClanName = (clan: ClanEntry, edition: EditionId, lang: LangCode) => {
-  if (clan.alternateNames?.[edition]) {
-    const altName = getText(clan.alternateNames[edition] as any, lang);
-    if (altName) return altName;
-  }
-  return getText(clan.name, lang);
-};
+import { getText, isAvailableInLang, getClanDisplayName } from "@/utils/content";
 
 export default function Clans() {
   const [selectedClan, setSelectedClan] = useState<ClanEntry | null>(null);
@@ -83,7 +75,7 @@ export default function Clans() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredClans.map((clan, i) => {
             const isMissingLang = !isAvailableInLang(clan.summary, activeLanguage);
-            const dynamicName = getClanName(clan, activeEdition, activeLanguage);
+            const dynamicName = getClanDisplayName(clan, activeEdition, activeLanguage);
             
             return (
               <motion.div 
@@ -156,7 +148,7 @@ export default function Clans() {
                   <div className="relative h-64 border-b border-zinc-900">
                     <img 
                       src={selectedClan.bannerImage || "/opengraph.jpg"} 
-                      alt={getClanName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}
+                      alt={getClanDisplayName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}
                       className="w-full h-full object-cover opacity-40 grayscale contrast-125"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
@@ -166,7 +158,7 @@ export default function Clans() {
                           {getText(selectedClan.sect, activeLanguage) || "Unknown Sect"}
                         </div>
                         <h2 className="font-serif text-5xl text-on-surface uppercase tracking-tight flex items-center gap-3">
-                          <span>{selectedClan.icon}</span> {getClanName(selectedClan, activeEdition, activeLanguage)}
+                          <span>{selectedClan.icon}</span> {getClanDisplayName(selectedClan, activeEdition, activeLanguage)}
                         </h2>
                       </div>
                       <FavoriteButton id={selectedClan.id} className="bg-black/50 border border-zinc-800" />

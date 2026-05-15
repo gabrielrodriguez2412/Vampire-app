@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -54,6 +54,7 @@ export default function CharacterPage() {
   const [activeView, setActiveView] = useState<'list' | 'create' | 'sheet'>('list');
   const [activeChar, setActiveChar] = useState<Character | null>(null);
   const [boundaryKey, setBoundaryKey] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Create Form State
   const [newName, setNewName] = useState("");
@@ -95,6 +96,7 @@ export default function CharacterPage() {
     setCharacters(getCharacters());
     setActiveChar(saved);
     setActiveView('sheet');
+    setIsEditing(false);
     setNewName("");
     setNewClan("");
     toast({
@@ -111,6 +113,7 @@ export default function CharacterPage() {
   const handleOpenSheet = (char: Character) => {
     setActiveChar(char);
     setActiveView('sheet');
+    setIsEditing(false);
   };
 
   // Debounced auto-save handler wrapper essentially
@@ -248,6 +251,22 @@ export default function CharacterPage() {
                     <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
                       {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
                     </div>
+                    <Button
+                      variant={isEditing ? "default" : "outline"}
+                      onClick={() => setIsEditing(!isEditing)}
+                      size="sm"
+                      className={`gap-2 ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground"}`}
+                    >
+                      {isEditing ? (
+                        <>
+                          <Check className="w-4 h-4" /> {strings.sheet_save || "Done"}
+                        </>
+                      ) : (
+                        <>
+                          <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
 
@@ -255,6 +274,7 @@ export default function CharacterPage() {
                   character={activeChar} 
                   schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)} 
                   onChange={handleSheetUpdate} 
+                  readonly={!isEditing}
                 />
               </>
             ) : (

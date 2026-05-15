@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
 import { clans } from "@/data/clans";
+import { disciplines } from "@/data/disciplines";
 import { ClanEntry, EditionId, LangCode } from "@/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FavoriteButton } from "@/components/favorite-button";
@@ -116,7 +117,10 @@ export default function Clans() {
                   
                   <div className="p-5 flex-1 flex flex-col">
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {clan.disciplines.map(d => (
+                      {clan.disciplines.filter(d => {
+                        const discData = disciplines.find(disc => disc.id === d);
+                        return discData ? discData.editions.includes(activeEdition) : false;
+                      }).map(d => (
                         <span key={d} className="px-2 py-1 bg-zinc-900 border border-zinc-800 text-[10px] font-sans text-zinc-300 uppercase tracking-widest">
                           {d}
                         </span>
@@ -216,7 +220,10 @@ export default function Clans() {
                           {strings.disciplinesLabel}
                         </h4>
                         <div className="flex flex-col gap-2">
-                          {selectedClan.disciplines.map(d => (
+                          {selectedClan.disciplines.filter(d => {
+                            const discData = disciplines.find(disc => disc.id === d);
+                            return discData ? discData.editions.includes(activeEdition) : false;
+                          }).map(d => (
                             <div 
                               key={d} 
                               className="bg-zinc-900 border border-zinc-800 px-4 py-3 font-sans text-sm text-zinc-300 hover:text-on-surface cursor-pointer transition-colors flex justify-between items-center group"

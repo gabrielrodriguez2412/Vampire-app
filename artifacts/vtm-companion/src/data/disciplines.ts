@@ -79,6 +79,56 @@ export const disciplines: DisciplineEntry[] = [
     clansWhoUse: ["lasombra"]
   },
   {
+    id: "necromancy",
+    editions: ["1ST", "2ND", "REVISED", "V20"],
+    name: "Necromancy",
+    type: fallbackStr("Sorcery/Death"),
+    description: fallbackStr("The magic of death and souls."),
+    powers: [],
+    narrativeUses: fallbackArr([]),
+    clansWhoUse: ["giovanni"]
+  },
+  {
+    id: "quietus",
+    editions: ["1ST", "2ND", "REVISED", "V20"],
+    name: "Quietus",
+    type: fallbackStr("Assassination"),
+    description: fallbackStr("The silent magic of the blood."),
+    powers: [],
+    narrativeUses: fallbackArr([]),
+    clansWhoUse: ["assamite"]
+  },
+  {
+    id: "serpentis",
+    editions: ["1ST", "2ND", "REVISED", "V20"],
+    name: "Serpentis",
+    type: fallbackStr("Transformation"),
+    description: fallbackStr("The corrupting gifts of Set."),
+    powers: [],
+    narrativeUses: fallbackArr([]),
+    clansWhoUse: ["followers_of_set"]
+  },
+  {
+    id: "vicissitude",
+    editions: ["1ST", "2ND", "REVISED", "V20"],
+    name: "Vicissitude",
+    type: fallbackStr("Fleshcrafting"),
+    description: fallbackStr("The alien art of shaping bone and flesh."),
+    powers: [],
+    narrativeUses: fallbackArr([]),
+    clansWhoUse: ["tzimisce"]
+  },
+  {
+    id: "chimerstry",
+    editions: ["1ST", "2ND", "REVISED", "V20"],
+    name: "Chimerstry",
+    type: fallbackStr("Illusion"),
+    description: fallbackStr("The power to craft convincing illusions."),
+    powers: [],
+    narrativeUses: fallbackArr([]),
+    clansWhoUse: ["ravnos"]
+  },
+  {
     id: "celerity",
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Celerity",

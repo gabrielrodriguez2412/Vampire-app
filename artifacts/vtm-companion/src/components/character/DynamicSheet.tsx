@@ -15,17 +15,21 @@ interface DynamicSheetProps {
 }
 
 // Simple object path getter/setter
-function getProperty(obj: any, path: string): any {
-  return path.split('.').reduce((o, p) => (o ? o[p] : undefined), obj);
+export function getProperty(obj: any, path: string): any {
+  if (!obj || !path) return undefined;
+  return path.split('.').reduce((o, p) => (o && typeof o === 'object' ? o[p] : undefined), obj);
 }
 
-function setProperty(obj: any, path: string, value: any): any {
+export function setProperty(obj: any, path: string, value: any): any {
+  if (!path) return obj;
   const parts = path.split('.');
   const last = parts.pop()!;
-  const newObj = JSON.parse(JSON.stringify(obj));
+  const newObj = obj ? JSON.parse(JSON.stringify(obj)) : {};
   let current = newObj;
   for (const part of parts) {
-    if (!current[part]) current[part] = {};
+    if (current[part] === null || typeof current[part] !== 'object') {
+      current[part] = {};
+    }
     current = current[part];
   }
   current[last] = value;
@@ -103,34 +107,47 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
         );
       case 'special-health':
       case 'special-willpower':
-        // Value should be an object { damage: 0, aggravated: 0, max: X } or for classic just a number (damage tracker)
-        // To handle both, we check the structure.
-        if (typeof value === 'object' && value !== null) {
+        const isV5 = character.edition === 'V5';
+
+        if (isV5 && field.special !== 'bloodPool') {
           // V5 style
+          const safeValue = (typeof value === 'object' && value !== null) 
+            ? value 
+            : { damage: 0, aggravated: 0, max: 5 };
+
           return (
             <div key={field.id} className="flex flex-col gap-2 py-2">
               <label className="text-sm text-foreground font-serif">{label}</label>
               <DamageTracker 
-                damage={value.damage || 0}
-                aggravated={value.aggravated || 0}
-                max={value.max || 5}
-                onChange={v => handleUpdate(field.id, { ...value, ...v })}
+                damage={safeValue.damage || 0}
+                aggravated={safeValue.aggravated || 0}
+                max={safeValue.max || 5}
+                onChange={v => handleUpdate(field.id, { ...safeValue, ...v })}
                 readonly={readonly}
               />
             </div>
           );
         } else {
-          // Classic style (blood pool or health index)
-          const classicMax = field.special === 'bloodPool' ? 20 : 7; 
-          // Simplified fallback for classic trackers
+          // Classic style (blood pool, health index, or willpower pool)
+          const isObject = typeof value === 'object' && value !== null;
+          const currentValue = isObject ? (value.current ?? 0) : (typeof value === 'number' ? value : 0);
+          const classicMax = isObject ? (value.max || 10) : (field.special === 'bloodPool' ? 20 : 7); 
+          
           return (
              <div key={field.id} className="flex flex-col gap-2 py-2">
                <label className="text-sm text-foreground font-serif">{label}</label>
                <div className="flex gap-2 items-center">
                  <Input 
                     type="number"
-                    value={value || 0} 
-                    onChange={e => handleUpdate(field.id, parseInt(e.target.value) || 0)} 
+                    value={currentValue} 
+                    onChange={e => {
+                      const num = parseInt(e.target.value) || 0;
+                      if (isObject) {
+                        handleUpdate(field.id, { ...value, current: num });
+                      } else {
+                        handleUpdate(field.id, num);
+                      }
+                    }} 
                     readOnly={readonly}
                     className="w-16 bg-zinc-950 border-zinc-800"
                   />

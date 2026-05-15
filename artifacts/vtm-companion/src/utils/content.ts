@@ -32,13 +32,13 @@ export function isAvailableInLang(record: Record<LangCode, string> | undefined, 
 }
 
 export function normalizeEditionId(value: string | null | undefined): EditionId {
-  if (!value) return 'V5';
+  if (!value) return 'V20';
   const normalized = value.toString().toUpperCase();
   if (normalized === 'V1' || normalized === '1ST' || normalized === 'FIRST') return '1ST';
   if (normalized === 'V2' || normalized === '2ND' || normalized === 'SECOND') return '2ND';
   if (normalized === 'REVISED') return 'REVISED';
   if (normalized === 'V20') return 'V20';
   if (normalized === 'V5') return 'V5';
-  return 'V5';
+  return 'V20';
 }
 

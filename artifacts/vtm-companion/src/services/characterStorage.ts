@@ -11,7 +11,9 @@ export function getCharacters(): Character[] {
     if (!Array.isArray(parsed)) return [];
     
     // Normalize old data structures safely
-    return parsed.map((c: any) => {
+    return parsed
+      .filter((c: any) => c && typeof c === 'object')
+      .map((c: any) => {
       const edition = normalizeEditionId(c.edition);
       // Construct a safe base
       const base = {

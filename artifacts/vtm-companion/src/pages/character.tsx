@@ -29,7 +29,7 @@ export default function CharacterPage() {
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
 
-  const availableClans = useMemo(() => filterByEdition(clans, newEdition), [newEdition]);
+  const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
 
   useEffect(() => {
     setCharacters(getCharacters());

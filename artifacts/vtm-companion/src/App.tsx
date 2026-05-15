@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
 import Clans from "@/pages/clans";
@@ -29,42 +30,44 @@ const queryClient = new QueryClient();
 function Router() {
   return (
     <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        
-        {/* Compendium Routes */}
-        <Route path="/compendium" component={Compendium} />
-        <Route path="/compendium/clanes" component={Clans} />
-        <Route path="/compendium/clanes/:id" component={Clans} />
-        <Route path="/compendium/disciplinas" component={Disciplines} />
-        <Route path="/compendium/disciplinas/:id" component={Disciplines} />
-        <Route path="/compendium/reglas" component={Rules} />
-        <Route path="/compendium/roleplay" component={Roleplay} />
-        <Route path="/compendium/herramientas" component={Tools} />
-        <Route path="/compendium/glosario" component={Glossary} />
-        
-        {/* Legacy routes for backwards compatibility / internal links */}
-        <Route path="/clanes" component={Clans} />
-        <Route path="/clanes/:id" component={Clans} />
-        <Route path="/disciplinas" component={Disciplines} />
-        <Route path="/disciplinas/:id" component={Disciplines} />
-        <Route path="/reglas" component={Rules} />
-        <Route path="/roleplay" component={Roleplay} />
-        <Route path="/herramientas" component={Tools} />
-        <Route path="/glosario" component={Glossary} />
+      <ErrorBoundary>
+        <Switch>
+          <Route path="/" component={Home} />
+          
+          {/* Compendium Routes */}
+          <Route path="/compendium" component={Compendium} />
+          <Route path="/compendium/clanes" component={Clans} />
+          <Route path="/compendium/clanes/:id" component={Clans} />
+          <Route path="/compendium/disciplinas" component={Disciplines} />
+          <Route path="/compendium/disciplinas/:id" component={Disciplines} />
+          <Route path="/compendium/reglas" component={Rules} />
+          <Route path="/compendium/roleplay" component={Roleplay} />
+          <Route path="/compendium/herramientas" component={Tools} />
+          <Route path="/compendium/glosario" component={Glossary} />
+          
+          {/* Legacy routes for backwards compatibility / internal links */}
+          <Route path="/clanes" component={Clans} />
+          <Route path="/clanes/:id" component={Clans} />
+          <Route path="/disciplinas" component={Disciplines} />
+          <Route path="/disciplinas/:id" component={Disciplines} />
+          <Route path="/reglas" component={Rules} />
+          <Route path="/roleplay" component={Roleplay} />
+          <Route path="/herramientas" component={Tools} />
+          <Route path="/glosario" component={Glossary} />
 
-        {/* New main sections */}
-        <Route path="/personaje" component={Character} />
-        <Route path="/cronica" component={Chronicle} />
-        <Route path="/ajustes" component={Settings} />
-        <Route path="/buscar" component={Search} />
-        
-        {/* Utilities */}
-        <Route path="/favoritos" component={Favorites} />
-        <Route path="/notas" component={Notes} />
-        
-        <Route component={NotFound} />
-      </Switch>
+          {/* New main sections */}
+          <Route path="/personaje" component={Character} />
+          <Route path="/cronica" component={Chronicle} />
+          <Route path="/ajustes" component={Settings} />
+          <Route path="/buscar" component={Search} />
+          
+          {/* Utilities */}
+          <Route path="/favoritos" component={Favorites} />
+          <Route path="/notas" component={Notes} />
+          
+          <Route component={NotFound} />
+        </Switch>
+      </ErrorBoundary>
     </Layout>
   );
 }

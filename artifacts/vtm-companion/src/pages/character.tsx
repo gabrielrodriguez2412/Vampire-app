@@ -15,7 +15,7 @@ import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, cl
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 
-class CharacterErrorBoundary extends Component<{ onReset: () => void }, { hasError: boolean }> {
+class CharacterErrorBoundary extends Component<{ onReset: () => void; children?: React.ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {

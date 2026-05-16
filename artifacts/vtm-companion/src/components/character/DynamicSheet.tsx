@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Character } from "@/types";
+import { Character, EditionId } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
@@ -10,6 +10,28 @@ import { Plus, X, ChevronDown } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
+import { clans } from "@/data/clans";
+
+/**
+ * Returns the clan's canonical disciplines for the given edition, excluding
+ * any that the character already has. Pure function (data-driven) so it can
+ * be unit-tested without rendering.
+ */
+export function getSuggestedDisciplineIds(
+  clanId: string | undefined,
+  edition: EditionId,
+  currentMap: Record<string, unknown> = {}
+): string[] {
+  if (!clanId) return [];
+  const clan = clans.find(c => c.id === clanId);
+  if (!clan) return [];
+  return clan.disciplines.filter(disciplineId => {
+    const d = disciplines.find(x => x.id === disciplineId);
+    if (!d) return false;
+    if (!d.editions.includes(edition)) return false;
+    return currentMap[disciplineId] === undefined;
+  });
+}
 
 interface DynamicSheetProps {
   character: Character;
@@ -113,6 +135,7 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
   const [customName, setCustomName] = useState('');
 
   const availableDisciplines = disciplines.filter(d => d.editions.includes(character.edition));
+  const suggestedIds: string[] = getSuggestedDisciplineIds(character.clan, character.edition, currentMap);
 
   const handleAdd = () => {
     if (selectedId === 'custom') {
@@ -128,6 +151,20 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
         setSelectedId('');
       }
     }
+  };
+
+  const addSuggested = (id: string) => {
+    if (currentMap[id] !== undefined) return;
+    handleUpdate(fieldId, { ...currentMap, [id]: 1 });
+  };
+
+  const addAllSuggested = () => {
+    if (suggestedIds.length === 0) return;
+    const next: Record<string, any> = { ...currentMap };
+    for (const id of suggestedIds) {
+      if (next[id] === undefined) next[id] = 1;
+    }
+    handleUpdate(fieldId, next);
   };
 
   const getDisplayName = (id: string) => {
@@ -168,6 +205,33 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
           </div>
         )}
       </div>
+      {!isReadOnly && suggestedIds.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 pb-1">
+          <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
+            {strings.disciplines_suggested || "Suggested"}:
+          </span>
+          {suggestedIds.map(id => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => addSuggested(id)}
+              className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border border-zinc-700 bg-zinc-950/60 text-foreground hover:bg-zinc-900 hover:border-primary/40 transition-colors"
+            >
+              <Plus className="w-3 h-3" aria-hidden="true" />
+              {getDisplayName(id)}
+            </button>
+          ))}
+          {suggestedIds.length > 1 && (
+            <button
+              type="button"
+              onClick={addAllSuggested}
+              className="text-xs px-2 py-1 rounded border border-primary/40 bg-primary/15 text-foreground hover:bg-primary/25 transition-colors"
+            >
+              {strings.disciplines_add_all_suggested || "Add all"}
+            </button>
+          )}
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
         {entries.map(([key, rating]) => (
           <div key={key} className="flex items-center justify-between gap-4 py-1 border-b border-zinc-800/30">

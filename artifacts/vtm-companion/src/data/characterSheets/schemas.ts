@@ -8,6 +8,8 @@ export interface FieldDef {
   min?: number;
   // Specific for trackers or specialized fields
   special?: 'health' | 'willpower' | 'bloodPool' | 'hunger';
+  /** If true, this field stays editable even in View Mode (gameplay trackers). */
+  gameplay?: boolean;
 }
 
 export interface SectionDef {

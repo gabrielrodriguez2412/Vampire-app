@@ -205,8 +205,15 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
-  const handleUpdate = (fieldId: string, value: any) => {
-    if (readonly) return;
+  /** A field is read-only if we're in View Mode AND it's not a gameplay tracker. */
+  const isFieldReadOnly = (field: FieldDef): boolean => {
+    if (!readonly) return false;       // Edit Mode: everything editable
+    return !field.gameplay;            // View Mode: only gameplay fields editable
+  };
+
+  const handleUpdate = (fieldId: string, value: any, field?: FieldDef) => {
+    // Block updates for non-gameplay fields in View Mode
+    if (readonly && (!field || !field.gameplay)) return;
     const updated = setProperty(character, fieldId, value);
     onChange(updated);
   };
@@ -232,8 +239,8 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
             <Input 
               value={value != null ? String(value) : ''} 
-              onChange={e => handleUpdate(field.id, e.target.value)} 
-              readOnly={readonly}
+              onChange={e => handleUpdate(field.id, e.target.value, field)} 
+              readOnly={isFieldReadOnly(field)}
               className="bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary-container"
             />
           </div>
@@ -244,8 +251,8 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
             <Textarea 
               value={value != null ? String(value) : ''} 
-              onChange={e => handleUpdate(field.id, e.target.value)} 
-              readOnly={readonly}
+              onChange={e => handleUpdate(field.id, e.target.value, field)} 
+              readOnly={isFieldReadOnly(field)}
               className="bg-zinc-950 border-zinc-800 min-h-[100px]"
             />
           </div>
@@ -257,8 +264,8 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
             <Input 
               type="number"
               value={typeof value === 'number' ? value : parseInt(String(value)) || 0} 
-              onChange={e => handleUpdate(field.id, parseInt(e.target.value) || 0)} 
-              readOnly={readonly}
+              onChange={e => handleUpdate(field.id, parseInt(e.target.value) || 0, field)} 
+              readOnly={isFieldReadOnly(field)}
               className="bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary-container w-20"
             />
           </div>
@@ -274,8 +281,8 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
               value={typeof value === 'number' ? value : parseInt(String(value)) || 0} 
               max={max} 
               min={field.min || 0}
-              onChange={v => handleUpdate(field.id, v)} 
-              readonly={readonly}
+              onChange={v => handleUpdate(field.id, v, field)} 
+              readonly={isFieldReadOnly(field)}
               className={colorClass}
             />
           </div>
@@ -297,8 +304,8 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
                 damage={safeValue.damage || 0}
                 aggravated={safeValue.aggravated || 0}
                 max={safeValue.max || 5}
-                onChange={v => handleUpdate(field.id, { ...safeValue, ...v })}
-                readonly={readonly}
+                onChange={v => handleUpdate(field.id, { ...safeValue, ...v }, field)}
+                readonly={isFieldReadOnly(field)}
               />
             </div>
           );
@@ -318,12 +325,12 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
                     onChange={e => {
                       const num = parseInt(e.target.value) || 0;
                       if (isObject) {
-                        handleUpdate(field.id, { ...value, current: num });
+                        handleUpdate(field.id, { ...value, current: num }, field);
                       } else {
-                        handleUpdate(field.id, num);
+                        handleUpdate(field.id, num, field);
                       }
                     }} 
-                    readOnly={readonly}
+                    readOnly={isFieldReadOnly(field)}
                     className="w-16 bg-zinc-950 border-zinc-800"
                   />
                   <span className="text-xs text-muted-foreground">/ {classicMax}</span>

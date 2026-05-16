@@ -240,33 +240,45 @@ export default function CharacterPage() {
           <motion.div key="sheet" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
             {activeChar ? (
               <>
-                <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
-                  <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
-                    <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
-                  </Button>
-                  <div className="flex items-center gap-4">
-                    <div className="text-xs uppercase tracking-widest text-muted-foreground hidden sm:block">
-                      {strings.saved}
-                    </div>
-                    <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
-                      {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
-                    </div>
-                    <Button
-                      variant={isEditing ? "default" : "outline"}
-                      onClick={() => setIsEditing(!isEditing)}
-                      size="sm"
-                      className={`gap-2 ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground"}`}
-                    >
-                      {isEditing ? (
-                        <>
-                          <Check className="w-4 h-4" /> {strings.sheet_save || "Done"}
-                        </>
-                      ) : (
-                        <>
-                          <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
-                        </>
-                      )}
+                {/* Sticky sheet header — always accessible while scrolling */}
+                <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border pb-4 mb-6 -mx-6 px-6 pt-2 md:-mx-10 md:px-10">
+                  <div className="flex items-center justify-between">
+                    <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
+                      <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
                     </Button>
+                    <div className="flex items-center gap-3">
+                      {/* Visual mode indicator */}
+                      <div className={`px-3 py-1 rounded text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 transition-colors ${
+                        isEditing
+                          ? "bg-primary/20 border border-primary/40 text-primary-foreground"
+                          : "bg-zinc-800/60 border border-zinc-700/50 text-muted-foreground"
+                      }`}>
+                        {isEditing ? (
+                          <>{strings.sheet_mode_edit || "Edit Mode"}</>
+                        ) : (
+                          <>{strings.sheet_mode_view || "View Mode"}</>
+                        )}
+                      </div>
+                      <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
+                        {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
+                      </div>
+                      <Button
+                        variant={isEditing ? "default" : "outline"}
+                        onClick={() => setIsEditing(!isEditing)}
+                        size="sm"
+                        className={`gap-2 ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground"}`}
+                      >
+                        {isEditing ? (
+                          <>
+                            <Check className="w-4 h-4" /> {strings.sheet_done || "Done"}
+                          </>
+                        ) : (
+                          <>
+                            <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

@@ -739,8 +739,9 @@ export const classicSchema: SheetSchema = {
       labelKey: 'sheet_section_other_traits',
       fields: [
         { id: 'humanity', labelKey: 'sheet_humanity_path', type: 'dots-10' },
-        { id: 'willpower', labelKey: 'sheet_willpower', type: 'special-willpower' },
-        { id: 'bloodPool', labelKey: 'sheet_blood_pool', type: 'special-health', special: 'bloodPool' },
+        { id: 'willpower', labelKey: 'sheet_willpower', type: 'special-willpower', gameplay: true },
+        { id: 'bloodPool', labelKey: 'sheet_blood_pool', type: 'special-health', special: 'bloodPool', gameplay: true },
+        { id: 'health', labelKey: 'sheet_health', type: 'special-health', special: 'health', gameplay: true },
       ]
     },
     {

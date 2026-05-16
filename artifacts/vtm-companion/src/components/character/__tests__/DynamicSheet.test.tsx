@@ -195,3 +195,228 @@ describe('DynamicSheet Rendering', () => {
     expect(queryByPlaceholderText('Name...')).toBeNull();
   });
 });
+
+describe('DynamicSheet Hybrid View/Edit Mode', () => {
+  const mockOnChange = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  const renderWithContext = (ui: React.ReactElement) => {
+    return render(
+      <AppContextProvider>
+        {ui}
+      </AppContextProvider>
+    );
+  };
+
+  it('View Mode blocks build field updates (attributes)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: { strength: 3 }, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'attrs', labelKey: 'test', fields: [
+          { id: 'attributes.strength', type: 'dots-5', labelKey: 'strength' }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    // Click a dot — should NOT trigger onChange because this is a build field in View Mode
+    const dots = container.querySelectorAll('.rounded-full');
+    if (dots.length > 0) {
+      fireEvent.click(dots[0]);
+    }
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('View Mode allows V5 gameplay tracker updates (health DamageTracker)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'health', type: 'special-health', labelKey: 'health', gameplay: true }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    // Click a damage box — should trigger onChange because health is a gameplay field
+    const damageBoxes = container.querySelectorAll('.w-5.h-5');
+    if (damageBoxes.length > 0) {
+      fireEvent.click(damageBoxes[0]);
+    }
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('View Mode allows V5 gameplay tracker updates (hunger dots)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'vtraits', labelKey: 'test', fields: [
+          { id: 'hunger', type: 'dots-5', labelKey: 'sheet_hunger', special: 'hunger', gameplay: true }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    // Click a hunger dot — should trigger onChange because hunger is a gameplay field
+    const dots = container.querySelectorAll('.rounded-full');
+    if (dots.length > 0) {
+      fireEvent.click(dots[dots.length - 1]); // click last dot
+    }
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('View Mode allows classic Health updates (flat number)', () => {
+    const classicChar: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 15, max: 20 },
+      health: 0,
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'health', type: 'special-health', special: 'health', labelKey: 'sheet_health', gameplay: true }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    // The classic health renders as a number input — it should NOT be readOnly for gameplay fields
+    const inputs = container.querySelectorAll('input[type="number"]');
+    expect(inputs.length).toBeGreaterThan(0);
+    const healthInput = inputs[0] as HTMLInputElement;
+    expect(healthInput.readOnly).toBe(false);
+
+    // Changing the value should trigger onChange
+    fireEvent.change(healthInput, { target: { value: '3' } });
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('View Mode allows classic Blood Pool updates', () => {
+    const classicChar: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 15, max: 20 },
+      health: 0,
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'bloodPool', type: 'special-health', special: 'bloodPool', labelKey: 'sheet_blood_pool', gameplay: true }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    const inputs = container.querySelectorAll('input[type="number"]');
+    expect(inputs.length).toBeGreaterThan(0);
+    const bpInput = inputs[0] as HTMLInputElement;
+    expect(bpInput.readOnly).toBe(false);
+
+    fireEvent.change(bpInput, { target: { value: '10' } });
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('Humanity stays locked in View Mode (not a gameplay field)', () => {
+    const classicChar: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 }, health: 0,
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'traits', labelKey: 'test', fields: [
+          { id: 'humanity', type: 'dots-10', labelKey: 'sheet_humanity_path' }
+          // No gameplay flag — should be locked in View Mode
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    // Click a humanity dot — should NOT trigger onChange
+    const dots = container.querySelectorAll('.rounded-full');
+    if (dots.length > 0) {
+      fireEvent.click(dots[0]);
+    }
+    expect(mockOnChange).not.toHaveBeenCalled();
+  });
+
+  it('Edit Mode allows all updates (build and gameplay fields)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: { strength: 3 }, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'mixed', labelKey: 'test', fields: [
+          { id: 'attributes.strength', type: 'dots-5', labelKey: 'strength' },
+          { id: 'hunger', type: 'dots-5', labelKey: 'sheet_hunger', special: 'hunger', gameplay: true }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} readonly={false} />
+    );
+
+    // Click attribute dot — should work in Edit Mode
+    const dots = container.querySelectorAll('.rounded-full');
+    if (dots.length > 0) {
+      fireEvent.click(dots[0]);
+    }
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+});

@@ -781,7 +781,7 @@ export const v5Schema: SheetSchema = {
       labelKey: 'sheet_section_vampire_traits',
       fields: [
         { id: 'bloodPotency', labelKey: 'sheet_blood_potency', type: 'dots-10', min: 1 },
-        { id: 'hunger', labelKey: 'sheet_hunger', type: 'dots-5', special: 'hunger' },
+        { id: 'hunger', labelKey: 'sheet_hunger', type: 'dots-5', special: 'hunger', gameplay: true },
         { id: 'humanity', labelKey: 'sheet_humanity', type: 'dots-10' },
         { id: 'resonance', labelKey: 'sheet_resonance', type: 'text' },
       ]
@@ -797,8 +797,8 @@ export const v5Schema: SheetSchema = {
       id: 'trackers',
       labelKey: 'sheet_section_trackers',
       fields: [
-        { id: 'health', labelKey: 'sheet_health', type: 'special-health' },
-        { id: 'willpower', labelKey: 'sheet_willpower', type: 'special-willpower' },
+        { id: 'health', labelKey: 'sheet_health', type: 'special-health', gameplay: true },
+        { id: 'willpower', labelKey: 'sheet_willpower', type: 'special-willpower', gameplay: true },
         { id: 'experience', labelKey: 'sheet_experience', type: 'number' },
       ]
     },

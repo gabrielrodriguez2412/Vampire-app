@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -85,6 +85,141 @@ describe('characterStorage', () => {
       expect(char.name).toBe('Test V20');
       expect((char as any).generation).toBe(13);
       expect((char as any).bloodPool).toEqual({ current: 10, max: 10 });
+    });
+  });
+
+  describe('renameCharacter', () => {
+    it('renames a character and persists to storage', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Original');
+      saveCharacter(char);
+
+      const updated = renameCharacter(char.id, 'New Name');
+      expect(updated).not.toBeNull();
+      expect(updated!.name).toBe('New Name');
+
+      // Verify persistence
+      const loaded = getCharacters();
+      expect(loaded[0].name).toBe('New Name');
+    });
+
+    it('trims whitespace from names', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Original');
+      saveCharacter(char);
+
+      const updated = renameCharacter(char.id, '  Trimmed Name  ');
+      expect(updated!.name).toBe('Trimmed Name');
+    });
+
+    it('rejects blank names (returns null)', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Original');
+      saveCharacter(char);
+
+      expect(renameCharacter(char.id, '')).toBeNull();
+      expect(renameCharacter(char.id, '   ')).toBeNull();
+
+      // Name should be unchanged
+      const loaded = getCharacters();
+      expect(loaded[0].name).toBe('Original');
+    });
+
+    it('returns null for non-existent character', () => {
+      expect(renameCharacter('nonexistent-id', 'New Name')).toBeNull();
+    });
+
+    it('does not affect other characters', () => {
+      const char1 = createEmptyCharacter('V5', 'brujah', 'First');
+      const char2 = createEmptyCharacter('V5', 'tremere', 'Second');
+      saveCharacter(char1);
+      saveCharacter(char2);
+
+      renameCharacter(char1.id, 'Renamed');
+
+      const loaded = getCharacters();
+      expect(loaded.find(c => c.id === char1.id)!.name).toBe('Renamed');
+      expect(loaded.find(c => c.id === char2.id)!.name).toBe('Second');
+    });
+  });
+
+  describe('duplicateCharacter', () => {
+    it('creates a copy with a new ID and "Copy" suffix', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Original');
+      saveCharacter(char);
+
+      const cloned = duplicateCharacter(char.id);
+      expect(cloned).not.toBeNull();
+      expect(cloned!.id).not.toBe(char.id);
+      expect(cloned!.name).toBe('Original Copy');
+      expect(cloned!.clan).toBe('brujah');
+      expect(cloned!.edition).toBe('V5');
+    });
+
+    it('preserves all character data', () => {
+      const char = createEmptyCharacter('V20', 'tremere', 'Wizard') as any;
+      char.generation = 8;
+      char.humanity = 6;
+      char.disciplines = { thaumaturgy: 3 };
+      char.backgrounds = { resources: 2 };
+      saveCharacter(char);
+
+      const cloned = duplicateCharacter(char.id) as any;
+      expect(cloned.generation).toBe(8);
+      expect(cloned.humanity).toBe(6);
+      expect(cloned.disciplines).toEqual({ thaumaturgy: 3 });
+      expect(cloned.backgrounds).toEqual({ resources: 2 });
+    });
+
+    it('creates independent copy (no shared references)', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Original') as any;
+      char.disciplines = { potence: 2 };
+      saveCharacter(char);
+
+      const cloned = duplicateCharacter(char.id) as any;
+      cloned.disciplines.potence = 5;
+
+      // Original should not be affected
+      const loaded = getCharacters();
+      const original = loaded.find(c => c.id === char.id) as any;
+      expect(original.disciplines.potence).toBe(2);
+    });
+
+    it('results in two characters in storage', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Test');
+      saveCharacter(char);
+
+      duplicateCharacter(char.id);
+
+      const loaded = getCharacters();
+      expect(loaded).toHaveLength(2);
+    });
+
+    it('returns null for non-existent character', () => {
+      expect(duplicateCharacter('nonexistent-id')).toBeNull();
+    });
+  });
+
+  describe('deleteCharacter', () => {
+    it('removes only the specified character', () => {
+      const char1 = createEmptyCharacter('V5', 'brujah', 'First');
+      const char2 = createEmptyCharacter('V5', 'tremere', 'Second');
+      saveCharacter(char1);
+      saveCharacter(char2);
+
+      deleteCharacter(char1.id);
+
+      const loaded = getCharacters();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0].id).toBe(char2.id);
+      expect(loaded[0].name).toBe('Second');
+    });
+
+    it('does nothing for non-existent id', () => {
+      const char = createEmptyCharacter('V5', 'brujah', 'Test');
+      saveCharacter(char);
+
+      deleteCharacter('nonexistent-id');
+
+      const loaded = getCharacters();
+      expect(loaded).toHaveLength(1);
     });
   });
 });

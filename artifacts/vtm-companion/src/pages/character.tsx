@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3 } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -11,7 +11,7 @@ import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 
@@ -61,6 +61,11 @@ export default function CharacterPage() {
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
 
+  // Character management state
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
 
   useEffect(() => {
@@ -104,10 +109,68 @@ export default function CharacterPage() {
     });
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  // --- Character management handlers ---
+
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteCharacter(id);
+    setDeletingId(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deletingId) return;
+    deleteCharacter(deletingId);
+    // If the deleted character is currently open, return to list
+    if (activeChar?.id === deletingId) {
+      setActiveChar(null);
+      setActiveView('list');
+    }
     setCharacters(getCharacters());
+    setDeletingId(null);
+    toast({ title: strings.char_deleted || "Character deleted" });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeletingId(null);
+  };
+
+  const handleRenameStart = (char: Character, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenamingId(char.id);
+    setRenameValue(char.name);
+  };
+
+  const handleRenameConfirm = () => {
+    if (!renamingId) return;
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      toast({ title: strings.missingData, description: strings.char_name_required || "Name cannot be blank.", variant: "destructive" });
+      return;
+    }
+    const updated = renameCharacter(renamingId, trimmed);
+    if (updated) {
+      setCharacters(getCharacters());
+      // If the renamed character is currently open, update activeChar too
+      if (activeChar?.id === renamingId) {
+        setActiveChar(updated);
+      }
+      toast({ title: strings.saved });
+    }
+    setRenamingId(null);
+    setRenameValue("");
+  };
+
+  const handleRenameCancel = () => {
+    setRenamingId(null);
+    setRenameValue("");
+  };
+
+  const handleDuplicate = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const cloned = duplicateCharacter(id);
+    if (cloned) {
+      setCharacters(getCharacters());
+      toast({ title: strings.char_duplicated || "Character duplicated" });
+    }
   };
 
   const handleOpenSheet = (char: Character) => {
@@ -130,6 +193,8 @@ export default function CharacterPage() {
     return getClanDisplayNameById(clanId, charEdition || activeEdition, activeLanguage);
   };
 
+  const deletingCharName = deletingId ? characters.find(c => c.id === deletingId)?.name : '';
+
   return (
     <CharacterErrorBoundary key={boundaryKey} onReset={resetCharacterData}>
       <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
@@ -140,6 +205,42 @@ export default function CharacterPage() {
         </h1>
         <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
       </div>
+
+      {/* Delete confirmation overlay */}
+      <AnimatePresence>
+        {deletingId && (
+          <motion.div
+            key="delete-confirm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={handleDeleteCancel}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-2">{strings.char_confirm_delete || "Delete Character?"}</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {strings.char_confirm_delete_desc || "This action cannot be undone."}{' '}
+                <span className="text-foreground font-medium">{deletingCharName}</span>
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" size="sm" onClick={handleDeleteCancel} className="text-muted-foreground">
+                  {strings.cancel}
+                </Button>
+                <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+                  <Trash2 className="w-4 h-4 mr-1" /> {strings.delete}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {activeView === 'list' && (
@@ -160,21 +261,71 @@ export default function CharacterPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {characters.map(char => (
                   <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors" onClick={() => handleOpenSheet(char)}>
-                    <CardHeader className="pb-4">
+                    <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="font-serif text-xl mb-1">{char.name}</CardTitle>
+                        <div className="min-w-0 flex-1">
+                          {renamingId === char.id ? (
+                            /* Inline rename editor */
+                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                              <Input
+                                value={renameValue}
+                                onChange={e => setRenameValue(e.target.value)}
+                                className="h-7 text-sm bg-zinc-950 border-zinc-700 font-serif"
+                                autoFocus
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') handleRenameConfirm();
+                                  if (e.key === 'Escape') handleRenameCancel();
+                                }}
+                              />
+                              <Button variant="ghost" size="icon" onClick={handleRenameConfirm} className="h-7 w-7 text-green-400 hover:text-green-300 hover:bg-green-950/30">
+                                <Check className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" onClick={handleRenameCancel} className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                <X className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <CardTitle className="font-serif text-xl mb-1 truncate">{char.name}</CardTitle>
+                          )}
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <span>{getClanIcon(char.clan)} {getClanName(char.clan, char.edition as EditionId)}</span>
                             <span>•</span>
                             <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" onClick={(e) => handleDelete(char.id, e)} className="text-muted-foreground hover:text-red-400 hover:bg-red-950/30 -mt-2 -mr-2">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
                       </div>
                     </CardHeader>
+                    {/* Action buttons row */}
+                    <div className="px-6 pb-4 pt-1 flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleRenameStart(char, e)}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                        title={strings.char_rename || "Rename"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> {strings.char_rename || "Rename"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDuplicate(char.id, e)}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                        title={strings.char_duplicate || "Duplicate"}
+                      >
+                        <Copy className="w-3.5 h-3.5" /> {strings.char_duplicate || "Duplicate"}
+                      </Button>
+                      <div className="flex-1" />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDeleteClick(char.id, e)}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-red-400 hover:bg-red-950/30 gap-1"
+                        title={strings.delete}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>

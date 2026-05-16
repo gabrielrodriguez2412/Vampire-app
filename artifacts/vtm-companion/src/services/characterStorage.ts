@@ -130,3 +130,36 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
     } as ClassicCharacter;
   }
 }
+
+/** Rename a character. Returns the updated character, or null if name is blank or character not found. */
+export function renameCharacter(id: string, newName: string): Character | null {
+  const trimmed = newName.trim();
+  if (!trimmed) return null;
+
+  const chars = getCharacters();
+  const index = chars.findIndex(c => c.id === id);
+  if (index < 0) return null;
+
+  const updated = { ...chars[index], name: trimmed, updatedAt: new Date().toISOString() } as Character;
+  chars[index] = updated;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  return updated;
+}
+
+/** Duplicate a character with a new unique ID and "(Copy)" suffix on the name. */
+export function duplicateCharacter(id: string): Character | null {
+  const chars = getCharacters();
+  const source = chars.find(c => c.id === id);
+  if (!source) return null;
+
+  // Deep clone all data to avoid shared references
+  const cloned = JSON.parse(JSON.stringify(source)) as Character;
+  cloned.id = crypto.randomUUID();
+  cloned.name = `${source.name} Copy`;
+  cloned.createdAt = new Date().toISOString();
+  cloned.updatedAt = new Date().toISOString();
+
+  chars.push(cloned);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  return cloned;
+}

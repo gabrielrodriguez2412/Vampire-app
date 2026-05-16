@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -14,6 +14,13 @@ import { useToast } from "@/hooks/use-toast";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 class CharacterErrorBoundary extends Component<{ onReset: () => void; children?: React.ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -111,11 +118,6 @@ export default function CharacterPage() {
 
   // --- Character management handlers ---
 
-  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setDeletingId(id);
-  };
-
   const handleDeleteConfirm = () => {
     if (!deletingId) return;
     deleteCharacter(deletingId);
@@ -131,12 +133,6 @@ export default function CharacterPage() {
 
   const handleDeleteCancel = () => {
     setDeletingId(null);
-  };
-
-  const handleRenameStart = (char: Character, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setRenamingId(char.id);
-    setRenameValue(char.name);
   };
 
   const handleRenameConfirm = () => {
@@ -162,23 +158,6 @@ export default function CharacterPage() {
   const handleRenameCancel = () => {
     setRenamingId(null);
     setRenameValue("");
-  };
-
-  const handleDuplicate = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const cloned = duplicateCharacter(id);
-    if (cloned) {
-      setCharacters(getCharacters());
-      toast({ title: strings.char_duplicated || "Character duplicated" });
-    }
-  };
-
-  const handleExport = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    const ok = downloadCharacterExport(id);
-    if (ok) {
-      toast({ title: strings.char_exported || "Character exported" });
-    }
   };
 
   // --- Import ---
@@ -318,9 +297,9 @@ export default function CharacterPage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {characters.map(char => (
-                  <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors" onClick={() => handleOpenSheet(char)}>
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
+                  <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group" onClick={() => handleOpenSheet(char)}>
+                    <CardHeader className="pb-3">
+                      <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1">
                           {renamingId === char.id ? (
                             /* Inline rename editor */
@@ -350,49 +329,56 @@ export default function CharacterPage() {
                             <span>•</span>
                             <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
                           </div>
+                          {char.updatedAt && (
+                            <div className="text-[10px] text-muted-foreground/60 mt-1.5">
+                              {new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* ⋯ More menu */}
+                        <div onClick={e => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity -mt-1 -mr-2"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem
+                                onClick={() => { setRenamingId(char.id); setRenameValue(char.name); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Pencil className="w-4 h-4" /> {strings.char_rename || "Rename"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { duplicateCharacter(char.id); setCharacters(getCharacters()); toast({ title: strings.char_duplicated || "Character duplicated" }); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Copy className="w-4 h-4" /> {strings.char_duplicate || "Duplicate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { downloadCharacterExport(char.id); toast({ title: strings.char_exported || "Character exported" }); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Download className="w-4 h-4" /> {strings.char_export || "Export"}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeletingId(char.id)}
+                                className="gap-2 cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-950/30"
+                              >
+                                <Trash2 className="w-4 h-4" /> {strings.delete}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardHeader>
-                    {/* Action buttons row */}
-                    <div className="px-6 pb-4 pt-1 flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleRenameStart(char, e)}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                        title={strings.char_rename || "Rename"}
-                      >
-                        <Pencil className="w-3.5 h-3.5" /> {strings.char_rename || "Rename"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDuplicate(char.id, e)}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                        title={strings.char_duplicate || "Duplicate"}
-                      >
-                        <Copy className="w-3.5 h-3.5" /> {strings.char_duplicate || "Duplicate"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleExport(char.id, e)}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                        title={strings.char_export || "Export"}
-                      >
-                        <Download className="w-3.5 h-3.5" /> {strings.char_export || "Export"}
-                      </Button>
-                      <div className="flex-1" />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => handleDeleteClick(char.id, e)}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-red-400 hover:bg-red-950/30 gap-1"
-                        title={strings.delete}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
                   </Card>
                 ))}
               </div>

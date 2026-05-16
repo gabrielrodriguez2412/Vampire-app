@@ -6,7 +6,7 @@ import { DamageTracker } from "./DamageTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ChevronDown } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
@@ -205,6 +205,13 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
+  /** Local-only collapsed state for sections. Not persisted; not in character data. */
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (sectionId: string) => {
+    setCollapsed(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
+  };
+
   /** A field is read-only if we're in View Mode AND it's not a gameplay tracker. */
   const isFieldReadOnly = (field: FieldDef): boolean => {
     if (!readonly) return false;       // Edit Mode: everything editable
@@ -356,18 +363,70 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
     }
   };
 
+  const sections = Array.isArray(schema.sections) ? schema.sections : [];
+  const sectionIds = sections.map((s, i) => s.id || s.labelKey || String(i));
+  const allCollapsed = sectionIds.length > 0 && sectionIds.every(id => collapsed[id]);
+
+  const toggleAll = () => {
+    if (allCollapsed) {
+      setCollapsed({});
+    } else {
+      const next: Record<string, boolean> = {};
+      for (const id of sectionIds) next[id] = true;
+      setCollapsed(next);
+    }
+  };
+
   return (
     <div className="space-y-10 pb-12">
-      {(Array.isArray(schema.sections) ? schema.sections : []).map((section, sectionIndex) => (
-        <section key={section.id || section.labelKey || sectionIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8">
-          <h2 className="font-serif text-xl text-primary mb-8 uppercase tracking-widest border-b border-zinc-800 pb-3">
-            {strings[section.labelKey] || section.labelKey}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
-            {(Array.isArray(section.fields) ? section.fields : []).map(field => renderField(field))}
-          </div>
-        </section>
-      ))}
+      {sections.length > 1 && (
+        <div className="flex justify-end -mb-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={toggleAll}
+            aria-pressed={allCollapsed}
+            className="gap-1.5 text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${allCollapsed ? "-rotate-90" : ""}`} aria-hidden="true" />
+            {allCollapsed
+              ? (strings.sheet_expand_all || "Expand all")
+              : (strings.sheet_collapse_all || "Collapse all")}
+          </Button>
+        </div>
+      )}
+      {sections.map((section, sectionIndex) => {
+        const sectionId = section.id || section.labelKey || String(sectionIndex);
+        const isCollapsed = !!collapsed[sectionId];
+        const sectionLabel = strings[section.labelKey] || section.labelKey;
+        const bodyId = `sheet-section-body-${sectionId}`;
+        return (
+          <section key={sectionId} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8">
+            <button
+              type="button"
+              onClick={() => toggleSection(sectionId)}
+              aria-expanded={!isCollapsed}
+              aria-controls={bodyId}
+              className="w-full flex items-center justify-between gap-3 uppercase tracking-widest border-b border-zinc-800 pb-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+            >
+              <h2 className="font-serif text-xl text-primary">
+                {sectionLabel}
+              </h2>
+              <ChevronDown
+                className={`w-4 h-4 text-muted-foreground group-hover:text-foreground transition-transform shrink-0 ${isCollapsed ? "-rotate-90" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+            <div
+              id={bodyId}
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5 ${isCollapsed ? "hidden" : "mt-6"}`}
+            >
+              {(Array.isArray(section.fields) ? section.fields : []).map(field => renderField(field))}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

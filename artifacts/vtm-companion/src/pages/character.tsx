@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -11,8 +11,9 @@ import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
+import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
@@ -96,6 +97,7 @@ export default function CharacterPage() {
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [printingId, setPrintingId] = useState<string | null>(null);
 
   const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
 
@@ -418,6 +420,12 @@ export default function CharacterPage() {
                               >
                                 <Download className="w-4 h-4" /> {strings.char_export || "Export"}
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => setPrintingId(char.id)}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Printer className="w-4 h-4" /> {strings.char_print || "Print / PDF"}
+                              </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => setDeletingId(char.id)}
@@ -578,6 +586,18 @@ export default function CharacterPage() {
                         {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
                       </div>
                       <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPrintingId(activeChar.id)}
+                        aria-label={strings.char_print || "Print / PDF"}
+                        title={strings.char_print || "Print / PDF"}
+                        className="gap-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Printer className="w-4 h-4" />
+                        <span className="hidden sm:inline">{strings.char_print || "Print"}</span>
+                      </Button>
+                      <Button
                         variant={isEditing ? "default" : "outline"}
                         onClick={() => setIsEditing(!isEditing)}
                         size="sm"
@@ -613,6 +633,18 @@ export default function CharacterPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Print preview modal — rendered at page root so it isn't constrained by motion.div transforms. */}
+      {printingId && (() => {
+        const target = activeChar?.id === printingId ? activeChar : getCharacterById(printingId);
+        if (!target) return null;
+        return (
+          <CharacterPrintModal
+            character={target}
+            onClose={() => setPrintingId(null)}
+          />
+        );
+      })()}
 
       {/* Floating Edit/Done button — always reachable while scrolling.
           Rendered outside the animated <motion.div> so it isn't affected by its transform. */}

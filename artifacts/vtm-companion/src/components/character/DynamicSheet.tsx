@@ -357,13 +357,13 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 pb-12">
       {(Array.isArray(schema.sections) ? schema.sections : []).map((section, sectionIndex) => (
-        <section key={section.id || section.labelKey || sectionIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6">
-          <h2 className="font-serif text-xl text-primary mb-6 uppercase tracking-widest border-b border-zinc-800 pb-2">
+        <section key={section.id || section.labelKey || sectionIndex} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8">
+          <h2 className="font-serif text-xl text-primary mb-8 uppercase tracking-widest border-b border-zinc-800 pb-3">
             {strings[section.labelKey] || section.labelKey}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5">
             {(Array.isArray(section.fields) ? section.fields : []).map(field => renderField(field))}
           </div>
         </section>

@@ -444,14 +444,13 @@ export default function CharacterPage() {
           <motion.div key="sheet" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
             {activeChar ? (
               <>
-                {/* Sticky sheet header — always accessible while scrolling */}
-                <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border pb-4 mb-6 -mx-6 px-6 pt-2 md:-mx-10 md:px-10">
-                  <div className="flex items-center justify-between">
+                {/* In-flow sheet header (visible at top of sheet) */}
+                <div className="border-b border-border pb-4 mb-8">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
                     <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
                       <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
                     </Button>
                     <div className="flex items-center gap-3">
-                      {/* Visual mode indicator */}
                       <div className={`px-3 py-1 rounded text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 transition-colors ${
                         isEditing
                           ? "bg-primary/20 border border-primary/40 text-primary-foreground"
@@ -486,10 +485,10 @@ export default function CharacterPage() {
                   </div>
                 </div>
 
-                <DynamicSheet 
-                  character={activeChar} 
-                  schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)} 
-                  onChange={handleSheetUpdate} 
+                <DynamicSheet
+                  character={activeChar}
+                  schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)}
+                  onChange={handleSheetUpdate}
                   readonly={!isEditing}
                 />
               </>
@@ -502,6 +501,37 @@ export default function CharacterPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Edit/Done button — always reachable while scrolling.
+          Rendered outside the animated <motion.div> so it isn't affected by its transform. */}
+      {activeView === 'sheet' && activeChar && (
+        <div className="fixed bottom-24 right-4 md:right-6 z-40 flex items-center gap-2">
+          <span className={`hidden sm:inline-flex px-2.5 py-1 rounded text-[10px] font-bold tracking-widest uppercase items-center gap-1.5 shadow-md backdrop-blur-sm ${
+            isEditing
+              ? "bg-primary/30 border border-primary/50 text-primary-foreground"
+              : "bg-zinc-900/80 border border-zinc-700/60 text-muted-foreground"
+          }`}>
+            {isEditing ? (strings.sheet_mode_edit || "Edit Mode") : (strings.sheet_mode_view || "View Mode")}
+          </span>
+          <Button
+            variant={isEditing ? "default" : "outline"}
+            onClick={() => setIsEditing(!isEditing)}
+            size="sm"
+            aria-label={isEditing ? (strings.sheet_done || "Done") : (strings.sheet_edit || "Edit")}
+            className={`gap-2 shadow-lg ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-zinc-900/90 border-zinc-700 text-foreground hover:bg-zinc-800 backdrop-blur-sm"}`}
+          >
+            {isEditing ? (
+              <>
+                <Check className="w-4 h-4" /> {strings.sheet_done || "Done"}
+              </>
+            ) : (
+              <>
+                <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
     </CharacterErrorBoundary>
   );

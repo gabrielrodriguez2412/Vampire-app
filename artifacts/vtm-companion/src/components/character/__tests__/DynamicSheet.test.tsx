@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { DynamicSheet, getProperty, setProperty } from '../DynamicSheet';
+import { DynamicSheet, getProperty, setProperty, getSuggestedDisciplineIds } from '../DynamicSheet';
 import { AppContextProvider } from '@/context/AppContext';
 import { Character, EditionId, V5Character, ClassicCharacter } from '@/types';
 import { SheetSchema } from '@/data/characterSheets/schemas';
@@ -46,6 +46,44 @@ describe('DynamicSheet Utilities', () => {
       const obj = { attributes: null };
       const updated = setProperty(obj, 'attributes.strength', 3);
       expect(updated.attributes.strength).toBe(3);
+    });
+  });
+
+  describe('getSuggestedDisciplineIds', () => {
+    it('returns the canonical disciplines for a clan in V5', () => {
+      const ids = getSuggestedDisciplineIds('brujah', 'V5', {});
+      expect(ids).toEqual(['celerity', 'potence', 'presence']);
+    });
+
+    it('filters out edition-incompatible disciplines (V5 Tremere: no Thaumaturgy)', () => {
+      const ids = getSuggestedDisciplineIds('tremere', 'V5', {});
+      expect(ids).toContain('blood_sorcery');
+      expect(ids).not.toContain('thaumaturgy');
+    });
+
+    it('filters out edition-incompatible disciplines (V20 Tremere: no Blood Sorcery)', () => {
+      const ids = getSuggestedDisciplineIds('tremere', 'V20', {});
+      expect(ids).toContain('thaumaturgy');
+      expect(ids).not.toContain('blood_sorcery');
+    });
+
+    it('returns empty array for Caitiff (no clan disciplines)', () => {
+      expect(getSuggestedDisciplineIds('caitiff', 'V5', {})).toEqual([]);
+    });
+
+    it('returns empty array for unknown clan id', () => {
+      expect(getSuggestedDisciplineIds('not-a-clan', 'V5', {})).toEqual([]);
+    });
+
+    it('returns empty array when clan id is undefined', () => {
+      expect(getSuggestedDisciplineIds(undefined, 'V5', {})).toEqual([]);
+    });
+
+    it('excludes disciplines that are already on the character', () => {
+      const ids = getSuggestedDisciplineIds('brujah', 'V5', { celerity: 2 });
+      expect(ids).not.toContain('celerity');
+      expect(ids).toContain('potence');
+      expect(ids).toContain('presence');
     });
   });
 });

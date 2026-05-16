@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { DynamicSheet, getProperty, setProperty, getSuggestedDisciplineIds } from '../DynamicSheet';
+import { DynamicSheet, getProperty, setProperty, getSuggestedDisciplineIds, readDisciplineEntry, writeDisciplineValue } from '../DynamicSheet';
 import { AppContextProvider } from '@/context/AppContext';
 import { Character, EditionId, V5Character, ClassicCharacter } from '@/types';
 import { SheetSchema } from '@/data/characterSheets/schemas';
@@ -84,6 +84,70 @@ describe('DynamicSheet Utilities', () => {
       expect(ids).not.toContain('celerity');
       expect(ids).toContain('potence');
       expect(ids).toContain('presence');
+    });
+
+    it('also excludes disciplines stored in the new object shape', () => {
+      const ids = getSuggestedDisciplineIds('brujah', 'V5', {
+        celerity: { rating: 2, powers: ['Cat\'s Grace'] },
+      });
+      expect(ids).not.toContain('celerity');
+    });
+  });
+
+  describe('readDisciplineEntry', () => {
+    it('treats a plain number as the rating with no powers', () => {
+      expect(readDisciplineEntry(2)).toEqual({ rating: 2, powers: [] });
+    });
+
+    it('reads the object shape with rating and powers', () => {
+      expect(readDisciplineEntry({ rating: 3, powers: ['A', 'B'] }))
+        .toEqual({ rating: 3, powers: ['A', 'B'] });
+    });
+
+    it('defaults missing powers to an empty array', () => {
+      expect(readDisciplineEntry({ rating: 4 })).toEqual({ rating: 4, powers: [] });
+    });
+
+    it('defaults missing rating to 0 (defensive)', () => {
+      expect(readDisciplineEntry({ powers: ['X'] })).toEqual({ rating: 0, powers: ['X'] });
+    });
+
+    it('filters non-string entries out of the powers array', () => {
+      expect(readDisciplineEntry({ rating: 1, powers: ['A', 42, null, 'B'] as any }))
+        .toEqual({ rating: 1, powers: ['A', 'B'] });
+    });
+
+    it('returns safe zero defaults for null/undefined', () => {
+      expect(readDisciplineEntry(null)).toEqual({ rating: 0, powers: [] });
+      expect(readDisciplineEntry(undefined)).toEqual({ rating: 0, powers: [] });
+    });
+
+    it('parses numeric strings (historical malformed data)', () => {
+      expect(readDisciplineEntry('3')).toEqual({ rating: 3, powers: [] });
+      expect(readDisciplineEntry('not-a-number')).toEqual({ rating: 0, powers: [] });
+    });
+  });
+
+  describe('writeDisciplineValue', () => {
+    it('returns a plain number when there are no powers (legacy-shape preserved)', () => {
+      expect(writeDisciplineValue(3, [])).toBe(3);
+    });
+
+    it('returns the object shape when powers are present', () => {
+      expect(writeDisciplineValue(2, ['Soaring Leap']))
+        .toEqual({ rating: 2, powers: ['Soaring Leap'] });
+    });
+
+    it('keeps the object shape even at rating 0 when powers exist', () => {
+      expect(writeDisciplineValue(0, ['X']))
+        .toEqual({ rating: 0, powers: ['X'] });
+    });
+
+    it('round-trips with readDisciplineEntry for both shapes', () => {
+      expect(readDisciplineEntry(writeDisciplineValue(3, [])))
+        .toEqual({ rating: 3, powers: [] });
+      expect(readDisciplineEntry(writeDisciplineValue(2, ['A', 'B'])))
+        .toEqual({ rating: 2, powers: ['A', 'B'] });
     });
   });
 });

@@ -69,6 +69,14 @@ export interface GlossaryEntry {
   related: string[];
 }
 
+/**
+ * A discipline entry can be either:
+ *   - a plain number (legacy shape — just the dot rating), or
+ *   - an object with `rating` and an optional `powers` list (when the character knows specific powers).
+ * Stored data may use either form interchangeably; readers should tolerate both.
+ */
+export type DisciplineValue = number | { rating: number; powers?: string[] };
+
 export interface BaseCharacter {
   id: string;
   name: string;
@@ -94,7 +102,7 @@ export interface V5Character extends BaseCharacter {
   predatorType?: string;
   attributes: Record<string, number>;
   skills: Record<string, number>;
-  disciplines: Record<string, number>;
+  disciplines: Record<string, DisciplineValue>;
   advantages?: string;
   flaws?: string;
   touchstones?: string;
@@ -112,7 +120,7 @@ export interface ClassicCharacter extends BaseCharacter {
   demeanor?: string;
   attributes: Record<string, number>;
   abilities: Record<string, number>;
-  disciplines: Record<string, number>;
+  disciplines: Record<string, DisciplineValue>;
   backgrounds: Record<string, number>;
   virtues: {
     conscience: number;

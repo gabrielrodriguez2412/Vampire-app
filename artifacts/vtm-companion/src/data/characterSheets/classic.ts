@@ -721,6 +721,20 @@ export const classicSchema: SheetSchema = {
       ]
     },
     {
+      id: 'disciplines',
+      labelKey: 'sheet_section_disciplines',
+      fields: [
+        { id: 'disciplines', labelKey: 'sheet_section_disciplines', type: 'special-disciplines' }
+      ]
+    },
+    {
+      id: 'backgrounds',
+      labelKey: 'sheet_section_backgrounds',
+      fields: [
+        { id: 'backgrounds', labelKey: 'sheet_section_backgrounds', type: 'dynamic-dots-5' }
+      ]
+    },
+    {
       id: 'other_traits',
       labelKey: 'sheet_section_other_traits',
       fields: [

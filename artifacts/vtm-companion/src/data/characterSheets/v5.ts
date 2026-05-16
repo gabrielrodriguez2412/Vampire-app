@@ -787,6 +787,13 @@ export const v5Schema: SheetSchema = {
       ]
     },
     {
+      id: 'disciplines',
+      labelKey: 'sheet_section_disciplines',
+      fields: [
+        { id: 'disciplines', labelKey: 'sheet_section_disciplines', type: 'special-disciplines' }
+      ]
+    },
+    {
       id: 'trackers',
       labelKey: 'sheet_section_trackers',
       fields: [

@@ -1,8 +1,8 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 import { DynamicSheet, getProperty, setProperty } from '../DynamicSheet';
 import { AppContextProvider } from '@/context/AppContext';
@@ -55,6 +55,10 @@ describe('DynamicSheet Rendering', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    cleanup();
   });
 
   const renderWithContext = (ui: React.ReactElement) => {
@@ -134,5 +138,60 @@ describe('DynamicSheet Rendering', () => {
     // In Classic, it renders an <input type="number"> instead of DamageTracker buttons
     const inputs = container.querySelectorAll('input[type="number"]');
     expect(inputs.length).toBeGreaterThan(0);
+  });
+
+  it('renders dynamic-dots-5 and allows adding custom entry', () => {
+    const v20Char: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: 0,
+      createdAt: '', updatedAt: '', experience: 0, generation: 13
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'bg', labelKey: 'bg', fields: [
+          { id: 'backgrounds', type: 'dynamic-dots-5', labelKey: 'bg' }
+        ]
+      }]
+    };
+
+    const { getByPlaceholderText } = renderWithContext(
+      <DynamicSheet character={v20Char} schema={schema} onChange={mockOnChange} readonly={false} />
+    );
+
+    // Try to add a custom background
+    const input = getByPlaceholderText('Add...');
+    fireEvent.change(input, { target: { value: 'Resources' } });
+    fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('hides add inputs when readonly is true', () => {
+    const v20Char: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: 0,
+      createdAt: '', updatedAt: '', experience: 0, generation: 13
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'bg', labelKey: 'bg', fields: [
+          { id: 'backgrounds', type: 'dynamic-dots-5', labelKey: 'bg' },
+          { id: 'disciplines', type: 'special-disciplines', labelKey: 'disc' }
+        ]
+      }]
+    };
+
+    const { queryByPlaceholderText, queryByRole } = renderWithContext(
+      <DynamicSheet character={v20Char} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+
+    expect(queryByPlaceholderText('Add...')).toBeNull();
+    expect(queryByPlaceholderText('Name...')).toBeNull();
   });
 });

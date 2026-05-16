@@ -1,11 +1,15 @@
+import React, { useState } from "react";
 import { Character } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Plus, X } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
+import { disciplines } from "@/data/disciplines";
 
 interface DynamicSheetProps {
   character: Character;
@@ -35,6 +39,166 @@ export function setProperty(obj: any, path: string, value: any): any {
   }
   current[last] = value;
   return newObj;
+}
+
+function DynamicDotList({ value, label, max, fieldId, isReadOnly, handleUpdate, strings }: any) {
+  const currentMap = typeof value === 'object' && value !== null ? value : {};
+  const entries = Object.entries(currentMap);
+  const [newItemName, setNewItemName] = useState('');
+
+  const handleAdd = () => {
+    const val = newItemName.trim();
+    if (val && currentMap[val] === undefined) {
+      handleUpdate(fieldId, { ...currentMap, [val]: 1 });
+      setNewItemName('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2 py-2 col-span-full">
+      <div className="flex items-center justify-between mb-2 border-b border-zinc-800/50 pb-2">
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider">{label}</label>
+        {!isReadOnly && (
+          <div className="flex gap-2 items-center">
+            <Input 
+              value={newItemName}
+              onChange={e => setNewItemName(e.target.value)}
+              placeholder={strings.add_background || "Add..."}
+              className="h-7 w-40 text-xs bg-zinc-950 border-zinc-800"
+              onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            />
+            <Button size="sm" variant="outline" className="h-7 px-2" onClick={handleAdd}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+        {entries.map(([key, rating]) => (
+          <div key={key} className="flex items-center justify-between gap-4 py-1 border-b border-zinc-800/30">
+            <span className="text-sm text-muted-foreground capitalize">{key}</span>
+            <div className="flex items-center gap-2">
+              <DotRating 
+                value={typeof rating === 'number' ? rating : parseInt(String(rating)) || 0} 
+                max={max} 
+                onChange={v => handleUpdate(fieldId, { ...currentMap, [key]: v })} 
+                readonly={isReadOnly}
+              />
+              {!isReadOnly && (
+                <button onClick={() => {
+                  const newMap = { ...currentMap };
+                  delete newMap[key];
+                  handleUpdate(fieldId, newMap);
+                }} className="text-red-500/50 hover:text-red-500 ml-2">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        {entries.length === 0 && (
+          <div className="text-xs text-muted-foreground italic py-2">
+            {strings.noResults || "No entries yet."}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character }: any) {
+  const currentMap = typeof value === 'object' && value !== null ? value : {};
+  const entries = Object.entries(currentMap);
+  const [selectedId, setSelectedId] = useState('');
+  const [customName, setCustomName] = useState('');
+
+  const availableDisciplines = disciplines.filter(d => d.editions.includes(character.edition));
+
+  const handleAdd = () => {
+    if (selectedId === 'custom') {
+      const val = customName.trim();
+      if (val && currentMap[val] === undefined) {
+        handleUpdate(fieldId, { ...currentMap, [val]: 1 });
+        setCustomName('');
+        setSelectedId('');
+      }
+    } else if (selectedId) {
+      if (currentMap[selectedId] === undefined) {
+        handleUpdate(fieldId, { ...currentMap, [selectedId]: 1 });
+        setSelectedId('');
+      }
+    }
+  };
+
+  const getDisplayName = (id: string) => {
+    const d = disciplines.find(x => x.id === id);
+    if (d) return strings[d.name] || d.name;
+    return id;
+  };
+
+  return (
+    <div className="flex flex-col gap-2 py-2 col-span-full">
+      <div className="flex items-center justify-between mb-2 border-b border-zinc-800/50 pb-2">
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider">{label}</label>
+        {!isReadOnly && (
+          <div className="flex gap-2 items-center">
+            <select 
+              value={selectedId} 
+              onChange={e => setSelectedId(e.target.value)}
+              className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-2 text-foreground"
+            >
+              <option value="">{strings.add_discipline || "Add Discipline..."}</option>
+              {availableDisciplines.map(d => (
+                <option key={d.id} value={d.id}>{strings[d.name] || d.name}</option>
+              ))}
+              <option value="custom">{strings.custom_discipline || "Custom..."}</option>
+            </select>
+            {selectedId === 'custom' && (
+              <Input 
+                value={customName}
+                onChange={e => setCustomName(e.target.value)}
+                placeholder={strings.sheet_name || "Name..."}
+                className="h-7 w-32 text-xs bg-zinc-950 border-zinc-800"
+                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+              />
+            )}
+            <Button size="sm" variant="outline" className="h-7 px-2" onClick={handleAdd}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
+        {entries.map(([key, rating]) => (
+          <div key={key} className="flex items-center justify-between gap-4 py-1 border-b border-zinc-800/30">
+            <span className="text-sm text-muted-foreground capitalize">{getDisplayName(key)}</span>
+            <div className="flex items-center gap-2">
+              <DotRating 
+                value={typeof rating === 'number' ? rating : parseInt(String(rating)) || 0} 
+                max={5} 
+                onChange={v => handleUpdate(fieldId, { ...currentMap, [key]: v })} 
+                readonly={isReadOnly}
+              />
+              {!isReadOnly && (
+                <button onClick={() => {
+                  const newMap = { ...currentMap };
+                  delete newMap[key];
+                  handleUpdate(fieldId, newMap);
+                }} className="text-red-500/50 hover:text-red-500 ml-2">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        {entries.length === 0 && (
+          <div className="text-xs text-muted-foreground italic py-2">
+            {strings.noResults || "No entries yet."}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function DynamicSheet({ character, schema, onChange, readonly = false }: DynamicSheetProps) {
@@ -165,8 +329,16 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
                   <span className="text-xs text-muted-foreground">/ {classicMax}</span>
                </div>
              </div>
-          );
+           );
         }
+      case 'dynamic-dots-5':
+        return (
+          <DynamicDotList key={field.id} value={value} label={label} max={5} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} />
+        );
+      case 'special-disciplines':
+        return (
+          <DisciplineList key={field.id} value={value} label={label} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} character={character} />
+        );
       default:
         return (
           <div key={field.id || field.labelKey || Math.random()} className="flex flex-col gap-1 border-b border-zinc-800/30 py-2">

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, Component, ErrorInfo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, Component, ErrorInfo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -11,7 +11,7 @@ import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 
@@ -173,6 +173,51 @@ export default function CharacterPage() {
     }
   };
 
+  const handleExport = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ok = downloadCharacterExport(id);
+    if (ok) {
+      toast({ title: strings.char_exported || "Character exported" });
+    }
+  };
+
+  // --- Import ---
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result;
+        if (typeof text !== 'string') throw new Error('Failed to read file');
+
+        const parsed = JSON.parse(text);
+        const result = importCharacter(parsed);
+
+        if (typeof result === 'string') {
+          // Validation error
+          toast({ title: strings.char_import_failed || "Import failed", description: result, variant: "destructive" });
+        } else {
+          setCharacters(getCharacters());
+          toast({ title: strings.char_imported || "Character imported", description: result.name });
+        }
+      } catch (err) {
+        toast({ title: strings.char_import_failed || "Import failed", description: strings.char_import_invalid_json || "The file is not valid JSON.", variant: "destructive" });
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = '';
+  };
+
   const handleOpenSheet = (char: Character) => {
     setActiveChar(char);
     setActiveView('sheet');
@@ -245,11 +290,24 @@ export default function CharacterPage() {
       <AnimatePresence mode="wait">
         {activeView === 'list' && (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {/* Hidden file input for import */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".json"
+              className="hidden"
+              onChange={handleImportFile}
+            />
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif">{strings.myCharacters}</h2>
-              <Button onClick={() => setActiveView('create')} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="w-4 h-4" /> {strings.createCharacter}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleImportClick} className="gap-2 text-muted-foreground hover:text-foreground" size="sm">
+                  <Upload className="w-4 h-4" /> {strings.char_import || "Import"}
+                </Button>
+                <Button onClick={() => setActiveView('create')} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Plus className="w-4 h-4" /> {strings.createCharacter}
+                </Button>
+              </div>
             </div>
             
             {characters.length === 0 ? (
@@ -314,6 +372,15 @@ export default function CharacterPage() {
                         title={strings.char_duplicate || "Duplicate"}
                       >
                         <Copy className="w-3.5 h-3.5" /> {strings.char_duplicate || "Duplicate"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleExport(char.id, e)}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                        title={strings.char_export || "Export"}
+                      >
+                        <Download className="w-3.5 h-3.5" /> {strings.char_export || "Export"}
                       </Button>
                       <div className="flex-1" />
                       <Button

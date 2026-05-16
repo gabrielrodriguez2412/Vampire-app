@@ -163,3 +163,90 @@ export function duplicateCharacter(id: string): Character | null {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
   return cloned;
 }
+
+// --- Export / Import ---
+
+export const EXPORT_VERSION = 1;
+
+export interface CharacterExport {
+  _vtmExport: true;
+  exportVersion: number;
+  exportedAt: string;
+  character: Record<string, any>;
+}
+
+/** Build an export envelope for a character. Does NOT trigger download. */
+export function buildCharacterExport(id: string): CharacterExport | null {
+  const char = getCharacterById(id);
+  if (!char) return null;
+
+  return {
+    _vtmExport: true,
+    exportVersion: EXPORT_VERSION,
+    exportedAt: new Date().toISOString(),
+    character: JSON.parse(JSON.stringify(char)),
+  };
+}
+
+/** Trigger a browser download of the character as a JSON file. */
+export function downloadCharacterExport(id: string): boolean {
+  const exportData = buildCharacterExport(id);
+  if (!exportData) return false;
+
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  // Sanitize filename: keep alphanumerics, dashes, underscores, spaces
+  const safeName = exportData.character.name?.replace(/[^a-zA-Z0-9_\- ]/g, '') || 'character';
+  a.download = `vtm-${safeName}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+/** Validate that raw parsed JSON looks like a valid character export. Returns error message or null. */
+export function validateCharacterExport(data: any): string | null {
+  if (!data || typeof data !== 'object') return 'Invalid file: not a JSON object.';
+  if (data._vtmExport !== true) return 'Invalid file: not a VTM character export.';
+  if (typeof data.exportVersion !== 'number') return 'Invalid file: missing export version.';
+  if (!data.character || typeof data.character !== 'object') return 'Invalid file: missing character data.';
+
+  const char = data.character;
+  if (typeof char.name !== 'string' || !char.name.trim()) return 'Invalid file: character has no name.';
+  if (typeof char.edition !== 'string') return 'Invalid file: character has no edition.';
+  if (typeof char.clan !== 'string') return 'Invalid file: character has no clan.';
+
+  return null; // valid
+}
+
+/** Import a character from a validated export object. Always creates a new character (new ID).
+ *  Appends " Imported" to the name if there's a name conflict.
+ *  Returns the imported character, or an error string. */
+export function importCharacter(data: any): Character | string {
+  const error = validateCharacterExport(data);
+  if (error) return error;
+
+  const charData = data.character as Record<string, any>;
+
+  // Assign a new unique ID — never reuse the exported ID
+  charData.id = crypto.randomUUID();
+  charData.createdAt = new Date().toISOString();
+  charData.updatedAt = new Date().toISOString();
+
+  // Check for name conflict
+  const existingChars = getCharacters();
+  const nameExists = existingChars.some(c => c.name === charData.name);
+  if (nameExists) {
+    charData.name = `${charData.name} Imported`;
+  }
+
+  // Save through the normal path — saveCharacter will persist it,
+  // and getCharacters normalizes it on next load (providing all fallback fields)
+  const saved = saveCharacter(charData as Character);
+  return saved;
+}

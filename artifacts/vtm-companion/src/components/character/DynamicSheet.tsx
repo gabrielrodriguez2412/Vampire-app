@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Character, EditionId } from "@/types";
+import { Character, EditionId, DisciplineValue } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
@@ -11,6 +11,42 @@ import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
 import { clans } from "@/data/clans";
+
+/**
+ * Normalize a stored discipline value into `{ rating, powers }`.
+ * Tolerates the legacy plain-number shape, the object shape `{ rating, powers? }`,
+ * missing fields, and malformed historical data.
+ */
+export function readDisciplineEntry(v: unknown): { rating: number; powers: string[] } {
+  if (typeof v === 'number') {
+    return { rating: v, powers: [] };
+  }
+  if (v && typeof v === 'object') {
+    const obj = v as { rating?: unknown; powers?: unknown };
+    const rRaw = obj.rating;
+    const rating = typeof rRaw === 'number'
+      ? rRaw
+      : (parseInt(String(rRaw), 10) || 0);
+    const powers = Array.isArray(obj.powers)
+      ? obj.powers.filter((x): x is string => typeof x === 'string')
+      : [];
+    return { rating, powers };
+  }
+  if (typeof v === 'string') {
+    const n = parseInt(v, 10);
+    return { rating: Number.isFinite(n) ? n : 0, powers: [] };
+  }
+  return { rating: 0, powers: [] };
+}
+
+/**
+ * Encode a discipline value for storage. Collapses to a plain number when
+ * there are no powers, so legacy-shape entries stay legacy-shape unless the
+ * user actually adds a power. Keeps stored JSON minimal and compatible.
+ */
+export function writeDisciplineValue(rating: number, powers: string[]): DisciplineValue {
+  return powers.length > 0 ? { rating, powers } : rating;
+}
 
 /**
  * Returns the clan's canonical disciplines for the given edition, excluding
@@ -167,6 +203,26 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
     handleUpdate(fieldId, next);
   };
 
+  const addPower = (disciplineId: string, name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const { rating, powers } = readDisciplineEntry(currentMap[disciplineId]);
+    if (powers.includes(trimmed)) return; // skip exact duplicates within the same discipline
+    handleUpdate(fieldId, {
+      ...currentMap,
+      [disciplineId]: writeDisciplineValue(rating, [...powers, trimmed]),
+    });
+  };
+
+  const removePower = (disciplineId: string, index: number) => {
+    const { rating, powers } = readDisciplineEntry(currentMap[disciplineId]);
+    const nextPowers = powers.filter((_, i) => i !== index);
+    handleUpdate(fieldId, {
+      ...currentMap,
+      [disciplineId]: writeDisciplineValue(rating, nextPowers),
+    });
+  };
+
   const getDisplayName = (id: string) => {
     const d = disciplines.find(x => x.id === id);
     if (d) return strings[d.name] || d.name;
@@ -233,28 +289,69 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
-        {entries.map(([key, rating]) => (
-          <div key={key} className="flex items-center justify-between gap-4 py-1 border-b border-zinc-800/30">
-            <span className="text-sm text-muted-foreground capitalize">{getDisplayName(key)}</span>
-            <div className="flex items-center gap-2">
-              <DotRating 
-                value={typeof rating === 'number' ? rating : parseInt(String(rating)) || 0} 
-                max={5} 
-                onChange={v => handleUpdate(fieldId, { ...currentMap, [key]: v })} 
-                readonly={isReadOnly}
-              />
-              {!isReadOnly && (
-                <button onClick={() => {
-                  const newMap = { ...currentMap };
-                  delete newMap[key];
-                  handleUpdate(fieldId, newMap);
-                }} className="text-red-500/50 hover:text-red-500 ml-2">
-                  <X className="w-4 h-4" />
-                </button>
+        {entries.map(([key, raw]) => {
+          const { rating, powers } = readDisciplineEntry(raw);
+          const showPowersStrip = powers.length > 0 || !isReadOnly;
+          return (
+            <div key={key} className="flex flex-col gap-1.5 py-1 border-b border-zinc-800/30">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground capitalize">{getDisplayName(key)}</span>
+                <div className="flex items-center gap-2">
+                  <DotRating
+                    value={rating}
+                    max={5}
+                    onChange={v => handleUpdate(fieldId, { ...currentMap, [key]: writeDisciplineValue(v, powers) })}
+                    readonly={isReadOnly}
+                  />
+                  {!isReadOnly && (
+                    <button onClick={() => {
+                      const newMap = { ...currentMap };
+                      delete newMap[key];
+                      handleUpdate(fieldId, newMap);
+                    }} className="text-red-500/50 hover:text-red-500 ml-2">
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {showPowersStrip && (
+                <div className="ml-2 pl-2 border-l border-zinc-800/40 flex flex-wrap items-center gap-1">
+                  {powers.map((p, i) => (
+                    isReadOnly ? (
+                      <span
+                        key={`${p}-${i}`}
+                        className="text-[11px] px-1.5 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-muted-foreground"
+                      >
+                        {p}
+                      </span>
+                    ) : (
+                      <span
+                        key={`${p}-${i}`}
+                        className="inline-flex items-center gap-1 text-[11px] pl-1.5 pr-1 py-0.5 rounded border border-zinc-800 bg-zinc-950/40 text-foreground"
+                      >
+                        {p}
+                        <button
+                          type="button"
+                          onClick={() => removePower(key, i)}
+                          aria-label={strings.remove_power || "Remove power"}
+                          className="text-red-500/50 hover:text-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    )
+                  ))}
+                  {!isReadOnly && (
+                    <AddPowerInput
+                      placeholder={strings.add_power || "Add power..."}
+                      onAdd={name => addPower(key, name)}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
         {entries.length === 0 && (
           <div className="text-xs text-muted-foreground italic py-2">
             {strings.noResults || "No entries yet."}
@@ -262,6 +359,36 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
         )}
       </div>
     </div>
+  );
+}
+
+function AddPowerInput({ placeholder, onAdd }: { placeholder: string; onAdd: (name: string) => void }) {
+  const [name, setName] = useState('');
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    setName('');
+  };
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        type="text"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }}
+        placeholder={placeholder}
+        className="h-6 text-[11px] bg-zinc-950 border border-zinc-800 rounded px-1.5 w-28 focus:outline-none focus:border-primary/40 text-foreground placeholder:text-muted-foreground"
+      />
+      <button
+        type="button"
+        onClick={submit}
+        aria-label={placeholder}
+        className="text-zinc-500 hover:text-primary"
+      >
+        <Plus className="w-3 h-3" />
+      </button>
+    </span>
   );
 }
 

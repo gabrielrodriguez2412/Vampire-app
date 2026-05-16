@@ -67,6 +67,30 @@ export default function CharacterPage() {
   const [newName, setNewName] = useState("");
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
+  // Optional identity fields (saved only if non-empty)
+  const [newConcept, setNewConcept] = useState("");
+  const [newChronicle, setNewChronicle] = useState("");
+  const [newAmbition, setNewAmbition] = useState("");
+  const [newDesire, setNewDesire] = useState("");
+  const [newPredatorType, setNewPredatorType] = useState("");
+  const [newNature, setNewNature] = useState("");
+  const [newDemeanor, setNewDemeanor] = useState("");
+  const [newSire, setNewSire] = useState("");
+  const [newGeneration, setNewGeneration] = useState("");
+
+  const resetCreateForm = () => {
+    setNewName("");
+    setNewClan("");
+    setNewConcept("");
+    setNewChronicle("");
+    setNewAmbition("");
+    setNewDesire("");
+    setNewPredatorType("");
+    setNewNature("");
+    setNewDemeanor("");
+    setNewSire("");
+    setNewGeneration("");
+  };
 
   // Character management state
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -104,13 +128,40 @@ export default function CharacterPage() {
       return;
     }
     const char = createEmptyCharacter(newEdition, newClan, newName);
+
+    // Apply optional identity fields. Only assign trimmed non-empty values
+    // so empty inputs don't clutter the saved object.
+    const concept = newConcept.trim();
+    const chronicle = newChronicle.trim();
+    if (concept) char.concept = concept;
+    if (chronicle) char.chronicle = chronicle;
+
+    if (char.edition === 'V5') {
+      const ambition = newAmbition.trim();
+      const desire = newDesire.trim();
+      const predatorType = newPredatorType.trim();
+      if (ambition) char.ambition = ambition;
+      if (desire) char.desire = desire;
+      if (predatorType) char.predatorType = predatorType;
+    } else {
+      const nature = newNature.trim();
+      const demeanor = newDemeanor.trim();
+      const sire = newSire.trim();
+      if (nature) char.nature = nature;
+      if (demeanor) char.demeanor = demeanor;
+      if (sire) char.sire = sire;
+      const gen = parseInt(newGeneration, 10);
+      if (Number.isFinite(gen) && gen >= 3 && gen <= 16) {
+        char.generation = gen;
+      }
+    }
+
     const saved = saveCharacter(char);
     setCharacters(getCharacters());
     setActiveChar(saved);
     setActiveView('sheet');
     setIsEditing(false);
-    setNewName("");
-    setNewClan("");
+    resetCreateForm();
     toast({
       title: strings.characterCreated,
     });
@@ -420,8 +471,8 @@ export default function CharacterPage() {
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{strings.sheet_select_clan}</label>
-                  <select 
-                    value={newClan} 
+                  <select
+                    value={newClan}
                     onChange={e => setNewClan(e.target.value)}
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
                   >
@@ -430,6 +481,67 @@ export default function CharacterPage() {
                       <option key={clan.id} value={clan.id}>{getClanDisplayName(clan, newEdition, activeLanguage)}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Optional identity fields */}
+                <div className="pt-4 border-t border-zinc-800 space-y-4">
+                  <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                    {strings.sheet_optional_details || "Optional details"}
+                  </p>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{strings.sheet_concept || "Concept"}</label>
+                    <Input value={newConcept} onChange={e => setNewConcept(e.target.value)} className="bg-background border-border" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">{strings.sheet_chronicle || "Chronicle"}</label>
+                    <Input value={newChronicle} onChange={e => setNewChronicle(e.target.value)} className="bg-background border-border" />
+                  </div>
+
+                  {newEdition === 'V5' ? (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
+                        <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
+                        <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
+                        <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
+                        <Input value={newNature} onChange={e => setNewNature(e.target.value)} className="bg-background border-border" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
+                        <Input value={newDemeanor} onChange={e => setNewDemeanor(e.target.value)} className="bg-background border-border" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_sire || "Sire"}</label>
+                        <Input value={newSire} onChange={e => setNewSire(e.target.value)} className="bg-background border-border" />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">{strings.sheet_generation || "Generation"}</label>
+                        <Input
+                          type="number"
+                          min={3}
+                          max={16}
+                          value={newGeneration}
+                          onChange={e => setNewGeneration(e.target.value)}
+                          placeholder="13"
+                          className="bg-background border-border"
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <Button onClick={handleCreate} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-4">

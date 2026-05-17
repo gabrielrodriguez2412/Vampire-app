@@ -669,7 +669,8 @@ export default function CharacterPage() {
               <>
                 {/* In-flow sheet header (visible at top of sheet) */}
                 <div className="border-b border-border pb-4 mb-8">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
+                  {/* Top row: back button + mode/print/edit controls */}
+                  <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
                     <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
                       <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
                     </Button>
@@ -684,9 +685,6 @@ export default function CharacterPage() {
                         ) : (
                           <>{strings.sheet_mode_view || "View Mode"}</>
                         )}
-                      </div>
-                      <div className="px-3 py-1 bg-primary/20 border border-primary/30 text-primary rounded text-xs font-bold tracking-widest uppercase">
-                        {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
                       </div>
                       <Button
                         type="button"
@@ -717,6 +715,22 @@ export default function CharacterPage() {
                         )}
                       </Button>
                     </div>
+                  </div>
+
+                  {/* Bottom row: character name + clan/edition subtitle */}
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary leading-tight break-words">
+                      {activeChar.name?.trim() || strings.unnamed_character || "Unnamed Character"}
+                    </h2>
+                    <p className="text-sm text-muted-foreground flex items-center flex-wrap gap-2 mt-1">
+                      <span>
+                        {getClanIcon(activeChar.clan)} {getClanName(activeChar.clan, activeChar.edition as EditionId)}
+                      </span>
+                      <span aria-hidden="true">•</span>
+                      <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
+                        {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
+                      </span>
+                    </p>
                   </div>
                 </div>
 

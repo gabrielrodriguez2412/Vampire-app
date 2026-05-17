@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId } from "@/types";
@@ -11,7 +11,7 @@ import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
@@ -215,6 +215,7 @@ export default function CharacterPage() {
 
   // --- Import ---
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -247,6 +248,71 @@ export default function CharacterPage() {
     reader.readAsText(file);
 
     // Reset the input so the same file can be re-selected
+    e.target.value = '';
+  };
+
+  // --- Full library backup ---
+
+  const handleExportAll = () => {
+    if (characters.length === 0) {
+      toast({
+        title: strings.char_backup_no_characters || "Nothing to back up",
+        description: strings.char_backup_no_characters_desc || "Create at least one character first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    downloadCharacterBackup();
+    toast({
+      title: strings.char_backup_downloaded || "Backup downloaded",
+      description: `${characters.length} ${characters.length === 1 ? "character" : "characters"}`,
+    });
+  };
+
+  const handleImportBackupClick = () => {
+    backupFileInputRef.current?.click();
+  };
+
+  const handleImportBackupFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result;
+        if (typeof text !== 'string') throw new Error('Failed to read file');
+
+        const parsed = JSON.parse(text);
+        const result = importCharacterBackup(parsed);
+
+        if (typeof result === 'string') {
+          toast({
+            title: strings.char_backup_import_failed || "Backup import failed",
+            description: result,
+            variant: "destructive",
+          });
+        } else {
+          setCharacters(getCharacters());
+          const renamedNote = result.renamed > 0
+            ? ` (${result.renamed} ${strings.char_backup_renamed || "renamed"})`
+            : "";
+          toast({
+            title: strings.char_backup_imported || "Backup imported",
+            description: `${result.imported} ${result.imported === 1 ? "character" : "characters"}${renamedNote}`,
+          });
+        }
+      } catch (err) {
+        toast({
+          title: strings.char_backup_import_failed || "Backup import failed",
+          description: strings.char_import_invalid_json || "The file is not valid JSON.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+
+    // Reset so the same file can be re-selected
     e.target.value = '';
   };
 
@@ -322,7 +388,7 @@ export default function CharacterPage() {
       <AnimatePresence mode="wait">
         {activeView === 'list' && (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            {/* Hidden file input for import */}
+            {/* Hidden file input for single-character import */}
             <input
               type="file"
               ref={fileInputRef}
@@ -330,12 +396,49 @@ export default function CharacterPage() {
               className="hidden"
               onChange={handleImportFile}
             />
+            {/* Hidden file input for full backup import */}
+            <input
+              type="file"
+              ref={backupFileInputRef}
+              accept=".json"
+              className="hidden"
+              onChange={handleImportBackupFile}
+            />
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif">{strings.myCharacters}</h2>
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={handleImportClick} className="gap-2 text-muted-foreground hover:text-foreground" size="sm">
                   <Upload className="w-4 h-4" /> {strings.char_import || "Import"}
                 </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-muted-foreground hover:text-foreground"
+                      aria-label={strings.char_backup || "Backup"}
+                      title={strings.char_backup || "Backup"}
+                    >
+                      <Database className="w-4 h-4" />
+                      <span className="hidden sm:inline">{strings.char_backup || "Backup"}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={handleExportAll}
+                      disabled={characters.length === 0}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" /> {strings.char_export_all || "Export all"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleImportBackupClick}
+                      className="gap-2 cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4" /> {strings.char_import_backup || "Import backup"}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button onClick={() => setActiveView('create')} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="w-4 h-4" /> {strings.createCharacter}
                 </Button>

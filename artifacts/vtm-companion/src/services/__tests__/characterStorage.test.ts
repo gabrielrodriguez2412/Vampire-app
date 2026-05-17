@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -359,6 +359,259 @@ describe('characterStorage', () => {
       expect(result.disciplines).toEqual({ thaumaturgy: 3 });
       expect(result.backgrounds).toEqual({ resources: 2 });
       expect(result.notes).toBe('Test notes');
+    });
+  });
+
+  // --- Full library backup ---
+
+  describe('buildCharacterBackup', () => {
+    it('returns an envelope with the backup marker, version, timestamp, and characters array', () => {
+      saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      saveCharacter(createEmptyCharacter('V20', 'tremere', 'Bob'));
+
+      const backup = buildCharacterBackup();
+      expect(backup._vtmBackup).toBe(true);
+      expect(backup.backupVersion).toBe(BACKUP_VERSION);
+      expect(typeof backup.exportedAt).toBe('string');
+      expect(Array.isArray(backup.characters)).toBe(true);
+      expect(backup.characters).toHaveLength(2);
+      expect(backup.characters.map((c: any) => c.name).sort()).toEqual(['Alice', 'Bob']);
+    });
+
+    it('returns an empty characters array when storage is empty', () => {
+      const backup = buildCharacterBackup();
+      expect(backup._vtmBackup).toBe(true);
+      expect(backup.characters).toEqual([]);
+    });
+
+    it('does not mutate storage', () => {
+      saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      const before = getCharacters().length;
+      buildCharacterBackup();
+      expect(getCharacters().length).toBe(before);
+    });
+  });
+
+  describe('validateCharacterBackup', () => {
+    it('returns null for a valid backup', () => {
+      expect(validateCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [{ name: 'Alice', edition: 'V5', clan: 'brujah' }],
+      })).toBeNull();
+    });
+
+    it('returns null when the characters array is empty', () => {
+      expect(validateCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [],
+      })).toBeNull();
+    });
+
+    it('rejects null and non-objects', () => {
+      expect(validateCharacterBackup(null)).toMatch(/JSON object/);
+      expect(validateCharacterBackup('string')).toMatch(/JSON object/);
+      expect(validateCharacterBackup(42)).toMatch(/JSON object/);
+    });
+
+    it('rejects files without the backup marker', () => {
+      expect(validateCharacterBackup({ backupVersion: 1, characters: [] })).toMatch(/not a VTM character backup/);
+    });
+
+    it('does not accept a single-character export as a backup', () => {
+      // A valid single-character export has _vtmExport, not _vtmBackup
+      expect(validateCharacterBackup({
+        _vtmExport: true,
+        exportVersion: 1,
+        exportedAt: 'now',
+        character: { name: 'Alice', edition: 'V5', clan: 'brujah' },
+      })).toMatch(/not a VTM character backup/);
+    });
+
+    it('rejects when backupVersion is missing or not a number', () => {
+      expect(validateCharacterBackup({ _vtmBackup: true, characters: [] }))
+        .toMatch(/missing backup version/);
+      expect(validateCharacterBackup({ _vtmBackup: true, backupVersion: 'one', characters: [] }))
+        .toMatch(/missing backup version/);
+    });
+
+    it('rejects when the characters list is missing or not an array', () => {
+      expect(validateCharacterBackup({ _vtmBackup: true, backupVersion: 1 }))
+        .toMatch(/missing characters list/);
+      expect(validateCharacterBackup({ _vtmBackup: true, backupVersion: 1, characters: 'oops' }))
+        .toMatch(/missing characters list/);
+    });
+
+    it('rejects when a character is missing required fields', () => {
+      expect(validateCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        characters: [{ edition: 'V5', clan: 'brujah' }], // no name
+      })).toMatch(/index 0: missing name/);
+
+      expect(validateCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        characters: [
+          { name: 'Alice', edition: 'V5', clan: 'brujah' },
+          { name: 'Bob', edition: 'V5' }, // no clan
+        ],
+      })).toMatch(/index 1: missing clan/);
+    });
+  });
+
+  describe('importCharacterBackup', () => {
+    it('returns an error string for invalid input (no throws)', () => {
+      expect(typeof importCharacterBackup(null)).toBe('string');
+      expect(typeof importCharacterBackup({ foo: 'bar' })).toBe('string');
+      expect(typeof importCharacterBackup({ _vtmBackup: true })).toBe('string');
+    });
+
+    it('imports every character with a new UUID', () => {
+      const backup = {
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [
+          { id: 'old-1', name: 'Alice', edition: 'V5', clan: 'brujah' },
+          { id: 'old-2', name: 'Bob', edition: 'V20', clan: 'tremere', generation: 8 },
+        ],
+      };
+
+      const result = importCharacterBackup(backup);
+      expect(typeof result).not.toBe('string');
+      expect((result as any).imported).toBe(2);
+      expect((result as any).renamed).toBe(0);
+
+      const chars = getCharacters();
+      expect(chars).toHaveLength(2);
+      // Old IDs must not survive
+      expect(chars.find(c => c.id === 'old-1')).toBeUndefined();
+      expect(chars.find(c => c.id === 'old-2')).toBeUndefined();
+      // Each character has a non-empty, unique id
+      const ids = chars.map(c => c.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      ids.forEach(id => expect(typeof id).toBe('string'));
+    });
+
+    it('does not overwrite existing characters; appends and renames on conflict', () => {
+      saveCharacter({ ...createEmptyCharacter('V5', 'brujah', 'Alice'), id: 'existing-1' });
+
+      const backup = {
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [
+          { name: 'Alice', edition: 'V5', clan: 'brujah' },
+          { name: 'Carol', edition: 'V5', clan: 'toreador' },
+        ],
+      };
+
+      const result = importCharacterBackup(backup);
+      expect((result as any).imported).toBe(2);
+      expect((result as any).renamed).toBe(1);
+
+      const chars = getCharacters();
+      expect(chars).toHaveLength(3);
+      // Original Alice still present (untouched)
+      expect(chars.find(c => c.id === 'existing-1')?.name).toBe('Alice');
+      // Imported clash renamed
+      expect(chars.find(c => c.name === 'Alice Imported')).toBeDefined();
+      // Non-clashing import keeps its name
+      expect(chars.find(c => c.name === 'Carol')).toBeDefined();
+    });
+
+    it('escalates the rename suffix when "Imported" itself is taken', () => {
+      saveCharacter({ ...createEmptyCharacter('V5', 'brujah', 'Alice'), id: 'e1' });
+      saveCharacter({ ...createEmptyCharacter('V5', 'brujah', 'Alice Imported'), id: 'e2' });
+
+      const backup = {
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [
+          { name: 'Alice', edition: 'V5', clan: 'brujah' },
+          { name: 'Alice', edition: 'V5', clan: 'brujah' },
+        ],
+      };
+
+      const result = importCharacterBackup(backup);
+      expect((result as any).imported).toBe(2);
+      expect((result as any).renamed).toBe(2);
+
+      const names = getCharacters().map(c => c.name).sort();
+      expect(names).toEqual(['Alice', 'Alice Imported', 'Alice Imported 2', 'Alice Imported 3']);
+    });
+
+    it('preserves character data fields (disciplines, powers, backgrounds, notes, identity)', () => {
+      const richCharacter = {
+        name: 'Rich Char',
+        edition: 'V20' as const,
+        clan: 'tremere',
+        generation: 8,
+        concept: 'Test concept',
+        chronicle: 'Test chronicle',
+        nature: 'Visionary',
+        demeanor: 'Architect',
+        disciplines: {
+          thaumaturgy: 3,
+          auspex: { rating: 2, powers: ['Heightened Senses'] },
+        },
+        backgrounds: { resources: 4, allies: 2 },
+        notes: 'Rich notes here',
+      };
+
+      const result = importCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [richCharacter],
+      });
+      expect((result as any).imported).toBe(1);
+
+      const imported = getCharacters()[0] as any;
+      expect(imported.name).toBe('Rich Char');
+      expect(imported.edition).toBe('V20');
+      expect(imported.clan).toBe('tremere');
+      expect(imported.generation).toBe(8);
+      expect(imported.concept).toBe('Test concept');
+      expect(imported.chronicle).toBe('Test chronicle');
+      expect(imported.nature).toBe('Visionary');
+      expect(imported.demeanor).toBe('Architect');
+      expect(imported.disciplines).toEqual({
+        thaumaturgy: 3,
+        auspex: { rating: 2, powers: ['Heightened Senses'] },
+      });
+      expect(imported.backgrounds).toEqual({ resources: 4, allies: 2 });
+      expect(imported.notes).toBe('Rich notes here');
+    });
+
+    it('does not mutate the caller\'s character objects', () => {
+      const original = { name: 'Alice', edition: 'V5', clan: 'brujah', id: 'frozen-id' };
+      importCharacterBackup({
+        _vtmBackup: true,
+        backupVersion: 1,
+        exportedAt: 'now',
+        characters: [original],
+      });
+      // Source object must still have its original id
+      expect(original.id).toBe('frozen-id');
+    });
+
+    it('round-trips: build then import re-creates the same characters under new IDs', () => {
+      saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      saveCharacter(createEmptyCharacter('V20', 'tremere', 'Bob'));
+      const backup = buildCharacterBackup();
+      // Wipe and re-import
+      clearCharacterStorage();
+
+      const result = importCharacterBackup(backup);
+      expect((result as any).imported).toBe(2);
+      const names = getCharacters().map(c => c.name).sort();
+      expect(names).toEqual(['Alice', 'Bob']);
     });
   });
 });

@@ -250,3 +250,119 @@ export function importCharacter(data: any): Character | string {
   const saved = saveCharacter(charData as Character);
   return saved;
 }
+
+// --- Full library backup (all characters in one file) ---
+
+export const BACKUP_VERSION = 1;
+
+export interface CharacterBackup {
+  _vtmBackup: true;
+  backupVersion: number;
+  exportedAt: string;
+  characters: Record<string, any>[];
+}
+
+/** Build a backup envelope containing every character currently in storage.
+ *  Pure with respect to storage: does NOT write or mutate. */
+export function buildCharacterBackup(): CharacterBackup {
+  const chars = getCharacters();
+  return {
+    _vtmBackup: true,
+    backupVersion: BACKUP_VERSION,
+    exportedAt: new Date().toISOString(),
+    // Deep clone so subsequent mutations to the returned object don't touch storage
+    characters: chars.map(c => JSON.parse(JSON.stringify(c))),
+  };
+}
+
+/** Trigger a browser download of all characters as a single JSON backup. */
+export function downloadCharacterBackup(): boolean {
+  const backup = buildCharacterBackup();
+
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  const ts = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  a.download = `vtm-backup-${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  return true;
+}
+
+/** Validate that raw parsed JSON looks like a valid backup. Returns error message or null. */
+export function validateCharacterBackup(data: any): string | null {
+  if (!data || typeof data !== 'object') return 'Invalid file: not a JSON object.';
+  if (data._vtmBackup !== true) return 'Invalid file: not a VTM character backup.';
+  if (typeof data.backupVersion !== 'number') return 'Invalid file: missing backup version.';
+  if (!Array.isArray(data.characters)) return 'Invalid file: missing characters list.';
+
+  for (let i = 0; i < data.characters.length; i++) {
+    const c = data.characters[i];
+    if (!c || typeof c !== 'object') return `Invalid character at index ${i}: not an object.`;
+    if (typeof c.name !== 'string' || !c.name.trim()) return `Invalid character at index ${i}: missing name.`;
+    if (typeof c.edition !== 'string') return `Invalid character at index ${i}: missing edition.`;
+    if (typeof c.clan !== 'string') return `Invalid character at index ${i}: missing clan.`;
+  }
+
+  return null;
+}
+
+/**
+ * Import every character from a validated backup envelope. Each imported
+ * character gets a fresh UUID and current timestamps so existing characters
+ * are never overwritten. Names that conflict with anything already in
+ * storage (or with another newly-imported character) get an " Imported"
+ * suffix, escalating to " Imported 2", " Imported 3", etc., as needed.
+ *
+ * Returns `{ imported, renamed }` on success, or an error message string
+ * on validation failure. Performs a single localStorage write so the
+ * operation is atomic from the app's perspective.
+ */
+export function importCharacterBackup(
+  data: any
+): { imported: number; renamed: number } | string {
+  const error = validateCharacterBackup(data);
+  if (error) return error;
+
+  const existing = getCharacters();
+  const takenNames = new Set(existing.map(c => c.name));
+  const now = new Date().toISOString();
+
+  let renamedCount = 0;
+  const toAdd = (data.characters as Record<string, any>[]).map(raw => {
+    // Shallow clone so we don't mutate the caller's data
+    const charData: Record<string, any> = { ...raw };
+
+    // Always assign a new unique ID — never reuse the backup's ID
+    charData.id = crypto.randomUUID();
+    charData.createdAt = now;
+    charData.updatedAt = now;
+
+    // Resolve name conflicts against both existing characters and earlier
+    // entries in this same backup that we've already taken.
+    const originalName = String(charData.name);
+    if (takenNames.has(originalName)) {
+      let candidate = `${originalName} Imported`;
+      if (takenNames.has(candidate)) {
+        let n = 2;
+        while (takenNames.has(`${originalName} Imported ${n}`)) n++;
+        candidate = `${originalName} Imported ${n}`;
+      }
+      charData.name = candidate;
+      renamedCount++;
+    }
+
+    takenNames.add(String(charData.name));
+    return charData;
+  });
+
+  const merged = [...existing, ...toAdd];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+  return { imported: toAdd.length, renamed: renamedCount };
+}

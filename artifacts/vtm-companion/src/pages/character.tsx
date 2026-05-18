@@ -1160,6 +1160,86 @@ export default function CharacterPage() {
                       </span>
                     </p>
                   </div>
+
+                  {/* Linked Chronicle panel — management metadata, always visible
+                      regardless of View/Edit mode. Reuses the existing assignment
+                      modal driven by `assigningChronicleForId`. */}
+                  {(() => {
+                    const linkedChr = activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId) : undefined;
+                    const hasLink = Boolean(activeChar.chronicleId);
+                    const isMissing = hasLink && !linkedChr;
+                    const openAssignModal = () => {
+                      refreshChronicles();
+                      setAssigningChronicleForId(activeChar.id);
+                      setAssignChronicleSelection(activeChar.chronicleId || "");
+                    };
+                    const handleUnlink = () => {
+                      const updated = setCharacterChronicle(activeChar.id, null);
+                      if (updated) {
+                        setCharacters(getCharacters());
+                        setActiveChar(updated);
+                        toast({ title: strings.char_chronicle_cleared || "Chronicle link removed" });
+                      }
+                    };
+                    return (
+                      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                        <ScrollText className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
+                        <span className="text-muted-foreground">
+                          {strings.char_chronicle_label || "Linked Chronicle"}:
+                        </span>
+                        {hasLink ? (
+                          <span
+                            className={`inline-flex items-center gap-1.5 text-xs border px-2 py-0.5 rounded max-w-[16rem] ${
+                              isMissing
+                                ? "border-zinc-700 bg-zinc-900 text-zinc-500 italic"
+                                : "border-primary/30 bg-primary/5 text-foreground"
+                            }`}
+                            title={linkedChr?.name || (strings.char_chronicle_missing || "Unknown chronicle")}
+                          >
+                            <span className="truncate">
+                              {linkedChr?.name || (strings.char_chronicle_missing || "Unknown chronicle")}
+                            </span>
+                            {linkedChr?.edition && (
+                              <span className="uppercase text-[9px] tracking-wider border border-border px-1 rounded bg-zinc-900 text-muted-foreground">
+                                {linkedChr.edition}
+                              </span>
+                            )}
+                            {linkedChr?.status === 'archived' && (
+                              <span className="uppercase text-[9px] tracking-wider border border-zinc-700 px-1 rounded bg-zinc-900 text-zinc-400">
+                                {strings.chr_status_archived || "Archived"}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">
+                            {strings.char_chronicle_no_link || "No Chronicle linked"}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={openAssignModal}
+                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          >
+                            {hasLink
+                              ? (strings.char_change_chronicle || "Change Chronicle")
+                              : (strings.char_assign_chronicle || "Assign Chronicle")}
+                          </Button>
+                          {hasLink && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={handleUnlink}
+                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              {strings.char_unlink_chronicle || "Unlink Chronicle"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <DynamicSheet

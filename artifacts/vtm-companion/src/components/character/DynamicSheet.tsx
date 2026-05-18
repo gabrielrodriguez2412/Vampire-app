@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Character, EditionId, DisciplineValue } from "@/types";
+import { Character, EditionId, DisciplineValue, InventoryItem, InventoryCategory } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
@@ -392,6 +392,140 @@ function AddPowerInput({ placeholder, onAdd }: { placeholder: string; onAdd: (na
   );
 }
 
+const INVENTORY_CATEGORIES: InventoryCategory[] = ['weapon', 'armor', 'tool', 'equipment', 'money', 'other'];
+
+function getInventoryCategoryLabel(category: string | undefined, strings: Record<string, string>): string {
+  switch (category) {
+    case 'weapon': return strings.inventory_cat_weapon || "Weapon";
+    case 'armor': return strings.inventory_cat_armor || "Armor";
+    case 'tool': return strings.inventory_cat_tool || "Tool";
+    case 'equipment': return strings.inventory_cat_equipment || "Equipment";
+    case 'money': return strings.inventory_cat_money || "Money/Resource";
+    case 'other': return strings.inventory_cat_other || "Other";
+    default: return category || "—";
+  }
+}
+
+function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, strings }: any) {
+  const items: InventoryItem[] = Array.isArray(value) ? value : [];
+
+  const addItem = () => {
+    const newItem: InventoryItem = {
+      id: crypto.randomUUID(),
+      name: '',
+      quantity: 1,
+      category: 'equipment',
+    };
+    handleUpdate(fieldId, [...items, newItem]);
+  };
+
+  const updateItem = (id: string, patch: Partial<InventoryItem>) => {
+    handleUpdate(fieldId, items.map(it => (it.id === id ? { ...it, ...patch } : it)));
+  };
+
+  const removeItem = (id: string) => {
+    handleUpdate(fieldId, items.filter(it => it.id !== id));
+  };
+
+  return (
+    <div className="col-span-full flex flex-col gap-3">
+      <div className="flex items-center justify-between mb-2 border-b border-zinc-800/50 pb-2">
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider">{label}</label>
+        {!isReadOnly && (
+          <Button size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
+            <Plus className="w-3.5 h-3.5" /> {strings.add_inventory_item || "Add item"}
+          </Button>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-xs italic text-muted-foreground py-1">
+          {strings.no_inventory_items || "No inventory items yet."}
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {items.map(item => (
+            <li key={item.id}>
+              {isReadOnly ? (
+                <div className="border-b border-zinc-800/30 pb-2">
+                  <div className="flex items-baseline flex-wrap gap-2 text-sm">
+                    {item.category && (
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border px-1.5 rounded bg-zinc-900">
+                        {getInventoryCategoryLabel(item.category, strings)}
+                      </span>
+                    )}
+                    <span className="text-foreground">{item.name || "—"}</span>
+                    {typeof item.quantity === 'number' && (
+                      <span className="text-muted-foreground text-xs">×{item.quantity}</span>
+                    )}
+                  </div>
+                  {item.notes && (
+                    <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                      {item.notes}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="border border-zinc-800 rounded-md bg-zinc-950/40 p-2 space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={item.category || 'equipment'}
+                      onChange={e => updateItem(item.id, { category: e.target.value as InventoryCategory })}
+                      className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground"
+                      aria-label={strings.inventory_item_category || "Category"}
+                    >
+                      {INVENTORY_CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{getInventoryCategoryLabel(cat, strings)}</option>
+                      ))}
+                    </select>
+                    <Input
+                      value={item.name}
+                      onChange={e => updateItem(item.id, { name: e.target.value })}
+                      placeholder={strings.inventory_item_name || "Item name"}
+                      className="h-7 text-xs bg-zinc-950 border-zinc-800 flex-1 min-w-[120px]"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={typeof item.quantity === 'number' ? item.quantity : ''}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === '') {
+                          updateItem(item.id, { quantity: undefined });
+                        } else {
+                          const n = parseInt(v, 10);
+                          if (Number.isFinite(n)) updateItem(item.id, { quantity: n });
+                        }
+                      }}
+                      placeholder="1"
+                      aria-label={strings.inventory_item_qty || "Quantity"}
+                      className="h-7 text-xs bg-zinc-950 border-zinc-800 w-16"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeItem(item.id)}
+                      aria-label={strings.remove_inventory_item || "Remove item"}
+                      className="text-red-500/50 hover:text-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <Textarea
+                    value={item.notes || ''}
+                    onChange={e => updateItem(item.id, { notes: e.target.value })}
+                    placeholder={strings.inventory_item_notes || "Notes (optional)"}
+                    className="bg-zinc-950 border-zinc-800 min-h-[40px] text-xs"
+                  />
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function DynamicSheet({ character, schema, onChange, readonly = false }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
@@ -543,6 +677,10 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
       case 'special-disciplines':
         return (
           <DisciplineList key={field.id} value={value} label={label} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} character={character} />
+        );
+      case 'inventory':
+        return (
+          <InventoryList key={field.id} value={value} label={label} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} />
         );
       default:
         return (

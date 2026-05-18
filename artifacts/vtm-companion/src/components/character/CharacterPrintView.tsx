@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Character, EditionId, V5Character, ClassicCharacter } from "@/types";
+import { Character, EditionId, V5Character, ClassicCharacter, InventoryItem } from "@/types";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { getClanDisplayNameById } from "@/utils/content";
@@ -259,6 +259,44 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
           )}
         </div>
       </section>
+
+      {/* Inventory */}
+      {Array.isArray(character.inventory) && character.inventory.length > 0 && (
+        <section className="break-inside-avoid">
+          <SectionHeading>{strings.sheet_section_inventory || "Inventory"}</SectionHeading>
+          <ul className="text-[12px]">
+            {(character.inventory as InventoryItem[]).map(item => {
+              const category = item.category
+                ? (
+                    item.category === 'weapon' ? (strings.inventory_cat_weapon || "Weapon") :
+                    item.category === 'armor' ? (strings.inventory_cat_armor || "Armor") :
+                    item.category === 'tool' ? (strings.inventory_cat_tool || "Tool") :
+                    item.category === 'equipment' ? (strings.inventory_cat_equipment || "Equipment") :
+                    item.category === 'money' ? (strings.inventory_cat_money || "Money/Resource") :
+                    item.category === 'other' ? (strings.inventory_cat_other || "Other") :
+                    item.category
+                  )
+                : null;
+              return (
+                <li key={item.id} className="border-b border-zinc-300 py-1 break-inside-avoid">
+                  <div className="flex items-baseline flex-wrap gap-2">
+                    {category && (
+                      <span className="text-[10px] uppercase tracking-wider">{category}</span>
+                    )}
+                    <span className="font-medium">{item.name || "—"}</span>
+                    {typeof item.quantity === 'number' && (
+                      <span>×{item.quantity}</span>
+                    )}
+                  </div>
+                  {item.notes && (
+                    <p className="text-[11px] ml-3 whitespace-pre-wrap">{item.notes}</p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* Notes */}
       {character.notes && (

@@ -813,6 +813,13 @@ export const v5Schema: SheetSchema = {
       ]
     },
     {
+      id: 'inventory',
+      labelKey: 'sheet_section_inventory',
+      fields: [
+        { id: 'inventory', labelKey: 'sheet_section_inventory', type: 'inventory' }
+      ]
+    },
+    {
       id: 'notes',
       labelKey: 'sheet_section_notes',
       fields: [

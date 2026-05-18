@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, normalizeInventory } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -722,6 +722,104 @@ describe('characterStorage', () => {
       const bReloaded = loaded.find(c => c.name === 'Bob');
       expect((aReloaded as any).characterType).toBe('npc');
       expect((bReloaded as any).characterType).toBe('player');
+    });
+  });
+
+  // --- Inventory normalization ---
+
+  describe('normalizeInventory', () => {
+    it('returns an empty array for missing/null/garbage values', () => {
+      expect(normalizeInventory(undefined)).toEqual([]);
+      expect(normalizeInventory(null)).toEqual([]);
+      expect(normalizeInventory(42)).toEqual([]);
+      expect(normalizeInventory({})).toEqual([]);
+    });
+
+    it('returns an empty array for an empty string', () => {
+      expect(normalizeInventory('')).toEqual([]);
+      expect(normalizeInventory('   ')).toEqual([]);
+    });
+
+    it('wraps a non-empty legacy string as a single "Legacy Notes" item', () => {
+      const result = normalizeInventory('Stake, lockpicks, lighter');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Legacy Notes');
+      expect(result[0].notes).toBe('Stake, lockpicks, lighter');
+      expect(typeof result[0].id).toBe('string');
+      expect(result[0].id.length).toBeGreaterThan(0);
+    });
+
+    it('preserves a well-formed item array verbatim', () => {
+      const items = [
+        { id: 'i1', name: 'Stake', quantity: 1, category: 'weapon', notes: 'Wooden' },
+        { id: 'i2', name: 'Jacket', quantity: 1, category: 'armor' },
+      ];
+      const result = normalizeInventory(items);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual(items[0]);
+      expect(result[1].name).toBe('Jacket');
+      expect(result[1].notes).toBeUndefined();
+    });
+
+    it('assigns a fresh id to items missing/empty id', () => {
+      const result = normalizeInventory([{ name: 'NoId' }, { id: '', name: 'EmptyId' }]);
+      expect(result).toHaveLength(2);
+      expect(typeof result[0].id).toBe('string');
+      expect(result[0].id.length).toBeGreaterThan(0);
+      expect(typeof result[1].id).toBe('string');
+      expect(result[1].id.length).toBeGreaterThan(0);
+      expect(result[0].id).not.toBe(result[1].id);
+    });
+
+    it('drops entries that are not items (null, primitives, missing name)', () => {
+      const result = normalizeInventory([
+        { id: 'a', name: 'Keep' },
+        null,
+        'string',
+        42,
+        { id: 'b' }, // no name
+        { id: 'c', name: 'AlsoKeep' },
+      ]);
+      expect(result.map(i => i.name)).toEqual(['Keep', 'AlsoKeep']);
+    });
+
+    it('rejects an invalid category and leaves the slot undefined', () => {
+      const result = normalizeInventory([
+        { id: 'i1', name: 'A', category: 'plasma-rifle' },
+      ]);
+      expect(result[0].category).toBeUndefined();
+    });
+
+    it('strips non-finite quantities (NaN, Infinity)', () => {
+      const result = normalizeInventory([
+        { id: 'i1', name: 'A', quantity: NaN },
+        { id: 'i2', name: 'B', quantity: Infinity },
+        { id: 'i3', name: 'C', quantity: 3 },
+      ]);
+      expect(result[0].quantity).toBeUndefined();
+      expect(result[1].quantity).toBeUndefined();
+      expect(result[2].quantity).toBe(3);
+    });
+  });
+
+  describe('inventory integration with storage', () => {
+    it('createEmptyCharacter starts with an empty inventory', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      expect((c as any).inventory).toEqual([]);
+    });
+
+    it('getCharacters normalizes legacy inventory shapes on read', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'A', clan: 'brujah', edition: 'V5' }, // no inventory
+        { id: '2', name: 'B', clan: 'brujah', edition: 'V5', inventory: 'Stakes and lockpicks' }, // legacy string
+        { id: '3', name: 'C', clan: 'brujah', edition: 'V5', inventory: [{ id: 'i1', name: 'Sword' }] },
+      ]));
+      const chars = getCharacters();
+      expect((chars[0] as any).inventory).toEqual([]);
+      expect((chars[1] as any).inventory).toHaveLength(1);
+      expect((chars[1] as any).inventory[0].notes).toBe('Stakes and lockpicks');
+      expect((chars[2] as any).inventory).toHaveLength(1);
+      expect((chars[2] as any).inventory[0].name).toBe('Sword');
     });
   });
 });

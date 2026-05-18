@@ -1420,80 +1420,178 @@ export default function ChroniclePage() {
 
                 {/* Body */}
                 <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-                  {manageTab === 'overview' && (
-                    <div className="space-y-4">
-                      {chr.description ? (
-                        <p className="text-sm text-foreground/85 whitespace-pre-wrap">{chr.description}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">
-                          {strings.chr_no_description || "No description."}
-                        </p>
-                      )}
+                  {manageTab === 'overview' && (() => {
+                    const latestLocation = locations.length > 0
+                      ? locations.reduce((a, b) => a.updatedAt > b.updatedAt ? a : b)
+                      : null;
+                    const latestRelationship = relationships.length > 0
+                      ? relationships.reduce((a, b) => a.updatedAt > b.updatedAt ? a : b)
+                      : null;
+                    const hasActivity = sessions.length > 0 || latestLocation !== null || latestRelationship !== null;
+                    return (
+                      <div className="space-y-5">
+                        {/* Description */}
+                        {chr.description ? (
+                          <p className="text-sm text-foreground/85 whitespace-pre-wrap">{chr.description}</p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic">
+                            {strings.chr_no_description || "No description."}
+                          </p>
+                        )}
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
-                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {strings.chr_overview_characters || "Linked characters"}
-                          </p>
-                          <p className="text-2xl font-serif text-foreground">{pcs.length + npcs.length}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {pcs.length} {strings.char_type_short_pc || "PC"} · {npcs.length} {strings.char_type_short_npc || "NPC"}
-                          </p>
+                        {/* Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
+                          <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {strings.chr_overview_characters || "Linked characters"}
+                            </p>
+                            <p className="text-2xl font-serif text-foreground">{pcs.length + npcs.length}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {pcs.length} {strings.char_type_short_pc || "PC"} · {npcs.length} {strings.char_type_short_npc || "NPC"}
+                            </p>
+                          </div>
+                          <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {strings.chr_overview_sessions || "Sessions"}
+                            </p>
+                            <p className="text-2xl font-serif text-foreground">{sessions.length}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">
+                              {sessions[0]?.sessionDate
+                                ? formatSessionDate(sessions[0].sessionDate)
+                                : sessions[0]?.title
+                                ? sessions[0].title
+                                : `${strings.chr_updated_at || "Updated"} ${formatUpdatedAt(chr.updatedAt)}`}
+                            </p>
+                          </div>
+                          <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {strings.chr_overview_locations || "Locations"}
+                            </p>
+                            <p className="text-2xl font-serif text-foreground">{locations.length}</p>
+                          </div>
+                          <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              {strings.chr_overview_relationships || "Relationships"}
+                            </p>
+                            <p className="text-2xl font-serif text-foreground">{relationships.length}</p>
+                          </div>
                         </div>
-                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {strings.chr_overview_sessions || "Sessions"}
-                          </p>
-                          <p className="text-2xl font-serif text-foreground">{sessions.length}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
-                          </p>
-                        </div>
-                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {strings.chr_overview_locations || "Locations"}
-                          </p>
-                          <p className="text-2xl font-serif text-foreground">{locations.length}</p>
-                        </div>
-                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
-                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                            {strings.chr_overview_relationships || "Relationships"}
-                          </p>
-                          <p className="text-2xl font-serif text-foreground">{relationships.length}</p>
-                        </div>
-                      </div>
 
-                      <div className="pt-3 border-t border-zinc-800 flex flex-wrap gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { closeManage(); openEdit(chr); }}
-                          className="gap-1.5"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                          {strings.chr_edit_basic_info || "Edit basic info"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => toggleArchive(chr)}
-                          className="gap-1.5"
-                        >
-                          {isArchived ? (
-                            <>
-                              <ArchiveRestore className="w-3.5 h-3.5" />
-                              {strings.chr_unarchive || "Unarchive"}
-                            </>
+                        {/* Quick actions */}
+                        <div className="pt-3 border-t border-zinc-800">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                            {strings.chr_overview_quick_actions || "Quick actions"}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setManageTab('characters')} className="gap-1.5 h-7 text-xs">
+                              <Users className="w-3.5 h-3.5" />
+                              {strings.chr_overview_manage_characters || "Manage characters"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={openCreateSession} className="gap-1.5 h-7 text-xs">
+                              <Plus className="w-3.5 h-3.5" />
+                              {strings.chr_overview_new_session || "New session"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={openCreateLocation} className="gap-1.5 h-7 text-xs">
+                              <MapPin className="w-3.5 h-3.5" />
+                              {strings.chr_overview_add_location || "Add location"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={openCreateRelationship} className="gap-1.5 h-7 text-xs">
+                              <Heart className="w-3.5 h-3.5" />
+                              {strings.chr_overview_add_relationship || "Add relationship"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { closeManage(); openEdit(chr); }} className="gap-1.5 h-7 text-xs">
+                              <Pencil className="w-3.5 h-3.5" />
+                              {strings.chr_edit_basic_info || "Edit basic info"}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => toggleArchive(chr)} className="gap-1.5 h-7 text-xs">
+                              {isArchived ? (
+                                <><ArchiveRestore className="w-3.5 h-3.5" />{strings.chr_unarchive || "Unarchive"}</>
+                              ) : (
+                                <><Archive className="w-3.5 h-3.5" />{strings.chr_archive || "Archive"}</>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Recent activity */}
+                        <div className="pt-3 border-t border-zinc-800">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">
+                            {strings.chr_overview_recent_activity || "Recent activity"}
+                          </p>
+                          {!hasActivity ? (
+                            <p className="text-xs text-muted-foreground italic">
+                              {strings.chr_overview_no_activity || "No recent activity yet."}
+                            </p>
                           ) : (
-                            <>
-                              <Archive className="w-3.5 h-3.5" />
-                              {strings.chr_archive || "Archive"}
-                            </>
+                            <div className="space-y-1.5">
+                              {sessions[0] && (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditSession(sessions[0])}
+                                  className="w-full text-left rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 px-3 py-2 transition-colors"
+                                >
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+                                    {strings.chr_overview_latest_session || "Latest session"}
+                                  </p>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <BookOpen className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span className="text-sm font-medium truncate">{sessions[0].title}</span>
+                                    {sessions[0].sessionDate && (
+                                      <span className="text-[10px] text-muted-foreground shrink-0">
+                                        {formatSessionDate(sessions[0].sessionDate)}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              )}
+                              {latestLocation && (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditLocation(latestLocation)}
+                                  className="w-full text-left rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 px-3 py-2 transition-colors"
+                                >
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+                                    {strings.chr_overview_latest_location || "Latest location"}
+                                  </p>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span className="text-sm font-medium truncate">{latestLocation.name}</span>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">
+                                      {locationCategoryLabel(latestLocation.category)}
+                                    </span>
+                                  </div>
+                                </button>
+                              )}
+                              {latestRelationship && (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditRelationship(latestRelationship)}
+                                  className="w-full text-left rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 px-3 py-2 transition-colors"
+                                >
+                                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+                                    {strings.chr_overview_latest_relationship || "Latest relationship"}
+                                  </p>
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <Heart className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    <span className="text-sm font-medium truncate">
+                                      {characterById.get(latestRelationship.sourceCharacterId)?.name ?? (strings.chr_session_unknown_character || "Unknown")}
+                                    </span>
+                                    <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                                    <span className="text-sm truncate">
+                                      {characterById.get(latestRelationship.targetCharacterId)?.name ?? (strings.chr_session_unknown_character || "Unknown")}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground shrink-0">
+                                      {relationshipTypeLabel(latestRelationship.relationshipType)}
+                                    </span>
+                                  </div>
+                                </button>
+                              )}
+                            </div>
                           )}
-                        </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {manageTab === 'characters' && (
                     <div>

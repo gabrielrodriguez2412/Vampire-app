@@ -84,6 +84,18 @@ export type DisciplineValue = number | { rating: number; powers?: string[] };
  */
 export type CharacterType = 'player' | 'npc';
 
+/** Coarse categories used to tag inventory items. */
+export type InventoryCategory = 'weapon' | 'armor' | 'tool' | 'equipment' | 'money' | 'other';
+
+/** A single inventory entry on a character. */
+export interface InventoryItem {
+  id: string;
+  name: string;
+  quantity?: number;
+  category?: InventoryCategory;
+  notes?: string;
+}
+
 export interface BaseCharacter {
   id: string;
   name: string;
@@ -97,6 +109,8 @@ export interface BaseCharacter {
   notes?: string;
   /** 'player' or 'npc'. Defaults to 'player' on load via getCharacters normalization. */
   characterType?: CharacterType;
+  /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
+  inventory?: InventoryItem[];
   createdAt: string;
   updatedAt: string;
 }

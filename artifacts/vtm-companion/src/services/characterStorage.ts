@@ -1,7 +1,55 @@
-import { Character, EditionId, V5Character, ClassicCharacter, CharacterType } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, CharacterType, InventoryItem, InventoryCategory } from '../types';
 import { normalizeEditionId } from '../utils/content';
 
 const STORAGE_KEY = 'vtm-characters';
+
+const VALID_INVENTORY_CATEGORIES: InventoryCategory[] = [
+  'weapon', 'armor', 'tool', 'equipment', 'money', 'other',
+];
+
+/**
+ * Coerce any value into a valid `InventoryItem[]`.
+ *
+ * - Array  → keep only entries that look like items (object with string `name`),
+ *            assign a fresh UUID to any missing/empty `id`, drop unknown shapes
+ *            of optional fields.
+ * - String → wrap as a single "Legacy Notes" item so an old free-text inventory
+ *            that may exist in a hand-edited backup isn't silently discarded.
+ * - Other  → empty array.
+ */
+export function normalizeInventory(raw: unknown): InventoryItem[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((x): x is Record<string, unknown> =>
+        !!x && typeof x === 'object' && typeof (x as Record<string, unknown>).name === 'string'
+      )
+      .map(x => {
+        const idVal = x.id;
+        const id = typeof idVal === 'string' && idVal ? idVal : crypto.randomUUID();
+        const qtyVal = x.quantity;
+        const catVal = x.category;
+        const notesVal = x.notes;
+        const item: InventoryItem = {
+          id,
+          name: x.name as string,
+        };
+        if (typeof qtyVal === 'number' && Number.isFinite(qtyVal)) item.quantity = qtyVal;
+        if (typeof catVal === 'string' && VALID_INVENTORY_CATEGORIES.includes(catVal as InventoryCategory)) {
+          item.category = catVal as InventoryCategory;
+        }
+        if (typeof notesVal === 'string') item.notes = notesVal;
+        return item;
+      });
+  }
+  if (typeof raw === 'string' && raw.trim()) {
+    return [{
+      id: crypto.randomUUID(),
+      name: 'Legacy Notes',
+      notes: raw,
+    }];
+  }
+  return [];
+}
 
 export function getCharacters(): Character[] {
   try {
@@ -25,6 +73,9 @@ export function getCharacters(): Character[] {
         // Default unknown/missing/garbage characterType to 'player' so legacy
         // saved characters (and any malformed entries) load safely.
         characterType: (c?.characterType === 'npc' ? 'npc' : 'player') as CharacterType,
+        // Normalize inventory to a valid InventoryItem[]; tolerates missing field,
+        // legacy free-text strings, or malformed arrays.
+        inventory: normalizeInventory(c?.inventory),
         createdAt: typeof c?.createdAt === 'string' ? c.createdAt : new Date().toISOString(),
         updatedAt: typeof c?.updatedAt === 'string' ? c.updatedAt : new Date().toISOString(),
       };
@@ -101,6 +152,7 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
     clan,
     edition,
     characterType: 'player' as CharacterType,
+    inventory: [] as InventoryItem[],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     attributes: {},

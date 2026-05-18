@@ -188,3 +188,22 @@ export interface Chronicle {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * A single session summary attached to a Chronicle. Sessions are stored in
+ * their own localStorage bucket (own service) and reference characters by
+ * id only — never embed full character objects. Orphan sessions (whose
+ * `chronicleId` no longer resolves) are filtered by readers; same for
+ * `taggedCharacterIds` whose targets have been deleted.
+ */
+export interface ChronicleSession {
+  id: string;
+  chronicleId: string;
+  title: string;
+  summary?: string;
+  /** ISO date string (YYYY-MM-DD or full ISO). Optional, user-supplied. */
+  sessionDate?: string;
+  taggedCharacterIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}

@@ -37,6 +37,7 @@ import {
 import { getCharacters, setCharacterChronicle } from "@/services/characterStorage";
 import {
   getChronicleSessions,
+  getAllChronicleSessions,
   saveChronicleSession,
   createEmptyChronicleSession,
   updateChronicleSession,
@@ -45,6 +46,7 @@ import {
 } from "@/services/chronicleSessionStorage";
 import {
   getChronicleLocations,
+  getAllChronicleLocations,
   saveChronicleLocation,
   createEmptyChronicleLocation,
   updateChronicleLocation,
@@ -53,6 +55,7 @@ import {
 } from "@/services/chronicleLocationStorage";
 import {
   getChronicleRelationships,
+  getAllChronicleRelationships,
   saveChronicleRelationship,
   createEmptyChronicleRelationship,
   updateChronicleRelationship,
@@ -278,6 +281,21 @@ export default function ChroniclePage() {
       return tb - ta;
     });
   }, [chronicles, statusFilter]);
+
+  // Preload session/location/relationship counts for every chronicle so cards
+  // can display all stats without opening the manage modal. Refreshes when the
+  // manage modal closes (managingId flips to null) so counts stay accurate.
+  const statsByChronicle = useMemo(() => {
+    const allSessions = getAllChronicleSessions();
+    const allLocations = getAllChronicleLocations();
+    const allRelationships = getAllChronicleRelationships();
+    const map = new Map<string, { sessions: number; locations: number; relationships: number }>();
+    for (const c of chronicles) map.set(c.id, { sessions: 0, locations: 0, relationships: 0 });
+    for (const s of allSessions) { const e = map.get(s.chronicleId); if (e) e.sessions++; }
+    for (const l of allLocations) { const e = map.get(l.chronicleId); if (e) e.locations++; }
+    for (const r of allRelationships) { const e = map.get(r.chronicleId); if (e) e.relationships++; }
+    return map;
+  }, [chronicles, managingId]);
 
   // --- Create ---
   const openCreate = () => {
@@ -730,10 +748,14 @@ export default function ChroniclePage() {
         <div className="flex gap-1 mb-6 border-b border-border">
           {(['active', 'archived', 'all'] as StatusFilter[]).map(opt => {
             const isActive = statusFilter === opt;
+            const count =
+              opt === 'active'   ? chronicles.filter(c => c.status === 'active').length
+              : opt === 'archived' ? chronicles.filter(c => c.status === 'archived').length
+              : chronicles.length;
             const label =
-              opt === 'active' ? (strings.chr_filter_active || "Active")
-              : opt === 'archived' ? (strings.chr_filter_archived || "Archived")
-              : (strings.chr_filter_all || "All");
+              opt === 'active'   ? `${strings.chr_filter_active   || "Active"} (${count})`
+              : opt === 'archived' ? `${strings.chr_filter_archived || "Archived"} (${count})`
+              : `${strings.chr_filter_all || "All"} (${count})`;
             return (
               <button
                 key={opt}
@@ -755,17 +777,26 @@ export default function ChroniclePage() {
 
       {/* List body */}
       {chronicles.length === 0 ? (
-        <div className="text-center py-16 bg-card border border-border rounded-lg">
-          <ScrollText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="text-muted-foreground">
-            {strings.chr_no_chronicles || "No chronicles yet. Create your first to get started."}
+        <div className="text-center py-20 bg-zinc-900/40 border border-zinc-800/70 rounded-lg">
+          <ScrollText className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+          <p className="text-sm font-medium text-muted-foreground mb-1">
+            {strings.chr_no_chronicles || "No chronicles yet."}
+          </p>
+          <p className="text-xs text-muted-foreground/50">
+            {strings.chr_create_first || "Create your first to get started."}
           </p>
         </div>
       ) : displayed.length === 0 ? (
-        <div className="text-center py-16 bg-card border border-border rounded-lg">
-          <ScrollText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">
-            {strings.chr_no_match || "No chronicles match the filter."}
+        <div className="text-center py-16 bg-zinc-900/40 border border-zinc-800/70 rounded-lg">
+          {statusFilter === 'archived'
+            ? <Archive className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />
+            : <ScrollText className="w-10 h-10 text-muted-foreground/20 mx-auto mb-3" />}
+          <p className="text-sm text-muted-foreground mb-4">
+            {statusFilter === 'active'
+              ? (strings.chr_no_active || "No active chronicles.")
+              : statusFilter === 'archived'
+              ? (strings.chr_no_archived || "No archived chronicles.")
+              : (strings.chr_no_match || "No chronicles match the filter.")}
           </p>
           <Button
             variant="outline"
@@ -780,48 +811,64 @@ export default function ChroniclePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {displayed.map(chr => {
             const isArchived = chr.status === 'archived';
+            const linked = linkedByChronicle.get(chr.id);
+            const pcCount = linked?.pcs.length ?? 0;
+            const npcCount = linked?.npcs.length ?? 0;
+            const stats = statsByChronicle.get(chr.id) ?? { sessions: 0, locations: 0, relationships: 0 };
             return (
               <Card
                 key={chr.id}
                 onClick={() => openManage(chr, 'overview')}
-                className={`bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group ${
-                  isArchived ? "opacity-70" : ""
+                className={`group cursor-pointer transition-all ${
+                  isArchived
+                    ? "bg-zinc-900/30 border-zinc-800/60 opacity-60 hover:opacity-80 hover:border-zinc-700"
+                    : "bg-card border-border hover:border-primary/40 hover:bg-white/[0.02]"
                 }`}
               >
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <CardTitle className="font-serif text-xl mb-1 truncate">{chr.name}</CardTitle>
-                      <div className="flex items-center flex-wrap gap-2 text-sm text-muted-foreground">
-                        {chr.setting && <span className="truncate">{chr.setting}</span>}
-                        {chr.setting && chr.edition && <span>•</span>}
-                        {chr.edition && (
-                          <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
-                            {chr.edition}
-                          </span>
-                        )}
-                        <span
-                          className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
-                            isArchived
-                              ? "border-zinc-700 bg-zinc-900 text-zinc-400"
-                              : "border-primary/30 bg-primary/10 text-primary"
-                          }`}
-                        >
+                <CardHeader className="pb-2 pt-4 px-4">
+                  <div className="flex items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start gap-2 mb-1">
+                        <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0">
+                          {chr.name}
+                        </CardTitle>
+                        <span className={`shrink-0 mt-0.5 uppercase text-[9px] tracking-wider border px-1.5 py-0.5 rounded ${
+                          isArchived
+                            ? "border-zinc-700 bg-zinc-900 text-zinc-500"
+                            : "border-primary/30 bg-primary/10 text-primary"
+                        }`}>
                           {isArchived
                             ? (strings.chr_status_archived || "Archived")
                             : (strings.chr_status_active || "Active")}
                         </span>
                       </div>
+                      {(chr.setting || chr.edition) && (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {chr.setting && (
+                            <span className="text-xs text-muted-foreground/80 truncate max-w-[14rem]">
+                              {chr.setting}
+                            </span>
+                          )}
+                          {chr.setting && chr.edition && (
+                            <span className="text-muted-foreground/30 text-xs select-none">·</span>
+                          )}
+                          {chr.edition && (
+                            <span className="uppercase text-[9px] tracking-wider border border-zinc-700 px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400">
+                              {chr.edition}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* ⋯ menu */}
-                    <div onClick={e => e.stopPropagation()}>
+                    <div onClick={e => e.stopPropagation()} className="shrink-0 -mt-1 -mr-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity -mt-1 -mr-2"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
                             aria-label="Chronicle actions"
                           >
                             <MoreHorizontal className="w-4 h-4" />
@@ -893,45 +940,58 @@ export default function ChroniclePage() {
                   </div>
                 </CardHeader>
 
-                {(() => {
-                  const linked = linkedByChronicle.get(chr.id);
-                  const pcCount = linked?.pcs.length ?? 0;
-                  const npcCount = linked?.npcs.length ?? 0;
-                  const hasFooter = chr.description || pcCount > 0 || npcCount > 0 || chr.updatedAt;
-                  if (!hasFooter) return null;
-                  return (
-                    <CardContent className="pt-0">
-                      {chr.description && (
-                        <p className="text-sm text-foreground/80 line-clamp-2 mb-2">
-                          {chr.description}
-                        </p>
-                      )}
-                      {(pcCount > 0 || npcCount > 0) && (
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          {pcCount > 0 && (
-                            <span
-                              className="inline-flex items-center gap-1 text-[11px] border border-primary/30 bg-primary/10 text-primary px-1.5 rounded"
-                              title={strings.chr_linked_pcs || "Player Characters"}
-                            >
-                              <User className="w-3 h-3" /> {pcCount}
-                            </span>
-                          )}
-                          {npcCount > 0 && (
-                            <span
-                              className="inline-flex items-center gap-1 text-[11px] border border-zinc-700 bg-zinc-900 text-zinc-400 px-1.5 rounded"
-                              title={strings.chr_linked_npcs || "NPCs"}
-                            >
-                              <Users className="w-3 h-3" /> {npcCount}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      <div className="text-[10px] text-muted-foreground/60">
-                        {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
-                      </div>
-                    </CardContent>
-                  );
-                })()}
+                <CardContent className="pt-0 pb-4 px-4">
+                  {chr.description && (
+                    <p className="text-xs text-foreground/65 line-clamp-2 mb-3">
+                      {chr.description}
+                    </p>
+                  )}
+
+                  {/* Stats row */}
+                  <div className="flex items-center gap-3 flex-wrap mb-3">
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      title={strings.chr_linked_pcs || "Player Characters"}
+                    >
+                      <User className="w-3 h-3 text-primary/70" /> {pcCount}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      title={strings.chr_linked_npcs || "NPCs"}
+                    >
+                      <Users className="w-3 h-3 text-muted-foreground/60" /> {npcCount}
+                    </span>
+                    <span className="text-muted-foreground/25 text-xs select-none" aria-hidden>·</span>
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      title={strings.chr_sessions || "Sessions"}
+                    >
+                      <BookOpen className="w-3 h-3" /> {stats.sessions}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      title={strings.chr_locations || "Locations"}
+                    >
+                      <MapPin className="w-3 h-3" /> {stats.locations}
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      title={strings.chr_relationships || "Relationships"}
+                    >
+                      <Heart className="w-3 h-3" /> {stats.relationships}
+                    </span>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+                    <span className="text-[10px] text-muted-foreground/50">
+                      {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
+                      {strings.chr_open_manage || "Open"} →
+                    </span>
+                  </div>
+                </CardContent>
               </Card>
             );
           })}

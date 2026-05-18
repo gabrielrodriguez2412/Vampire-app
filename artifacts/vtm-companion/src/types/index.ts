@@ -77,6 +77,13 @@ export interface GlossaryEntry {
  */
 export type DisciplineValue = number | { rating: number; powers?: string[] };
 
+/**
+ * Tag identifying whether a character is a Player Character or a Storyteller's NPC.
+ * Optional on the type so legacy characters loaded from storage still satisfy `Character`;
+ * `getCharacters` normalizes missing values to `'player'`.
+ */
+export type CharacterType = 'player' | 'npc';
+
 export interface BaseCharacter {
   id: string;
   name: string;
@@ -88,6 +95,8 @@ export interface BaseCharacter {
   sire?: string;
   sect?: string;
   notes?: string;
+  /** 'player' or 'npc'. Defaults to 'player' on load via getCharacters normalization. */
+  characterType?: CharacterType;
   createdAt: string;
   updatedAt: string;
 }

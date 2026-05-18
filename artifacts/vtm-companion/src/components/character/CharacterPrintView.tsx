@@ -104,7 +104,12 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       <header className="border-b-2 border-black pb-2 mb-2">
         <h1 className="text-2xl font-bold tracking-tight">{character.name}</h1>
         <p className="text-sm">
-          {clanName} · <span className="uppercase">{character.edition}</span>
+          {clanName} · <span className="uppercase">{character.edition}</span> ·{" "}
+          <span className="uppercase tracking-wider">
+            {character.characterType === 'npc'
+              ? (strings.char_type_short_npc || "NPC")
+              : (strings.char_type_short_pc || "PC")}
+          </span>
         </p>
       </header>
 

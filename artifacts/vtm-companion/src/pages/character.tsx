@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId } from "@/types";
+import { Character, EditionId, CharacterType } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup, setCharacterType } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
@@ -68,6 +68,7 @@ export default function CharacterPage() {
   const [newName, setNewName] = useState("");
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
+  const [newCharacterType, setNewCharacterType] = useState<CharacterType>('player');
   // Optional identity fields (saved only if non-empty)
   const [newConcept, setNewConcept] = useState("");
   const [newChronicle, setNewChronicle] = useState("");
@@ -82,6 +83,7 @@ export default function CharacterPage() {
   const resetCreateForm = () => {
     setNewName("");
     setNewClan("");
+    setNewCharacterType('player');
     setNewConcept("");
     setNewChronicle("");
     setNewAmbition("");
@@ -130,6 +132,10 @@ export default function CharacterPage() {
       return;
     }
     const char = createEmptyCharacter(newEdition, newClan, newName);
+
+    // Apply selected character type (createEmptyCharacter defaults to 'player';
+    // override here if the user picked NPC).
+    char.characterType = newCharacterType;
 
     // Apply optional identity fields. Only assign trimmed non-empty values
     // so empty inputs don't clutter the saved object.
@@ -336,6 +342,13 @@ export default function CharacterPage() {
     return getClanDisplayNameById(clanId, charEdition || activeEdition, activeLanguage);
   };
 
+  /** Short pill label for the character-type tag (PC / NPC, localized). */
+  const getTypeShortLabel = (type: CharacterType | undefined) => {
+    return type === 'npc'
+      ? (strings.char_type_short_npc || "NPC")
+      : (strings.char_type_short_pc || "PC");
+  };
+
   const deletingCharName = deletingId ? characters.find(c => c.id === deletingId)?.name : '';
 
   return (
@@ -480,10 +493,20 @@ export default function CharacterPage() {
                           ) : (
                             <CardTitle className="font-serif text-xl mb-1 truncate">{char.name}</CardTitle>
                           )}
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <div className="flex items-center flex-wrap gap-2 text-sm text-muted-foreground">
                             <span>{getClanIcon(char.clan)} {getClanName(char.clan, char.edition as EditionId)}</span>
                             <span>•</span>
                             <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
+                            <span
+                              className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                                char.characterType === 'npc'
+                                  ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                                  : "border-primary/30 bg-primary/10 text-primary"
+                              }`}
+                              title={char.characterType === 'npc' ? (strings.char_type_npc || "NPC") : (strings.char_type_player || "Player Character")}
+                            >
+                              {getTypeShortLabel(char.characterType)}
+                            </span>
                           </div>
                           {char.updatedAt && (
                             <div className="text-[10px] text-muted-foreground/60 mt-1.5">
@@ -510,6 +533,27 @@ export default function CharacterPage() {
                                 className="gap-2 cursor-pointer"
                               >
                                 <Pencil className="w-4 h-4" /> {strings.char_rename || "Rename"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const next: CharacterType = char.characterType === 'npc' ? 'player' : 'npc';
+                                  const updated = setCharacterType(char.id, next);
+                                  if (updated) {
+                                    setCharacters(getCharacters());
+                                    if (activeChar?.id === char.id) setActiveChar(updated);
+                                    toast({
+                                      title: next === 'npc'
+                                        ? (strings.char_marked_npc || "Marked as NPC")
+                                        : (strings.char_marked_player || "Marked as Player Character"),
+                                    });
+                                  }
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <User className="w-4 h-4" />
+                                {char.characterType === 'npc'
+                                  ? (strings.char_mark_as_player || "Mark as Player Character")
+                                  : (strings.char_mark_as_npc || "Mark as NPC")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => { duplicateCharacter(char.id); setCharacters(getCharacters()); toast({ title: strings.char_duplicated || "Character duplicated" }); }}
@@ -563,7 +607,40 @@ export default function CharacterPage() {
                   <label className="text-sm font-medium">{strings.sheet_name}</label>
                   <Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-background border-border" placeholder="e.g. Jeanette Voerman" />
                 </div>
-                
+
+                {/* Character type — Player Character vs NPC */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{strings.char_type_label || "Character Type"}</label>
+                  <div className="flex gap-2" role="radiogroup" aria-label={strings.char_type_label || "Character Type"}>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={newCharacterType === 'player'}
+                      onClick={() => setNewCharacterType('player')}
+                      className={`flex-1 px-3 py-2 rounded text-sm border transition-colors ${
+                        newCharacterType === 'player'
+                          ? "bg-primary/20 border-primary text-foreground"
+                          : "bg-background border-border text-muted-foreground hover:border-zinc-700"
+                      }`}
+                    >
+                      {strings.char_type_player || "Player Character"}
+                    </button>
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={newCharacterType === 'npc'}
+                      onClick={() => setNewCharacterType('npc')}
+                      className={`flex-1 px-3 py-2 rounded text-sm border transition-colors ${
+                        newCharacterType === 'npc'
+                          ? "bg-primary/20 border-primary text-foreground"
+                          : "bg-background border-border text-muted-foreground hover:border-zinc-700"
+                      }`}
+                    >
+                      {strings.char_type_npc || "NPC"}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{strings.sheet_select_edition}</label>
                   <select 
@@ -729,6 +806,16 @@ export default function CharacterPage() {
                       <span aria-hidden="true">•</span>
                       <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
                         {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
+                      </span>
+                      <span
+                        className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                          activeChar.characterType === 'npc'
+                            ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                            : "border-primary/30 bg-primary/10 text-primary"
+                        }`}
+                        title={activeChar.characterType === 'npc' ? (strings.char_type_npc || "NPC") : (strings.char_type_player || "Player Character")}
+                      >
+                        {getTypeShortLabel(activeChar.characterType)}
                       </span>
                     </p>
                   </div>

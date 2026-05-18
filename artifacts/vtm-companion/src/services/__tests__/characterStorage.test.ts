@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, normalizeInventory } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -820,6 +820,119 @@ describe('characterStorage', () => {
       expect((chars[1] as any).inventory[0].notes).toBe('Stakes and lockpicks');
       expect((chars[2] as any).inventory).toHaveLength(1);
       expect((chars[2] as any).inventory[0].name).toBe('Sword');
+    });
+  });
+
+  describe('chronicleId linking (backward compatible)', () => {
+    it('omits chronicleId entirely for legacy characters (missing field)', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'Legacy', clan: 'brujah', edition: 'V5' },
+      ]));
+      const c = getCharacters()[0];
+      expect((c as any).chronicleId).toBeUndefined();
+      expect('chronicleId' in c).toBe(false);
+    });
+
+    it('drops blank or non-string chronicleId values on load', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'A', clan: 'brujah', edition: 'V5', chronicleId: '' },
+        { id: '2', name: 'B', clan: 'brujah', edition: 'V5', chronicleId: '   ' },
+        { id: '3', name: 'C', clan: 'brujah', edition: 'V5', chronicleId: 42 },
+        { id: '4', name: 'D', clan: 'brujah', edition: 'V5', chronicleId: null },
+      ]));
+      const chars = getCharacters();
+      for (const c of chars) {
+        expect((c as any).chronicleId).toBeUndefined();
+      }
+    });
+
+    it('preserves a valid chronicleId on load', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'A', clan: 'brujah', edition: 'V5', chronicleId: 'chr-123' },
+      ]));
+      expect(getCharacters()[0].chronicleId).toBe('chr-123');
+    });
+
+    it('createEmptyCharacter does not set chronicleId', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      expect((c as any).chronicleId).toBeUndefined();
+    });
+  });
+
+  describe('setCharacterChronicle', () => {
+    it('assigns a chronicleId to a character', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      saveCharacter(c);
+      const updated = setCharacterChronicle(c.id, 'chr-1');
+      expect(updated?.chronicleId).toBe('chr-1');
+      expect(getCharacters()[0].chronicleId).toBe('chr-1');
+    });
+
+    it('clears the link when given null', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      saveCharacter(c);
+      setCharacterChronicle(c.id, 'chr-1');
+      const cleared = setCharacterChronicle(c.id, null);
+      expect((cleared as any).chronicleId).toBeUndefined();
+      expect((getCharacters()[0] as any).chronicleId).toBeUndefined();
+    });
+
+    it('clears the link when given an empty/whitespace string', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      saveCharacter(c);
+      setCharacterChronicle(c.id, 'chr-1');
+      setCharacterChronicle(c.id, '   ');
+      expect((getCharacters()[0] as any).chronicleId).toBeUndefined();
+    });
+
+    it('returns null for unknown character id', () => {
+      expect(setCharacterChronicle('nope', 'chr-1')).toBeNull();
+    });
+
+    it('does not verify the chronicle exists — that is the UI\'s job', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      saveCharacter(c);
+      const updated = setCharacterChronicle(c.id, 'never-created');
+      expect(updated?.chronicleId).toBe('never-created');
+    });
+  });
+
+  describe('chronicleId survives import/export round-trips', () => {
+    it('single-character export includes chronicleId and import preserves it', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Linked');
+      saveCharacter(c);
+      setCharacterChronicle(c.id, 'chr-xyz');
+
+      const exported = buildCharacterExport(c.id);
+      expect(exported?.character.chronicleId).toBe('chr-xyz');
+
+      clearCharacterStorage();
+      const imported = importCharacter(exported);
+      // importCharacter returns Character or string error
+      expect(typeof imported === 'object' && imported !== null).toBe(true);
+      expect((imported as any).chronicleId).toBe('chr-xyz');
+    });
+
+    it('full backup preserves chronicleId for every character', () => {
+      const a = createEmptyCharacter('V5', 'brujah', 'A');
+      const b = createEmptyCharacter('V5', 'tremere', 'B');
+      saveCharacter(a);
+      saveCharacter(b);
+      setCharacterChronicle(a.id, 'chr-1');
+      // b intentionally left unassigned
+
+      const backup = buildCharacterBackup();
+      expect(backup.characters.find(x => x.name === 'A')?.chronicleId).toBe('chr-1');
+      expect(backup.characters.find(x => x.name === 'B')?.chronicleId).toBeUndefined();
+
+      clearCharacterStorage();
+      const result = importCharacterBackup(backup);
+      expect(typeof result).toBe('object');
+      const reloaded = getCharacters();
+      const restoredA = reloaded.find(c => c.name === 'A');
+      const restoredB = reloaded.find(c => c.name === 'B');
+      expect(restoredA?.chronicleId).toBe('chr-1');
+      expect((restoredB as any)?.chronicleId).toBeUndefined();
     });
   });
 });

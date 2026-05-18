@@ -10,6 +10,7 @@ function fixture(props: {
   edition: EditionId;
   characterType?: CharacterType;
   updatedAt?: string;
+  chronicleId?: string;
 }): Character {
   return {
     id: `id-${props.name}`,
@@ -17,6 +18,7 @@ function fixture(props: {
     clan: props.clan,
     edition: props.edition,
     characterType: props.characterType,
+    chronicleId: props.chronicleId,
     createdAt: '2020-01-01T00:00:00.000Z',
     updatedAt: props.updatedAt ?? '2020-01-01T00:00:00.000Z',
   } as unknown as Character;
@@ -159,6 +161,55 @@ describe('sortAndFilterCharacters', () => {
         language: 'en',
       });
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('filterChronicle', () => {
+    const list = [
+      fixture({ name: 'Linked-A', clan: 'brujah', edition: 'V5', chronicleId: 'chr-1' }),
+      fixture({ name: 'Linked-B', clan: 'brujah', edition: 'V5', chronicleId: 'chr-2' }),
+      fixture({ name: 'Unassigned', clan: 'brujah', edition: 'V5' }), // no chronicleId
+      fixture({ name: 'Dangling', clan: 'brujah', edition: 'V5', chronicleId: 'chr-deleted' }),
+    ];
+
+    it('"all" keeps every character', () => {
+      const r = sortAndFilterCharacters(list, { sortBy: 'name', filterChronicle: 'all', language: 'en' });
+      expect(r).toHaveLength(4);
+    });
+
+    it('filters to a specific chronicle id', () => {
+      const r = sortAndFilterCharacters(list, { sortBy: 'name', filterChronicle: 'chr-1', language: 'en' });
+      expect(r.map(c => c.name)).toEqual(['Linked-A']);
+    });
+
+    it('"unassigned" includes characters with no chronicleId', () => {
+      const r = sortAndFilterCharacters(list, { sortBy: 'name', filterChronicle: 'unassigned', language: 'en' });
+      // Without validChronicleIds the dangling link is still considered assigned;
+      // only the truly-unassigned character matches.
+      expect(r.map(c => c.name)).toEqual(['Unassigned']);
+    });
+
+    it('"unassigned" + validChronicleIds treats dangling links as unassigned', () => {
+      const validIds = new Set(['chr-1', 'chr-2']);
+      const r = sortAndFilterCharacters(list, {
+        sortBy: 'name',
+        filterChronicle: 'unassigned',
+        validChronicleIds: validIds,
+        language: 'en',
+      });
+      expect(r.map(c => c.name).sort()).toEqual(['Dangling', 'Unassigned']);
+    });
+
+    it('specific id + validChronicleIds still resolves dangling correctly', () => {
+      const validIds = new Set(['chr-1', 'chr-2']);
+      const r = sortAndFilterCharacters(list, {
+        sortBy: 'name',
+        filterChronicle: 'chr-deleted',
+        validChronicleIds: validIds,
+        language: 'en',
+      });
+      // No character is *validly* linked to chr-deleted any more.
+      expect(r).toEqual([]);
     });
   });
 

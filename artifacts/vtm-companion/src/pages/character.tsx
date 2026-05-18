@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId, CharacterType } from "@/types";
+import { Character, EditionId, CharacterType, Chronicle } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
@@ -16,9 +16,11 @@ import {
   CharacterTypeFilter,
   CharacterEditionFilter,
   CharacterClanFilter,
+  CharacterChronicleFilter,
 } from "@/utils/characterFilter";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup, setCharacterType } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup, setCharacterType, setCharacterChronicle } from "@/services/characterStorage";
+import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
@@ -66,6 +68,7 @@ export default function CharacterPage() {
   const { toast } = useToast();
 
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [chronicles, setChronicles] = useState<Chronicle[]>([]);
   const [activeView, setActiveView] = useState<'list' | 'create' | 'sheet'>('list');
   const [activeChar, setActiveChar] = useState<Character | null>(null);
   const [boundaryKey, setBoundaryKey] = useState(0);
@@ -76,6 +79,7 @@ export default function CharacterPage() {
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
   const [newCharacterType, setNewCharacterType] = useState<CharacterType>('player');
+  const [newChronicleId, setNewChronicleId] = useState<string>("");
   // Optional identity fields (saved only if non-empty)
   const [newConcept, setNewConcept] = useState("");
   const [newChronicle, setNewChronicle] = useState("");
@@ -91,6 +95,7 @@ export default function CharacterPage() {
     setNewName("");
     setNewClan("");
     setNewCharacterType('player');
+    setNewChronicleId("");
     setNewConcept("");
     setNewChronicle("");
     setNewAmbition("");
@@ -107,12 +112,16 @@ export default function CharacterPage() {
   const [renameValue, setRenameValue] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [printingId, setPrintingId] = useState<string | null>(null);
+  // Chronicle assignment modal
+  const [assigningChronicleForId, setAssigningChronicleForId] = useState<string | null>(null);
+  const [assignChronicleSelection, setAssignChronicleSelection] = useState<string>("");
 
   // List view: sort + filter UI state (purely display; never written back to storage)
   const [sortBy, setSortBy] = useState<CharacterSortKey>('updated');
   const [filterType, setFilterType] = useState<CharacterTypeFilter>('all');
   const [filterEdition, setFilterEdition] = useState<CharacterEditionFilter>('all');
   const [filterClan, setFilterClan] = useState<CharacterClanFilter>('all');
+  const [filterChronicle, setFilterChronicle] = useState<CharacterChronicleFilter>('all');
 
   const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
 
@@ -127,6 +136,17 @@ export default function CharacterPage() {
     [characters]
   );
 
+  // Valid chronicle id set — used by filter to treat dangling links as "unassigned".
+  const validChronicleIds = useMemo(
+    () => new Set(chronicles.map(c => c.id)),
+    [chronicles]
+  );
+  const chronicleById = useMemo(() => {
+    const m = new Map<string, Chronicle>();
+    chronicles.forEach(c => m.set(c.id, c));
+    return m;
+  }, [chronicles]);
+
   // Sorted + filtered list for display only. Never written back to storage.
   const displayedCharacters = useMemo(
     () =>
@@ -135,16 +155,30 @@ export default function CharacterPage() {
         filterType,
         filterEdition,
         filterClan,
+        filterChronicle,
+        validChronicleIds,
         language: activeLanguage,
       }),
-    [characters, sortBy, filterType, filterEdition, filterClan, activeLanguage]
+    [characters, sortBy, filterType, filterEdition, filterClan, filterChronicle, validChronicleIds, activeLanguage]
   );
 
   const clearListFilters = () => {
     setFilterType('all');
     setFilterEdition('all');
     setFilterClan('all');
+    setFilterChronicle('all');
   };
+
+  // Refresh chronicles from storage; used after mount and when modals open
+  // so the dropdowns always show the latest list.
+  const refreshChronicles = useCallback(() => {
+    try {
+      setChronicles(getChronicles());
+    } catch (error) {
+      console.error('Failed to load chronicles', error);
+      setChronicles([]);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -154,7 +188,26 @@ export default function CharacterPage() {
       console.error('Failed to load characters', error);
       setCharacters([]);
     }
-  }, [boundaryKey]);
+    refreshChronicles();
+  }, [boundaryKey, refreshChronicles]);
+
+  // Cross-page deep-link: chronicle page sets `vtm-open-character-id` in
+  // sessionStorage and navigates here; we consume it once on mount.
+  useEffect(() => {
+    try {
+      const pendingId = sessionStorage.getItem('vtm-open-character-id');
+      if (!pendingId) return;
+      sessionStorage.removeItem('vtm-open-character-id');
+      const target = getCharacterById(pendingId);
+      if (target) {
+        setActiveChar(target);
+        setActiveView('sheet');
+        setIsEditing(false);
+      }
+    } catch {
+      // sessionStorage may be unavailable — ignore.
+    }
+  }, []);
 
   const resetCharacterData = () => {
     clearCharacterStorage();
@@ -186,6 +239,10 @@ export default function CharacterPage() {
     const chronicle = newChronicle.trim();
     if (concept) char.concept = concept;
     if (chronicle) char.chronicle = chronicle;
+    // Link to a Chronicle if one was selected and still exists in storage.
+    if (newChronicleId && validChronicleIds.has(newChronicleId)) {
+      char.chronicleId = newChronicleId;
+    }
 
     if (char.edition === 'V5') {
       const ambition = newAmbition.trim();
@@ -405,6 +462,90 @@ export default function CharacterPage() {
         <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
       </div>
 
+      {/* Chronicle assignment modal */}
+      <AnimatePresence>
+        {assigningChronicleForId && (() => {
+          const targetChar = characters.find(c => c.id === assigningChronicleForId);
+          if (!targetChar) return null;
+          const handleClose = () => {
+            setAssigningChronicleForId(null);
+            setAssignChronicleSelection("");
+          };
+          const handleSave = () => {
+            const value = assignChronicleSelection || null;
+            const updated = setCharacterChronicle(targetChar.id, value);
+            if (updated) {
+              setCharacters(getCharacters());
+              if (activeChar?.id === targetChar.id) setActiveChar(updated);
+              toast({
+                title: value
+                  ? (strings.char_chronicle_set || "Chronicle assigned")
+                  : (strings.char_chronicle_cleared || "Chronicle link removed"),
+              });
+            }
+            handleClose();
+          };
+          return (
+            <motion.div
+              key="assign-chronicle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={handleClose}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {targetChar.chronicleId
+                    ? (strings.char_change_chronicle || "Change Chronicle")
+                    : (strings.char_assign_chronicle || "Assign Chronicle")}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4 truncate">
+                  <span className="text-foreground font-medium">{targetChar.name}</span>
+                </p>
+                {chronicles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground italic mb-4">
+                    {strings.chr_no_chronicles_to_link || "No chronicles yet. Create one in the Chronicle tab."}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 mb-2">
+                    <label className="text-sm font-medium">
+                      {strings.char_chronicle_label || "Chronicle"}
+                    </label>
+                    <select
+                      value={assignChronicleSelection}
+                      onChange={e => setAssignChronicleSelection(e.target.value)}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                    >
+                      <option value="">{strings.char_chronicle_none || "No chronicle"}</option>
+                      {chronicles.map(chr => (
+                        <option key={chr.id} value={chr.id}>
+                          {chr.name}{chr.status === 'archived' ? ` (${strings.chr_status_archived || "Archived"})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="flex gap-3 justify-end mt-6">
+                  <Button variant="outline" size="sm" onClick={handleClose} className="text-muted-foreground">
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button size="sm" onClick={handleSave} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    {strings.save || "Save"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
       {/* Delete confirmation overlay */}
       <AnimatePresence>
         {deletingId && (
@@ -495,7 +636,7 @@ export default function CharacterPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={() => setActiveView('create')} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button onClick={() => { refreshChronicles(); setActiveView('create'); }} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="w-4 h-4" /> {strings.createCharacter}
                 </Button>
               </div>
@@ -565,6 +706,23 @@ export default function CharacterPage() {
                     </select>
                   </label>
                 )}
+
+                {chronicles.length > 0 && (
+                  <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    {strings.list_filter_chronicle_label || "Chronicle"}
+                    <select
+                      value={filterChronicle}
+                      onChange={e => setFilterChronicle(e.target.value as CharacterChronicleFilter)}
+                      className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                    >
+                      <option value="all">{strings.list_filter_all || "All"}</option>
+                      <option value="unassigned">{strings.char_chronicle_unassigned || "Unassigned"}</option>
+                      {chronicles.map(chr => (
+                        <option key={chr.id} value={chr.id}>{chr.name}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
               </div>
             )}
 
@@ -627,6 +785,23 @@ export default function CharacterPage() {
                             >
                               {getTypeShortLabel(char.characterType)}
                             </span>
+                            {char.chronicleId && (() => {
+                              const linkedChr = chronicleById.get(char.chronicleId);
+                              const label = linkedChr ? linkedChr.name : (strings.char_chronicle_missing || "Unknown chronicle");
+                              return (
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[11px] border px-1.5 rounded truncate max-w-[12rem] ${
+                                    linkedChr
+                                      ? "border-primary/30 bg-primary/5 text-foreground/80"
+                                      : "border-zinc-700 bg-zinc-900 text-zinc-500 italic"
+                                  }`}
+                                  title={label}
+                                >
+                                  <ScrollText className="w-3 h-3 shrink-0" />
+                                  <span className="truncate">{label}</span>
+                                </span>
+                              );
+                            })()}
                           </div>
                           {char.updatedAt && (
                             <div className="text-[10px] text-muted-foreground/60 mt-1.5">
@@ -647,12 +822,25 @@ export default function CharacterPage() {
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuContent align="end" className="w-56">
                               <DropdownMenuItem
                                 onClick={() => { setRenamingId(char.id); setRenameValue(char.name); }}
                                 className="gap-2 cursor-pointer"
                               >
                                 <Pencil className="w-4 h-4" /> {strings.char_rename || "Rename"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  refreshChronicles();
+                                  setAssigningChronicleForId(char.id);
+                                  setAssignChronicleSelection(char.chronicleId || "");
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <ScrollText className="w-4 h-4" />
+                                {char.chronicleId
+                                  ? (strings.char_change_chronicle || "Change Chronicle")
+                                  : (strings.char_assign_chronicle || "Assign Chronicle")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => {
@@ -791,6 +979,36 @@ export default function CharacterPage() {
                   </select>
                 </div>
 
+                {/* Linked Chronicle — primary section, distinct from the legacy
+                    free-text "Chronicle" note below. Sets `character.chronicleId`. */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <ScrollText className="w-4 h-4 text-primary" />
+                    {strings.char_chronicle_label || "Linked Chronicle"}
+                  </label>
+                  {chronicles.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      {strings.chr_no_chronicles_to_link || "No chronicles yet. Create one in the Chronicle tab."}
+                    </p>
+                  ) : (
+                    <select
+                      value={newChronicleId}
+                      onChange={e => setNewChronicleId(e.target.value)}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                    >
+                      <option value="">{strings.char_chronicle_none || "No chronicle"}</option>
+                      {chronicles.map(chr => (
+                        <option key={chr.id} value={chr.id}>
+                          {chr.name}{chr.status === 'archived' ? ` (${strings.chr_status_archived || "Archived"})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-[11px] text-muted-foreground">
+                    {strings.char_chronicle_help || "Links this character to a saved Chronicle."}
+                  </p>
+                </div>
+
                 {/* Optional identity fields */}
                 <div className="pt-4 border-t border-zinc-800 space-y-4">
                   <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
@@ -803,8 +1021,11 @@ export default function CharacterPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{strings.sheet_chronicle || "Chronicle"}</label>
+                    <label className="text-sm font-medium">{strings.char_chronicle_note_label || "Chronicle note (free-text)"}</label>
                     <Input value={newChronicle} onChange={e => setNewChronicle(e.target.value)} className="bg-background border-border" />
+                    <p className="text-[11px] text-muted-foreground">
+                      {strings.char_chronicle_note_help || "Legacy free-text field. Informational only — does not link to a Chronicle."}
+                    </p>
                   </div>
 
                   {newEdition === 'V5' ? (

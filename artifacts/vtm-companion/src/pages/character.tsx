@@ -10,6 +10,13 @@ import { Character, EditionId, CharacterType } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
+import {
+  sortAndFilterCharacters,
+  CharacterSortKey,
+  CharacterTypeFilter,
+  CharacterEditionFilter,
+  CharacterClanFilter,
+} from "@/utils/characterFilter";
 import { useToast } from "@/hooks/use-toast";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup, setCharacterType } from "@/services/characterStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
@@ -101,7 +108,43 @@ export default function CharacterPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [printingId, setPrintingId] = useState<string | null>(null);
 
+  // List view: sort + filter UI state (purely display; never written back to storage)
+  const [sortBy, setSortBy] = useState<CharacterSortKey>('updated');
+  const [filterType, setFilterType] = useState<CharacterTypeFilter>('all');
+  const [filterEdition, setFilterEdition] = useState<CharacterEditionFilter>('all');
+  const [filterClan, setFilterClan] = useState<CharacterClanFilter>('all');
+
   const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
+
+  // Editions and clans actually present among the user's characters — keeps
+  // filter dropdowns from listing options the user can't possibly use.
+  const uniqueEditions = useMemo(
+    () => Array.from(new Set(characters.map(c => c.edition))) as EditionId[],
+    [characters]
+  );
+  const uniqueClans = useMemo(
+    () => Array.from(new Set(characters.map(c => c.clan))).sort(),
+    [characters]
+  );
+
+  // Sorted + filtered list for display only. Never written back to storage.
+  const displayedCharacters = useMemo(
+    () =>
+      sortAndFilterCharacters(characters, {
+        sortBy,
+        filterType,
+        filterEdition,
+        filterClan,
+        language: activeLanguage,
+      }),
+    [characters, sortBy, filterType, filterEdition, filterClan, activeLanguage]
+  );
+
+  const clearListFilters = () => {
+    setFilterType('all');
+    setFilterEdition('all');
+    setFilterClan('all');
+  };
 
   useEffect(() => {
     try {
@@ -458,14 +501,91 @@ export default function CharacterPage() {
               </div>
             </div>
             
+            {/* Sort + filter controls (only when there's something to sort/filter) */}
+            {characters.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
+                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  {strings.list_sort_label || "Sort"}
+                  <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as CharacterSortKey)}
+                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                  >
+                    <option value="updated">{strings.list_sort_updated || "Recently updated"}</option>
+                    <option value="name">{strings.list_sort_name || "Alphabetical (A–Z)"}</option>
+                    <option value="clan">{strings.list_sort_clan || "Clan"}</option>
+                    <option value="edition">{strings.list_sort_edition || "Edition"}</option>
+                    <option value="type">{strings.list_sort_type || "Character type"}</option>
+                  </select>
+                </label>
+
+                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  {strings.list_filter_type_label || "Type"}
+                  <select
+                    value={filterType}
+                    onChange={e => setFilterType(e.target.value as CharacterTypeFilter)}
+                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                  >
+                    <option value="all">{strings.list_filter_all || "All"}</option>
+                    <option value="player">{strings.char_type_player || "Player Character"}</option>
+                    <option value="npc">{strings.char_type_npc || "NPC"}</option>
+                  </select>
+                </label>
+
+                {uniqueEditions.length > 1 && (
+                  <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    {strings.list_filter_edition_label || "Edition"}
+                    <select
+                      value={filterEdition}
+                      onChange={e => setFilterEdition(e.target.value as CharacterEditionFilter)}
+                      className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                    >
+                      <option value="all">{strings.list_filter_all || "All"}</option>
+                      {EDITION_LIST.filter(ed => uniqueEditions.includes(ed.id)).map(ed => (
+                        <option key={ed.id} value={ed.id}>{ed.shortName}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+                {uniqueClans.length > 1 && (
+                  <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                    {strings.list_filter_clan_label || "Clan"}
+                    <select
+                      value={filterClan}
+                      onChange={e => setFilterClan(e.target.value as CharacterClanFilter)}
+                      className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                    >
+                      <option value="all">{strings.list_filter_all || "All"}</option>
+                      {uniqueClans.map(clanId => (
+                        <option key={clanId} value={clanId}>
+                          {getClanDisplayNameById(clanId, activeEdition, activeLanguage)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
+
             {characters.length === 0 ? (
               <div className="text-center py-16 bg-card border border-border rounded-lg">
                 <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-muted-foreground">{strings.noCharacters}</p>
               </div>
+            ) : displayedCharacters.length === 0 ? (
+              <div className="text-center py-16 bg-card border border-border rounded-lg">
+                <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+                <p className="text-muted-foreground mb-4">
+                  {strings.list_no_match || "No characters match the current filters."}
+                </p>
+                <Button variant="outline" size="sm" onClick={clearListFilters} className="text-muted-foreground hover:text-foreground">
+                  {strings.list_clear_filters || "Clear filters"}
+                </Button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {characters.map(char => (
+                {displayedCharacters.map(char => (
                   <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group" onClick={() => handleOpenSheet(char)}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start gap-2">

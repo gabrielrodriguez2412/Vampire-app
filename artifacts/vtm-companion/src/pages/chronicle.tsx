@@ -1,280 +1,538 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollText, Trash2, Plus, Users, MapPin, Calendar, Save } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
+  MoreHorizontal, X,
+} from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
+import { useToast } from "@/hooks/use-toast";
+import { Chronicle, ChronicleStatus, EditionId } from "@/types";
+import { EDITION_LIST } from "@/data/editions";
+import {
+  getChronicles,
+  saveChronicle,
+  createEmptyChronicle,
+  updateChronicle,
+  setChronicleStatus,
+  deleteChronicle,
+} from "@/services/chronicleStorage";
 
-interface Session { id: string; title: string; date: string; summary: string; }
-interface NPC { id: string; name: string; description: string; }
-interface Location { id: string; name: string; description: string; }
+type StatusFilter = 'all' | 'active' | 'archived';
+
+interface ChronicleForm {
+  name: string;
+  description: string;
+  setting: string;
+  edition: EditionId | '';
+}
+
+const EMPTY_FORM: ChronicleForm = { name: '', description: '', setting: '', edition: '' };
 
 export default function ChroniclePage() {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+  const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState("sessions");
+  const [chronicles, setChronicles] = useState<Chronicle[]>([]);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
 
-  // State
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [npcs, setNpcs] = useState<NPC[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+  // Create modal state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<ChronicleForm>(EMPTY_FORM);
 
-  // Forms
-  const [sessionForm, setSessionForm] = useState<Partial<Session>>({});
-  const [npcForm, setNpcForm] = useState<Partial<NPC>>({});
-  const [locForm, setLocForm] = useState<Partial<Location>>({});
+  // Edit modal state
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<ChronicleForm>(EMPTY_FORM);
+
+  // Delete confirm state
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const refresh = () => setChronicles(getChronicles());
 
   useEffect(() => {
-    try {
-      const s = localStorage.getItem('vtm-sessions');
-      const n = localStorage.getItem('vtm-npcs');
-      const l = localStorage.getItem('vtm-locations');
-      if (s) setSessions(JSON.parse(s));
-      if (n) setNpcs(JSON.parse(n));
-      if (l) setLocations(JSON.parse(l));
-    } catch(e) {}
+    refresh();
   }, []);
 
-  const saveToLocal = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
+  const displayed = useMemo(() => {
+    const filtered = chronicles.filter(c => {
+      if (statusFilter === 'all') return true;
+      return c.status === statusFilter;
+    });
+    return filtered.sort((a, b) => {
+      const ta = Date.parse(a.updatedAt) || 0;
+      const tb = Date.parse(b.updatedAt) || 0;
+      return tb - ta;
+    });
+  }, [chronicles, statusFilter]);
 
-  // --- Sessions ---
-  const saveSession = () => {
-    if (!sessionForm.title) return;
-    let newSessions;
-    if (editingId) {
-      newSessions = sessions.map(x => x.id === editingId ? { ...x, ...sessionForm } as Session : x);
-    } else {
-      newSessions = [...sessions, { id: crypto.randomUUID(), ...sessionForm, date: sessionForm.date || new Date().toISOString().split('T')[0] } as Session];
+  // --- Create ---
+  const openCreate = () => {
+    setCreateForm(EMPTY_FORM);
+    setCreateOpen(true);
+  };
+
+  const handleCreate = () => {
+    const name = createForm.name.trim();
+    if (!name) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_name_required || "Name is required",
+        variant: "destructive",
+      });
+      return;
     }
-    setSessions(newSessions);
-    saveToLocal('vtm-sessions', newSessions);
-    setSessionForm({});
-    setEditingId(null);
+    const chr = createEmptyChronicle(name, {
+      description: createForm.description,
+      setting: createForm.setting,
+      edition: createForm.edition || undefined,
+    });
+    saveChronicle(chr);
+    refresh();
+    setCreateOpen(false);
+    setCreateForm(EMPTY_FORM);
+    toast({ title: strings.chr_created || "Chronicle created" });
   };
 
-  const deleteSession = (id: string) => {
-    const newSessions = sessions.filter(x => x.id !== id);
-    setSessions(newSessions);
-    saveToLocal('vtm-sessions', newSessions);
+  // --- Edit ---
+  const openEdit = (chr: Chronicle) => {
+    setEditingId(chr.id);
+    setEditForm({
+      name: chr.name,
+      description: chr.description || '',
+      setting: chr.setting || '',
+      edition: chr.edition || '',
+    });
   };
 
-  // --- NPCs ---
-  const saveNpc = () => {
-    if (!npcForm.name) return;
-    let newNpcs;
-    if (editingId) {
-      newNpcs = npcs.map(x => x.id === editingId ? { ...x, ...npcForm } as NPC : x);
-    } else {
-      newNpcs = [...npcs, { id: crypto.randomUUID(), ...npcForm } as NPC];
+  const handleUpdate = () => {
+    if (!editingId) return;
+    const trimmed = editForm.name.trim();
+    if (!trimmed) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_name_required || "Name is required",
+        variant: "destructive",
+      });
+      return;
     }
-    setNpcs(newNpcs);
-    saveToLocal('vtm-npcs', newNpcs);
-    setNpcForm({});
+    updateChronicle(editingId, {
+      name: editForm.name,
+      description: editForm.description,
+      setting: editForm.setting,
+      edition: editForm.edition || null,
+    });
+    refresh();
     setEditingId(null);
+    setEditForm(EMPTY_FORM);
+    toast({ title: strings.chr_updated || "Chronicle updated" });
   };
 
-  const deleteNpc = (id: string) => {
-    const newNpcs = npcs.filter(x => x.id !== id);
-    setNpcs(newNpcs);
-    saveToLocal('vtm-npcs', newNpcs);
+  // --- Archive / Unarchive ---
+  const toggleArchive = (chr: Chronicle) => {
+    const next: ChronicleStatus = chr.status === 'archived' ? 'active' : 'archived';
+    setChronicleStatus(chr.id, next);
+    refresh();
+    toast({
+      title: next === 'archived'
+        ? (strings.chr_archived_toast || "Chronicle archived")
+        : (strings.chr_unarchived_toast || "Chronicle unarchived"),
+    });
   };
 
-  // --- Locations ---
-  const saveLoc = () => {
-    if (!locForm.name) return;
-    let newLocs;
-    if (editingId) {
-      newLocs = locations.map(x => x.id === editingId ? { ...x, ...locForm } as Location : x);
-    } else {
-      newLocs = [...locations, { id: crypto.randomUUID(), ...locForm } as Location];
+  // --- Delete ---
+  const handleDeleteConfirm = () => {
+    if (!deletingId) return;
+    deleteChronicle(deletingId);
+    setDeletingId(null);
+    refresh();
+    toast({ title: strings.chr_deleted || "Chronicle deleted" });
+  };
+
+  const deletingChronicleName = deletingId
+    ? chronicles.find(c => c.id === deletingId)?.name
+    : '';
+
+  const formatUpdatedAt = (iso: string): string => {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return '';
     }
-    setLocations(newLocs);
-    saveToLocal('vtm-locations', newLocs);
-    setLocForm({});
-    setEditingId(null);
   };
-
-  const deleteLoc = (id: string) => {
-    const newLocs = locations.filter(x => x.id !== id);
-    setLocations(newLocs);
-    saveToLocal('vtm-locations', newLocs);
-  };
-
-  const cancelEdit = () => {
-    setSessionForm({}); setNpcForm({}); setLocForm({}); setEditingId(null);
-  };
-
-  const sortedSessions = [...sessions].sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
     <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
-      <div className="mb-8 flex items-center gap-3">
-        <ScrollText className="w-8 h-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">{strings.chronicleTitle}</h1>
-          <p className="text-muted-foreground">{strings.chronicleSubtitle}</p>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
+          <ScrollText className="w-8 h-8" />
+          {strings.chronicle || "Chronicle"}
+        </h1>
+        <p className="text-muted-foreground">
+          {strings.chr_subtitle || "Manage your campaigns and settings"}
+        </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-card border border-border mb-6 flex flex-wrap h-auto">
-          <TabsTrigger value="sessions" className="data-[state=active]:bg-primary/20"><Calendar className="w-4 h-4 mr-2"/> {strings.sessionNotes}</TabsTrigger>
-          <TabsTrigger value="npcs" className="data-[state=active]:bg-primary/20"><Users className="w-4 h-4 mr-2"/> {strings.npcs}</TabsTrigger>
-          <TabsTrigger value="locations" className="data-[state=active]:bg-primary/20"><MapPin className="w-4 h-4 mr-2"/> {strings.locations}</TabsTrigger>
-          <TabsTrigger value="timeline" className="data-[state=active]:bg-primary/20"><ScrollText className="w-4 h-4 mr-2"/> {strings.timeline}</TabsTrigger>
-        </TabsList>
+      {/* Top action row */}
+      <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
+        <h2 className="text-xl font-serif">{strings.chronicleSection || "Chronicles"}</h2>
+        <Button
+          onClick={openCreate}
+          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Plus className="w-4 h-4" /> {strings.chr_new_chronicle || "New Chronicle"}
+        </Button>
+      </div>
 
-        {/* SESSIONS */}
-        <TabsContent value="sessions" className="space-y-6">
-          <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addSession}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="text-xs mb-1 block">{strings.sessionTitle}</label>
-                  <Input value={sessionForm.title || ''} onChange={e=>setSessionForm({...sessionForm, title: e.target.value})} className="bg-background"/>
-                </div>
-                <div>
-                  <label className="text-xs mb-1 block">{strings.sessionDate}</label>
-                  <Input type="date" value={sessionForm.date || ''} onChange={e=>setSessionForm({...sessionForm, date: e.target.value})} className="bg-background"/>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs mb-1 block">{strings.sessionSummary}</label>
-                <Textarea value={sessionForm.summary || ''} onChange={e=>setSessionForm({...sessionForm, summary: e.target.value})} className="bg-background min-h-[100px]"/>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end gap-2">
-              {editingId && <Button variant="ghost" onClick={cancelEdit}>{strings.cancel}</Button>}
-              <Button onClick={saveSession} className="bg-primary hover:bg-primary/90 text-white">{strings.save}</Button>
-            </CardFooter>
-          </Card>
+      {/* Status filter tabs */}
+      {chronicles.length > 0 && (
+        <div className="flex gap-1 mb-6 border-b border-border">
+          {(['active', 'archived', 'all'] as StatusFilter[]).map(opt => {
+            const isActive = statusFilter === opt;
+            const label =
+              opt === 'active' ? (strings.chr_filter_active || "Active")
+              : opt === 'archived' ? (strings.chr_filter_archived || "Archived")
+              : (strings.chr_filter_all || "All");
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setStatusFilter(opt)}
+                aria-pressed={isActive}
+                className={`px-3 py-1.5 text-xs uppercase tracking-widest font-medium transition-colors border-b-2 -mb-px ${
+                  isActive
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-          <div className="grid gap-4">
-            {sessions.length === 0 ? <p className="text-center text-muted-foreground py-8">{strings.noSessions}</p> : 
-              sessions.map(s => (
-                <Card key={s.id} className="bg-card border-border">
-                  <CardHeader className="pb-2 flex flex-row justify-between">
-                    <div>
-                      <CardTitle className="font-serif text-xl">{s.title}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{s.date}</p>
+      {/* List body */}
+      {chronicles.length === 0 ? (
+        <div className="text-center py-16 bg-card border border-border rounded-lg">
+          <ScrollText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="text-muted-foreground">
+            {strings.chr_no_chronicles || "No chronicles yet. Create your first to get started."}
+          </p>
+        </div>
+      ) : displayed.length === 0 ? (
+        <div className="text-center py-16 bg-card border border-border rounded-lg">
+          <ScrollText className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="text-muted-foreground mb-4">
+            {strings.chr_no_match || "No chronicles match the filter."}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setStatusFilter('all')}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            {strings.chr_filter_all || "All"}
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {displayed.map(chr => {
+            const isArchived = chr.status === 'archived';
+            return (
+              <Card
+                key={chr.id}
+                onClick={() => openEdit(chr)}
+                className={`bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group ${
+                  isArchived ? "opacity-70" : ""
+                }`}
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="font-serif text-xl mb-1 truncate">{chr.name}</CardTitle>
+                      <div className="flex items-center flex-wrap gap-2 text-sm text-muted-foreground">
+                        {chr.setting && <span className="truncate">{chr.setting}</span>}
+                        {chr.setting && chr.edition && <span>•</span>}
+                        {chr.edition && (
+                          <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
+                            {chr.edition}
+                          </span>
+                        )}
+                        <span
+                          className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                            isArchived
+                              ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                              : "border-primary/30 bg-primary/10 text-primary"
+                          }`}
+                        >
+                          {isArchived
+                            ? (strings.chr_status_archived || "Archived")
+                            : (strings.chr_status_active || "Active")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setSessionForm(s); setEditingId(s.id); }}>{strings.edit}</Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={()=>deleteSession(s.id)}><Trash2 className="w-4 h-4"/></Button>
+
+                    {/* ⋯ menu */}
+                    <div onClick={e => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity -mt-1 -mr-2"
+                            aria-label="Chronicle actions"
+                          >
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => openEdit(chr)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4" /> {strings.edit || "Edit"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleArchive(chr)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            {isArchived ? (
+                              <>
+                                <ArchiveRestore className="w-4 h-4" />
+                                {strings.chr_unarchive || "Unarchive"}
+                              </>
+                            ) : (
+                              <>
+                                <Archive className="w-4 h-4" />
+                                {strings.chr_archive || "Archive"}
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setDeletingId(chr.id)}
+                            className="gap-2 cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-950/30"
+                          >
+                            <Trash2 className="w-4 h-4" /> {strings.delete || "Delete"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  </CardHeader>
-                  <CardContent><p className="whitespace-pre-wrap text-sm text-foreground/80">{s.summary}</p></CardContent>
-                </Card>
-              ))
-            }
-          </div>
-        </TabsContent>
-
-        {/* NPCs */}
-        <TabsContent value="npcs" className="space-y-6">
-          <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addNPC}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs mb-1 block">{strings.npcName}</label>
-                <Input value={npcForm.name || ''} onChange={e=>setNpcForm({...npcForm, name: e.target.value})} className="bg-background"/>
-              </div>
-              <div>
-                <label className="text-xs mb-1 block">{strings.npcDescription}</label>
-                <Textarea value={npcForm.description || ''} onChange={e=>setNpcForm({...npcForm, description: e.target.value})} className="bg-background min-h-[80px]"/>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end gap-2">
-              {editingId && <Button variant="ghost" onClick={cancelEdit}>{strings.cancel}</Button>}
-              <Button onClick={saveNpc} className="bg-primary hover:bg-primary/90 text-white">{strings.save}</Button>
-            </CardFooter>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {npcs.length === 0 ? <p className="text-center text-muted-foreground py-8 col-span-full">{strings.noNPCs}</p> : 
-              npcs.map(n => (
-                <Card key={n.id} className="bg-card border-border">
-                  <CardHeader className="pb-2 flex flex-row justify-between">
-                    <CardTitle className="font-serif text-lg">{n.name}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setNpcForm(n); setEditingId(n.id); }}>{strings.edit}</Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={()=>deleteNpc(n.id)}><Trash2 className="w-4 h-4"/></Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent><p className="whitespace-pre-wrap text-sm text-foreground/80">{n.description}</p></CardContent>
-                </Card>
-              ))
-            }
-          </div>
-        </TabsContent>
-
-        {/* Locations */}
-        <TabsContent value="locations" className="space-y-6">
-          <Card className="bg-card border-border">
-            <CardHeader><CardTitle className="font-serif text-lg">{editingId ? strings.edit : strings.addLocation}</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs mb-1 block">{strings.locationName}</label>
-                <Input value={locForm.name || ''} onChange={e=>setLocForm({...locForm, name: e.target.value})} className="bg-background"/>
-              </div>
-              <div>
-                <label className="text-xs mb-1 block">{strings.locationDescription}</label>
-                <Textarea value={locForm.description || ''} onChange={e=>setLocForm({...locForm, description: e.target.value})} className="bg-background min-h-[80px]"/>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end gap-2">
-              {editingId && <Button variant="ghost" onClick={cancelEdit}>{strings.cancel}</Button>}
-              <Button onClick={saveLoc} className="bg-primary hover:bg-primary/90 text-white">{strings.save}</Button>
-            </CardFooter>
-          </Card>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {locations.length === 0 ? <p className="text-center text-muted-foreground py-8 col-span-full">{strings.noLocations}</p> : 
-              locations.map(l => (
-                <Card key={l.id} className="bg-card border-border">
-                  <CardHeader className="pb-2 flex flex-row justify-between">
-                    <CardTitle className="font-serif text-lg">{l.name}</CardTitle>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => { setLocForm(l); setEditingId(l.id); }}>{strings.edit}</Button>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={()=>deleteLoc(l.id)}><Trash2 className="w-4 h-4"/></Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent><p className="whitespace-pre-wrap text-sm text-foreground/80">{l.description}</p></CardContent>
-                </Card>
-              ))
-            }
-          </div>
-        </TabsContent>
-
-        {/* Timeline */}
-        <TabsContent value="timeline">
-          <div className="space-y-8 py-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
-            {sortedSessions.length === 0 ? <p className="text-center text-muted-foreground py-8">{strings.noSessions}</p> : 
-              sortedSessions.map((s, i) => (
-                <div key={s.id} className={`relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active`}>
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border border-border bg-background shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow">
-                    <div className="w-3 h-3 bg-primary rounded-full" />
                   </div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-border bg-card/50 shadow">
-                    <div className="flex flex-col gap-1 mb-2">
-                      <span className="font-serif text-lg font-bold text-foreground">{s.title}</span>
-                      <span className="text-xs text-primary">{s.date}</span>
+                </CardHeader>
+
+                {(chr.description || chr.updatedAt) && (
+                  <CardContent className="pt-0">
+                    {chr.description && (
+                      <p className="text-sm text-foreground/80 line-clamp-2 mb-2">
+                        {chr.description}
+                      </p>
+                    )}
+                    <div className="text-[10px] text-muted-foreground/60">
+                      {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-3">{s.summary}</p>
-                  </div>
-                </div>
-              ))
-            }
-          </div>
-        </TabsContent>
-      </Tabs>
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Create modal */}
+      <AnimatePresence>
+        {createOpen && (
+          <motion.div
+            key="create-chronicle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setCreateOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-4">
+                {strings.chr_new_chronicle || "New Chronicle"}
+              </h3>
+              <ChronicleFormFields
+                value={createForm}
+                onChange={setCreateForm}
+                strings={strings}
+              />
+              <div className="flex gap-3 justify-end mt-6">
+                <Button variant="outline" size="sm" onClick={() => setCreateOpen(false)} className="text-muted-foreground">
+                  {strings.cancel || "Cancel"}
+                </Button>
+                <Button size="sm" onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  <Plus className="w-4 h-4 mr-1" />
+                  {strings.chr_create_chronicle || "Create Chronicle"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit modal */}
+      <AnimatePresence>
+        {editingId && (
+          <motion.div
+            key="edit-chronicle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setEditingId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-4">
+                {strings.chr_edit_chronicle || "Edit Chronicle"}
+              </h3>
+              <ChronicleFormFields
+                value={editForm}
+                onChange={setEditForm}
+                strings={strings}
+              />
+              <div className="flex gap-3 justify-end mt-6">
+                <Button variant="outline" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground">
+                  {strings.cancel || "Cancel"}
+                </Button>
+                <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  {strings.chr_save_changes || "Save Changes"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirm */}
+      <AnimatePresence>
+        {deletingId && (
+          <motion.div
+            key="delete-chronicle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setDeletingId(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-2">
+                {strings.chr_confirm_delete || "Delete Chronicle?"}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {strings.chr_confirm_delete_desc || "This action cannot be undone."}{' '}
+                <span className="text-foreground font-medium">{deletingChronicleName}</span>
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setDeletingId(null)} className="text-muted-foreground">
+                  {strings.cancel || "Cancel"}
+                </Button>
+                <Button size="sm" onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700 text-white">
+                  <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+interface ChronicleFormFieldsProps {
+  value: ChronicleForm;
+  onChange: (next: ChronicleForm) => void;
+  strings: Record<string, string>;
+}
+
+function ChronicleFormFields({ value, onChange, strings }: ChronicleFormFieldsProps) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">
+          {strings.chr_chronicle_name || "Chronicle Name"}
+        </label>
+        <Input
+          value={value.name}
+          onChange={e => onChange({ ...value, name: e.target.value })}
+          className="bg-background border-border"
+          autoFocus
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium">
+          {strings.chr_chronicle_description || "Description"}
+        </label>
+        <Textarea
+          value={value.description}
+          onChange={e => onChange({ ...value, description: e.target.value })}
+          className="bg-background border-border min-h-[80px]"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">
+            {strings.chr_chronicle_setting || "Setting"}
+          </label>
+          <Input
+            value={value.setting}
+            onChange={e => onChange({ ...value, setting: e.target.value })}
+            placeholder={strings.chr_chronicle_setting_placeholder || "City, region, etc."}
+            className="bg-background border-border"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">
+            {strings.chr_chronicle_edition || "Edition"}
+          </label>
+          <select
+            value={value.edition}
+            onChange={e => onChange({ ...value, edition: e.target.value as EditionId | '' })}
+            className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+          >
+            <option value="">{strings.chr_chronicle_edition_none || "No edition"}</option>
+            {EDITION_LIST.map(ed => (
+              <option key={ed.id} value={ed.id}>{ed.shortName}</option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   );
 }

@@ -207,3 +207,37 @@ export interface ChronicleSession {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Coarse category for a Chronicle Location. Unknown / legacy values are
+ * normalized to `'other'` by `getChronicleLocations`.
+ */
+export type ChronicleLocationCategory =
+  | 'haven'
+  | 'elysium'
+  | 'domain'
+  | 'business'
+  | 'street'
+  | 'neighborhood'
+  | 'enemy_base'
+  | 'other';
+
+/**
+ * A point of interest inside a Chronicle (haven, Elysium, nightclub, etc.).
+ * Stored in its own localStorage bucket. References characters by id only;
+ * never embeds full character objects. Orphan locations (whose `chronicleId`
+ * no longer resolves) are filtered by readers.
+ */
+export interface ChronicleLocation {
+  id: string;
+  chronicleId: string;
+  name: string;
+  category: ChronicleLocationCategory;
+  description?: string;
+  /** Free-text district / neighborhood / region tag. */
+  district?: string;
+  notes?: string;
+  linkedCharacterIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}

@@ -17,10 +17,35 @@ export default function Disciplines() {
   const [filter, setFilter] = useState("");
   const [, setLocation] = useLocation();
   const params = useParams();
-  
+
   const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
-  
+
+  // Controlled accordion state — kept in sync with the URL param so external
+  // deep links (clan page, favorites, search) open and scroll to the target
+  // discipline even when the page is already mounted.
+  const [openId, setOpenId] = useState<string | undefined>(params.id);
+  useEffect(() => {
+    setOpenId(params.id);
+    if (!params.id) return;
+    const targetId = params.id;
+    // Use a manual scroll with a header offset (instead of scrollIntoView)
+    // because:
+    //  1. The sticky app header (~65px) would otherwise hide the card title.
+    //  2. Radix's Accordion focuses the expanded trigger ("Powers") when
+    //     the controlled value changes; the browser's focus auto-scroll can
+    //     then push the discipline title above the viewport. The timeout
+    //     lets that focus pass before we set the final scroll target.
+    const HEADER_OFFSET = 80;
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`disc-${targetId}`);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 60);
+    return () => window.clearTimeout(timer);
+  }, [params.id]);
+
   const filteredDiscs = filterByEdition(disciplines, activeEdition).filter(d => {
     const nameMatch = d.name.toLowerCase().includes(filter.toLowerCase());
     const clanMatch = d.clansWhoUse.some(c => c.toLowerCase().includes(filter.toLowerCase()));
@@ -57,12 +82,21 @@ export default function Disciplines() {
           </p>
         </div>
       ) : (
-        <Accordion type="single" collapsible defaultValue={params.id} className="space-y-6">
+        <Accordion
+          type="single"
+          collapsible
+          value={openId ?? ""}
+          onValueChange={(val) => {
+            setOpenId(val || undefined);
+            setLocation(val ? `/compendium/disciplinas/${val}` : `/compendium/disciplinas`);
+          }}
+          className="space-y-6"
+        >
           <AnimatePresence>
             {filteredDiscs.map((disc, i) => {
               const isMissingLang = !isAvailableInLang(disc.description, activeLanguage);
               return (
-                <motion.div 
+                <motion.div
                   key={disc.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -70,6 +104,7 @@ export default function Disciplines() {
                   transition={{ delay: i * 0.05 }}
                   layout
                   id={`disc-${disc.id}`}
+                  className="scroll-mt-24"
                 >
                   <Card className="bg-card border-border overflow-hidden" data-testid={`discipline-card-${disc.id}`}>
                     <CardHeader className="bg-white/[0.02] border-b border-border pb-4 flex flex-row items-start justify-between">
@@ -113,13 +148,7 @@ export default function Disciplines() {
                     <CardContent className="p-0">
                       {disc.powers && disc.powers.length > 0 && (
                         <AccordionItem value={disc.id} className="border-b-0">
-                          <AccordionTrigger className="px-6 py-4 hover:bg-white/[0.02] font-serif text-lg" onClick={() => {
-                            if (params.id !== disc.id) {
-                              setLocation(`/compendium/disciplinas/${disc.id}`);
-                            } else {
-                              setLocation(`/compendium/disciplinas`);
-                            }
-                          }}>
+                          <AccordionTrigger className="px-6 py-4 hover:bg-white/[0.02] font-serif text-lg">
                             {strings.powers}
                           </AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">

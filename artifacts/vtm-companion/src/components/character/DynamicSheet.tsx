@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Character, EditionId, DisciplineValue, InventoryItem, InventoryCategory } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
@@ -6,7 +7,7 @@ import { DamageTracker } from "./DamageTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, ExternalLink } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
@@ -169,9 +170,14 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
   const entries = Object.entries(currentMap);
   const [selectedId, setSelectedId] = useState('');
   const [customName, setCustomName] = useState('');
+  const [, setLocation] = useLocation();
 
   const availableDisciplines = disciplines.filter(d => d.editions.includes(character.edition));
   const suggestedIds: string[] = getSuggestedDisciplineIds(character.clan, character.edition, currentMap);
+
+  /** A stored discipline key is "known" if it matches a discipline data id. */
+  const isKnownDiscipline = (id: string) => disciplines.some(d => d.id === id);
+  const openDiscipline = (id: string) => setLocation(`/compendium/disciplinas/${id}`);
 
   const handleAdd = () => {
     if (selectedId === 'custom') {
@@ -295,7 +301,20 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
           return (
             <div key={key} className="flex flex-col gap-1.5 py-1 border-b border-zinc-800/30">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-muted-foreground capitalize">{getDisplayName(key)}</span>
+                {isKnownDiscipline(key) ? (
+                  <button
+                    type="button"
+                    onClick={() => openDiscipline(key)}
+                    title={strings.view_discipline || "View discipline"}
+                    aria-label={`${getDisplayName(key)} — ${strings.view_discipline || "View discipline"}`}
+                    className="inline-flex items-center gap-1 text-sm text-foreground capitalize hover:text-primary focus:outline-none focus-visible:text-primary group"
+                  >
+                    <span className="underline-offset-2 group-hover:underline">{getDisplayName(key)}</span>
+                    <ExternalLink className="w-3 h-3 text-muted-foreground/60 group-hover:text-primary" aria-hidden="true" />
+                  </button>
+                ) : (
+                  <span className="text-sm text-muted-foreground capitalize">{getDisplayName(key)}</span>
+                )}
                 <div className="flex items-center gap-2">
                   <DotRating
                     value={rating}

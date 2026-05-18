@@ -49,7 +49,7 @@ export function useSearch(query: string) {
           title: name,
           description: getText(disc.type, lang) || '',
           type: 'disciplina',
-          url: `/disciplinas?id=${disc.id}`
+          url: `/compendium/disciplinas/${disc.id}`
         });
       }
     });

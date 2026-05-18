@@ -241,3 +241,41 @@ export interface ChronicleLocation {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Coarse relationship kind. `'other'` is the safe default for unknown /
+ * legacy values (normalized by `getChronicleRelationships`).
+ */
+export type ChronicleRelationshipType =
+  | 'ally'
+  | 'enemy'
+  | 'sire'
+  | 'childe'
+  | 'rival'
+  | 'contact'
+  | 'mawla'
+  | 'touchstone'
+  | 'coterie_mate'
+  | 'other';
+
+/** Relationship lifecycle status. Default `'active'`. */
+export type ChronicleRelationshipStatus = 'active' | 'broken' | 'unknown' | 'secret';
+
+/**
+ * A directed relationship between two characters inside a Chronicle
+ * (`source → target`). Stored in its own localStorage bucket. References
+ * characters by id only; never embeds full character objects. Orphan
+ * relationships (whose `chronicleId`, `sourceCharacterId`, or
+ * `targetCharacterId` is missing) are filtered by readers.
+ */
+export interface ChronicleRelationship {
+  id: string;
+  chronicleId: string;
+  sourceCharacterId: string;
+  targetCharacterId: string;
+  relationshipType: ChronicleRelationshipType;
+  status: ChronicleRelationshipStatus;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}

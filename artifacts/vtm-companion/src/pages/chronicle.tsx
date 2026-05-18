@@ -14,12 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
-  MoreHorizontal, X, User, Users, Link2, Link2Off,
+  MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
-import { Chronicle, ChronicleStatus, EditionId, Character } from "@/types";
+import { Chronicle, ChronicleStatus, EditionId, Character, ChronicleSession } from "@/types";
 import { EDITION_LIST } from "@/data/editions";
 import {
   getChronicles,
@@ -30,6 +30,14 @@ import {
   deleteChronicle,
 } from "@/services/chronicleStorage";
 import { getCharacters, setCharacterChronicle } from "@/services/characterStorage";
+import {
+  getChronicleSessions,
+  saveChronicleSession,
+  createEmptyChronicleSession,
+  updateChronicleSession,
+  deleteChronicleSession,
+  deleteChronicleSessionsForChronicle,
+} from "@/services/chronicleSessionStorage";
 import { clans } from "@/data/clans";
 import { getClanDisplayNameById } from "@/utils/content";
 
@@ -74,6 +82,19 @@ export default function ChroniclePage() {
   // Reassignment confirm (when picking a character that's linked elsewhere)
   const [pendingReassign, setPendingReassign] = useState<Character | null>(null);
 
+  // Sessions belonging to the chronicle currently being edited.
+  const [sessions, setSessions] = useState<ChronicleSession[]>([]);
+  // Session editor (create or edit). `id === null` while creating a new one.
+  const [sessionEditor, setSessionEditor] = useState<{
+    id: string | null;
+    title: string;
+    summary: string;
+    sessionDate: string;
+    taggedCharacterIds: string[];
+  } | null>(null);
+  // Confirm modal for session deletion.
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+
   const refresh = () => {
     setChronicles(getChronicles());
     try {
@@ -87,6 +108,21 @@ export default function ChroniclePage() {
   useEffect(() => {
     refresh();
   }, []);
+
+  // Reload sessions whenever the user opens/switches the edit modal. Cleared
+  // when the modal closes so we don't leak the previous chronicle's sessions
+  // into a future open.
+  useEffect(() => {
+    if (editingId) {
+      setSessions(getChronicleSessions(editingId));
+    } else {
+      setSessions([]);
+    }
+  }, [editingId]);
+
+  const refreshSessions = () => {
+    if (editingId) setSessions(getChronicleSessions(editingId));
+  };
 
   // Group linked characters by chronicle id, split into PCs vs NPCs. Linked
   // characters whose chronicleId points to a missing chronicle are excluded
@@ -122,6 +158,23 @@ export default function ChroniclePage() {
     for (const c of chronicles) m.set(c.id, c.name);
     return m;
   }, [chronicles]);
+
+  const characterById = useMemo(() => {
+    const m = new Map<string, Character>();
+    for (const c of characters) m.set(c.id, c);
+    return m;
+  }, [characters]);
+
+  const formatSessionDate = (iso: string): string => {
+    try {
+      // Accept both "YYYY-MM-DD" and full ISO timestamps. Local date display.
+      const d = new Date(iso.length === 10 ? `${iso}T00:00:00` : iso);
+      if (Number.isNaN(d.getTime())) return iso;
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    } catch {
+      return iso;
+    }
+  };
 
   // Link a character to the chronicle currently being edited. If the character
   // already has a different chronicleId, callers should route through the
@@ -205,6 +258,8 @@ export default function ChroniclePage() {
     setEditForm(EMPTY_FORM);
     setLinkPickerOpen(false);
     setPendingReassign(null);
+    setSessionEditor(null);
+    setDeletingSessionId(null);
   };
 
   const handleUpdate = () => {
@@ -244,10 +299,91 @@ export default function ChroniclePage() {
   // --- Delete ---
   const handleDeleteConfirm = () => {
     if (!deletingId) return;
+    // Cascade: drop sessions tied to this chronicle so they don't accumulate
+    // as orphans in localStorage. Character links are NOT touched — characters
+    // simply revert to "Unknown chronicle" until reassigned.
+    deleteChronicleSessionsForChronicle(deletingId);
     deleteChronicle(deletingId);
     setDeletingId(null);
     refresh();
     toast({ title: strings.chr_deleted || "Chronicle deleted" });
+  };
+
+  // --- Session handlers (all scoped to `editingId`) ---
+  const openCreateSession = () => {
+    if (!editingId) return;
+    setSessionEditor({
+      id: null,
+      title: '',
+      summary: '',
+      sessionDate: '',
+      taggedCharacterIds: [],
+    });
+  };
+
+  const openEditSession = (session: ChronicleSession) => {
+    setSessionEditor({
+      id: session.id,
+      title: session.title,
+      summary: session.summary || '',
+      sessionDate: session.sessionDate || '',
+      taggedCharacterIds: [...session.taggedCharacterIds],
+    });
+  };
+
+  const handleSessionSave = () => {
+    if (!editingId || !sessionEditor) return;
+    const title = sessionEditor.title.trim();
+    if (!title) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_session_title_required || "Title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (sessionEditor.id) {
+      updateChronicleSession(sessionEditor.id, {
+        title,
+        summary: sessionEditor.summary,
+        sessionDate: sessionEditor.sessionDate,
+        taggedCharacterIds: sessionEditor.taggedCharacterIds,
+      });
+      toast({ title: strings.chr_session_updated || "Session updated" });
+    } else {
+      const draft = createEmptyChronicleSession(editingId);
+      saveChronicleSession({
+        ...draft,
+        title,
+        summary: sessionEditor.summary || undefined,
+        sessionDate: sessionEditor.sessionDate || undefined,
+        taggedCharacterIds: sessionEditor.taggedCharacterIds,
+      });
+      toast({ title: strings.chr_session_created || "Session created" });
+    }
+    setSessionEditor(null);
+    refreshSessions();
+  };
+
+  const handleSessionDeleteConfirm = () => {
+    if (!deletingSessionId) return;
+    deleteChronicleSession(deletingSessionId);
+    setDeletingSessionId(null);
+    refreshSessions();
+    toast({ title: strings.chr_session_deleted || "Session deleted" });
+  };
+
+  const toggleSessionTag = (charId: string) => {
+    setSessionEditor(prev => {
+      if (!prev) return prev;
+      const has = prev.taggedCharacterIds.includes(charId);
+      return {
+        ...prev,
+        taggedCharacterIds: has
+          ? prev.taggedCharacterIds.filter(id => id !== charId)
+          : [...prev.taggedCharacterIds, charId],
+      };
+    });
   };
 
   const deletingChronicleName = deletingId
@@ -550,6 +686,121 @@ export default function ChroniclePage() {
               </Button>
             </div>
           );
+
+          // Tag chip used inside session rows and inside the session editor.
+          // `onClick`: open the sheet from a saved session row; toggle the
+          // tag when used inside the editor. Missing characters render a
+          // disabled "Unknown character" chip that never crashes.
+          const renderTagChip = (
+            charId: string,
+            opts: { mode: 'display' | 'edit'; selected?: boolean }
+          ) => {
+            const ch = characterById.get(charId);
+            const missing = !ch;
+            const selected = !!opts.selected;
+            const baseClass =
+              "inline-flex items-center gap-1 max-w-full text-[11px] px-1.5 py-0.5 rounded border transition-colors";
+            if (missing) {
+              return (
+                <span
+                  key={charId}
+                  className={`${baseClass} border-zinc-700 bg-zinc-900 text-zinc-500 italic`}
+                  title={strings.chr_session_unknown_character || "Unknown character"}
+                >
+                  <X className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {strings.chr_session_unknown_character || "Unknown character"}
+                  </span>
+                </span>
+              );
+            }
+            const cls = opts.mode === 'edit'
+              ? (selected
+                ? `${baseClass} border-primary/60 bg-primary/20 text-primary hover:bg-primary/30`
+                : `${baseClass} border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500`)
+              : `${baseClass} border-primary/30 bg-primary/10 text-primary hover:bg-primary/20`;
+            const handleClick = opts.mode === 'edit'
+              ? () => toggleSessionTag(charId)
+              : () => openCharacterSheet(charId);
+            return (
+              <button
+                key={charId}
+                type="button"
+                onClick={handleClick}
+                className={cls}
+                title={ch.name}
+              >
+                <span className="shrink-0">{getClanIcon(ch.clan)}</span>
+                <span className="truncate">{ch.name}</span>
+                {ch.characterType === 'npc' && (
+                  <span className="uppercase text-[9px] tracking-wider opacity-70 shrink-0">
+                    {strings.char_type_short_npc || "NPC"}
+                  </span>
+                )}
+              </button>
+            );
+          };
+
+          const renderSessionRow = (session: ChronicleSession) => {
+            const dateLabel = session.sessionDate ? formatSessionDate(session.sessionDate) : '';
+            return (
+              <li
+                key={session.id}
+                className="rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 transition-colors"
+              >
+                <div className="flex items-start gap-2 p-2.5">
+                  <button
+                    type="button"
+                    onClick={() => openEditSession(session)}
+                    className="flex-1 min-w-0 text-left"
+                    title={strings.chr_session_edit || "Edit session"}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-sm truncate">{session.title}</span>
+                      {dateLabel && (
+                        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
+                          <CalendarDays className="w-3 h-3" /> {dateLabel}
+                        </span>
+                      )}
+                    </div>
+                    {session.summary && (
+                      <p className="text-xs text-foreground/70 line-clamp-2 mb-1.5">{session.summary}</p>
+                    )}
+                    {session.taggedCharacterIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {session.taggedCharacterIds.map(id =>
+                          renderTagChip(id, { mode: 'display' })
+                        )}
+                      </div>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-0.5 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openEditSession(session)}
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                      title={strings.chr_session_edit || "Edit session"}
+                      aria-label={strings.chr_session_edit || "Edit session"}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeletingSessionId(session.id)}
+                      className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                      title={strings.chr_session_delete || "Delete session"}
+                      aria-label={strings.chr_session_delete || "Delete session"}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </li>
+            );
+          };
+
           return (
             <motion.div
               key="edit-chronicle"
@@ -628,6 +879,35 @@ export default function ChroniclePage() {
                           </div>
                         )}
                       </div>
+                    )}
+                  </div>
+
+                  {/* Session summaries */}
+                  <div className="mt-6 pt-4 border-t border-zinc-800">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <p className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                        <BookOpen className="w-3.5 h-3.5" />
+                        {strings.chr_sessions || "Session summaries"}
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={openCreateSession}
+                        className="gap-1.5 h-7 text-xs"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        {strings.chr_session_new || "New session"}
+                      </Button>
+                    </div>
+                    {sessions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        {strings.chr_no_sessions || "No session summaries yet."}
+                      </p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {sessions.map(s => renderSessionRow(s))}
+                      </ul>
                     )}
                   </div>
                 </div>
@@ -869,6 +1149,222 @@ export default function ChroniclePage() {
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     {strings.chr_reassign_confirm || "Reassign"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Session editor (create + edit). Linked characters of the current
+          Chronicle appear first as "Linked" tag candidates; other characters
+          fall under "Other". Tags toggle by click. */}
+      <AnimatePresence>
+        {sessionEditor && editingId && (() => {
+          const linked = linkedByChronicle.get(editingId);
+          const linkedAll = [...(linked?.pcs ?? []), ...(linked?.npcs ?? [])];
+          const linkedIds = new Set(linkedAll.map(c => c.id));
+          const others = characters
+            .filter(c => !linkedIds.has(c.id))
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', activeLanguage));
+          const isEditing = sessionEditor.id !== null;
+
+          const renderEditChip = (ch: Character) => {
+            const selected = sessionEditor.taggedCharacterIds.includes(ch.id);
+            return (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => toggleSessionTag(ch.id)}
+                className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
+                  selected
+                    ? "border-primary/60 bg-primary/20 text-primary"
+                    : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                }`}
+                title={ch.name}
+              >
+                <span className="shrink-0">{getClanIcon(ch.clan)}</span>
+                <span className="truncate max-w-[10rem]">{ch.name}</span>
+                {ch.characterType === 'npc' && (
+                  <span className="uppercase text-[9px] tracking-wider opacity-70 shrink-0">
+                    {strings.char_type_short_npc || "NPC"}
+                  </span>
+                )}
+              </button>
+            );
+          };
+
+          return (
+            <motion.div
+              key="session-editor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              onClick={() => setSessionEditor(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                  <h3 className="text-lg font-serif text-foreground">
+                    {isEditing
+                      ? (strings.chr_session_edit || "Edit session")
+                      : (strings.chr_session_new || "New session")}
+                  </h3>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_session_title || "Title"}
+                    </label>
+                    <Input
+                      value={sessionEditor.title}
+                      onChange={e =>
+                        setSessionEditor(prev => prev ? { ...prev, title: e.target.value } : prev)
+                      }
+                      className="bg-background border-border"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_session_date || "Session date"}
+                    </label>
+                    <Input
+                      type="date"
+                      value={sessionEditor.sessionDate}
+                      onChange={e =>
+                        setSessionEditor(prev => prev ? { ...prev, sessionDate: e.target.value } : prev)
+                      }
+                      className="bg-background border-border"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_session_summary || "Summary"}
+                    </label>
+                    <Textarea
+                      value={sessionEditor.summary}
+                      onChange={e =>
+                        setSessionEditor(prev => prev ? { ...prev, summary: e.target.value } : prev)
+                      }
+                      className="bg-background border-border min-h-[120px]"
+                      placeholder={strings.chr_session_summary_placeholder || "What happened in this session?"}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                    <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                      {strings.chr_session_tag_characters || "Tag characters"}
+                    </p>
+
+                    {linkedAll.length === 0 && others.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        {strings.chr_session_no_characters || "No characters available."}
+                      </p>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {linkedAll.length > 0 && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wider text-primary mb-1.5">
+                              {strings.chr_session_tag_linked || "Linked to this Chronicle"}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {linkedAll.map(renderEditChip)}
+                            </div>
+                          </div>
+                        )}
+                        {others.length > 0 && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                              {strings.chr_session_tag_other || "Other characters"}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {others.map(renderEditChip)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSessionEditor(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSessionSave}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {strings.save || "Save"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Session delete confirm */}
+      <AnimatePresence>
+        {deletingSessionId && (() => {
+          const target = sessions.find(s => s.id === deletingSessionId);
+          return (
+            <motion.div
+              key="delete-session"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setDeletingSessionId(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {strings.chr_session_confirm_delete || "Delete session?"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {strings.chr_session_confirm_delete_desc || "This action cannot be undone."}{' '}
+                  {target?.title && (
+                    <span className="text-foreground font-medium">{target.title}</span>
+                  )}
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeletingSessionId(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSessionDeleteConfirm}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}
                   </Button>
                 </div>
               </motion.div>

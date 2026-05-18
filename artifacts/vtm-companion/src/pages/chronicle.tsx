@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
-  MoreHorizontal, X, User, Users,
+  MoreHorizontal, X, User, Users, Link2, Link2Off,
 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -29,11 +29,13 @@ import {
   setChronicleStatus,
   deleteChronicle,
 } from "@/services/chronicleStorage";
-import { getCharacters } from "@/services/characterStorage";
+import { getCharacters, setCharacterChronicle } from "@/services/characterStorage";
 import { clans } from "@/data/clans";
 import { getClanDisplayNameById } from "@/utils/content";
 
 type StatusFilter = 'all' | 'active' | 'archived';
+
+type LinkPickerFilter = 'all' | 'pc' | 'npc' | 'unassigned' | 'other_chronicle';
 
 interface ChronicleForm {
   name: string;
@@ -64,6 +66,13 @@ export default function ChroniclePage() {
 
   // Delete confirm state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Link-picker modal state (opens from inside the edit modal)
+  const [linkPickerOpen, setLinkPickerOpen] = useState(false);
+  const [linkPickerFilter, setLinkPickerFilter] = useState<LinkPickerFilter>('all');
+
+  // Reassignment confirm (when picking a character that's linked elsewhere)
+  const [pendingReassign, setPendingReassign] = useState<Character | null>(null);
 
   const refresh = () => {
     setChronicles(getChronicles());
@@ -106,6 +115,29 @@ export default function ChroniclePage() {
   const getClanIcon = (clanId: string) => {
     const clan = clans.find(c => c.id === clanId);
     return clan?.icon || "🦇";
+  };
+
+  const chronicleNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of chronicles) m.set(c.id, c.name);
+    return m;
+  }, [chronicles]);
+
+  // Link a character to the chronicle currently being edited. If the character
+  // already has a different chronicleId, callers should route through the
+  // reassignment confirm — this helper just performs the write.
+  const performLink = (charId: string, chronicleId: string) => {
+    const updated = setCharacterChronicle(charId, chronicleId);
+    if (!updated) return;
+    setCharacters(getCharacters());
+    toast({ title: strings.chr_character_linked || "Character linked" });
+  };
+
+  const performUnlink = (charId: string) => {
+    const updated = setCharacterChronicle(charId, null);
+    if (!updated) return;
+    setCharacters(getCharacters());
+    toast({ title: strings.chr_character_unlinked || "Character unlinked" });
   };
 
   const openCharacterSheet = (charId: string) => {
@@ -168,6 +200,13 @@ export default function ChroniclePage() {
     });
   };
 
+  const closeEdit = () => {
+    setEditingId(null);
+    setEditForm(EMPTY_FORM);
+    setLinkPickerOpen(false);
+    setPendingReassign(null);
+  };
+
   const handleUpdate = () => {
     if (!editingId) return;
     const trimmed = editForm.name.trim();
@@ -186,8 +225,7 @@ export default function ChroniclePage() {
       edition: editForm.edition || null,
     });
     refresh();
-    setEditingId(null);
-    setEditForm(EMPTY_FORM);
+    closeEdit();
     toast({ title: strings.chr_updated || "Chronicle updated" });
   };
 
@@ -484,19 +522,33 @@ export default function ChroniclePage() {
           const pcs = linked?.pcs ?? [];
           const npcs = linked?.npcs ?? [];
           const renderCharacterRow = (ch: Character) => (
-            <button
+            <div
               key={ch.id}
-              type="button"
-              onClick={() => openCharacterSheet(ch.id)}
-              className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-colors text-sm"
-              title={strings.chr_open_character || "Open sheet"}
+              className="flex items-center gap-1 rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-colors"
             >
-              <span className="text-base shrink-0">{getClanIcon(ch.clan)}</span>
-              <span className="flex-1 min-w-0 truncate">{ch.name}</span>
-              <span className="uppercase text-[10px] tracking-wider text-muted-foreground shrink-0">
-                {getClanDisplayNameById(ch.clan, ch.edition as EditionId, activeLanguage)}
-              </span>
-            </button>
+              <button
+                type="button"
+                onClick={() => openCharacterSheet(ch.id)}
+                className="flex-1 min-w-0 text-left flex items-center gap-2 px-2 py-1.5 text-sm"
+                title={strings.chr_open_character || "Open sheet"}
+              >
+                <span className="text-base shrink-0">{getClanIcon(ch.clan)}</span>
+                <span className="flex-1 min-w-0 truncate">{ch.name}</span>
+                <span className="uppercase text-[10px] tracking-wider text-muted-foreground shrink-0">
+                  {getClanDisplayNameById(ch.clan, ch.edition as EditionId, activeLanguage)}
+                </span>
+              </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => performUnlink(ch.id)}
+                className="h-7 w-7 mr-1 text-muted-foreground hover:text-red-400"
+                title={strings.chr_unlink_character || "Unlink"}
+                aria-label={strings.chr_unlink_character || "Unlink"}
+              >
+                <Link2Off className="w-3.5 h-3.5" />
+              </Button>
+            </div>
           );
           return (
             <motion.div
@@ -504,66 +556,319 @@ export default function ChroniclePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-              onClick={() => setEditingId(null)}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28"
+              onClick={closeEdit}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
-                <h3 className="text-lg font-serif text-foreground mb-4">
-                  {strings.chr_edit_chronicle || "Edit Chronicle"}
-                </h3>
-                <ChronicleFormFields
-                  value={editForm}
-                  onChange={setEditForm}
-                  strings={strings}
-                />
-
-                {/* Linked characters */}
-                <div className="mt-6 pt-4 border-t border-zinc-800">
-                  <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground mb-3">
-                    {strings.chr_linked_characters || "Linked characters"}
-                  </p>
-                  {pcs.length === 0 && npcs.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">
-                      {strings.chr_no_linked_characters || "No linked characters yet."}
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {pcs.length > 0 && (
-                        <div>
-                          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-primary mb-1.5">
-                            <User className="w-3 h-3" /> {strings.chr_linked_pcs || "Player Characters"} ({pcs.length})
-                          </p>
-                          <div className="space-y-1">
-                            {pcs.map(renderCharacterRow)}
-                          </div>
-                        </div>
-                      )}
-                      {npcs.length > 0 && (
-                        <div>
-                          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                            <Users className="w-3 h-3" /> {strings.chr_linked_npcs || "NPCs"} ({npcs.length})
-                          </p>
-                          <div className="space-y-1">
-                            {npcs.map(renderCharacterRow)}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                {/* Header (fixed) */}
+                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                  <h3 className="text-lg font-serif text-foreground">
+                    {strings.chr_edit_chronicle || "Edit Chronicle"}
+                  </h3>
                 </div>
 
-                <div className="flex gap-3 justify-end mt-6">
-                  <Button variant="outline" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground">
+                {/* Scrollable body */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+                  <ChronicleFormFields
+                    value={editForm}
+                    onChange={setEditForm}
+                    strings={strings}
+                  />
+
+                  {/* Linked characters */}
+                  <div className="mt-6 pt-4 border-t border-zinc-800">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                        {strings.chr_linked_characters || "Linked characters"}
+                      </p>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setLinkPickerFilter('all');
+                          setLinkPickerOpen(true);
+                        }}
+                        className="gap-1.5 h-7 text-xs"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        {strings.chr_link_existing_character || "Link character"}
+                      </Button>
+                    </div>
+                    {pcs.length === 0 && npcs.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        {strings.chr_no_linked_characters || "No linked characters yet."}
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {pcs.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-primary mb-1.5">
+                              <User className="w-3 h-3" /> {strings.chr_linked_pcs || "Player Characters"} ({pcs.length})
+                            </p>
+                            <div className="space-y-1">
+                              {pcs.map(renderCharacterRow)}
+                            </div>
+                          </div>
+                        )}
+                        {npcs.length > 0 && (
+                          <div>
+                            <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                              <Users className="w-3 h-3" /> {strings.chr_linked_npcs || "NPCs"} ({npcs.length})
+                            </p>
+                            <div className="space-y-1">
+                              {npcs.map(renderCharacterRow)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Footer (fixed) */}
+                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                  <Button variant="outline" size="sm" onClick={closeEdit} className="text-muted-foreground">
                     {strings.cancel || "Cancel"}
                   </Button>
                   <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
                     {strings.chr_save_changes || "Save Changes"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Link picker modal: select an existing character to link to the chronicle
+          currently being edited. Filterable by PC/NPC/unassigned/other-chronicle.
+          Picking a character already linked elsewhere routes through a reassign
+          confirm; otherwise links immediately. */}
+      <AnimatePresence>
+        {linkPickerOpen && editingId && (() => {
+          // Candidates: everyone NOT already linked to this chronicle.
+          const targetChronicleId = editingId;
+          const candidates = characters.filter(ch => ch.chronicleId !== targetChronicleId);
+
+          const filtered = candidates.filter(ch => {
+            switch (linkPickerFilter) {
+              case 'pc':
+                return ch.characterType !== 'npc';
+              case 'npc':
+                return ch.characterType === 'npc';
+              case 'unassigned':
+                return !ch.chronicleId;
+              case 'other_chronicle':
+                return !!ch.chronicleId && ch.chronicleId !== targetChronicleId;
+              case 'all':
+              default:
+                return true;
+            }
+          }).sort((a, b) => (a.name || '').localeCompare(b.name || '', activeLanguage));
+
+          const handlePick = (ch: Character) => {
+            if (ch.chronicleId && ch.chronicleId !== targetChronicleId) {
+              setPendingReassign(ch);
+              return;
+            }
+            performLink(ch.id, targetChronicleId);
+          };
+
+          const filterOptions: { value: LinkPickerFilter; label: string }[] = [
+            { value: 'all', label: strings.chr_link_filter_all || "All" },
+            { value: 'pc', label: strings.chr_link_filter_pc || "Player Characters" },
+            { value: 'npc', label: strings.chr_link_filter_npc || "NPCs" },
+            { value: 'unassigned', label: strings.chr_link_filter_unassigned || "Unassigned" },
+            { value: 'other_chronicle', label: strings.chr_link_filter_other || "Linked to another Chronicle" },
+          ];
+
+          return (
+            <motion.div
+              key="link-picker"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setLinkPickerOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl max-h-[85vh] flex flex-col"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <h3 className="text-lg font-serif text-foreground">
+                    {strings.chr_link_existing_character || "Link character"}
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setLinkPickerOpen(false)}
+                    className="h-7 w-7 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
+                    aria-label={strings.close || "Close"}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-1.5 mb-3">
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground">
+                    {strings.chr_link_filter_label || "Show"}
+                  </label>
+                  <select
+                    value={linkPickerFilter}
+                    onChange={e => setLinkPickerFilter(e.target.value as LinkPickerFilter)}
+                    className="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none"
+                  >
+                    {filterOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+                  {characters.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-6 text-center">
+                      {strings.chr_link_no_characters || "No characters available. Create one in the Character tab."}
+                    </p>
+                  ) : filtered.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic py-6 text-center">
+                      {strings.chr_link_no_match || "No characters match this filter."}
+                    </p>
+                  ) : (
+                    <ul className="space-y-1">
+                      {filtered.map(ch => {
+                        const otherChronicleName = ch.chronicleId && ch.chronicleId !== targetChronicleId
+                          ? chronicleNameById.get(ch.chronicleId)
+                          : null;
+                        const isNpc = ch.characterType === 'npc';
+                        return (
+                          <li key={ch.id}>
+                            <button
+                              type="button"
+                              onClick={() => handlePick(ch)}
+                              className="w-full text-left flex items-center gap-2 px-2 py-2 rounded border border-transparent hover:border-primary/40 hover:bg-primary/5 transition-colors text-sm"
+                            >
+                              <span className="text-base shrink-0">{getClanIcon(ch.clan)}</span>
+                              <span className="flex-1 min-w-0">
+                                <span className="block truncate">{ch.name}</span>
+                                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+                                  {getClanDisplayNameById(ch.clan, ch.edition as EditionId, activeLanguage)}
+                                  {ch.edition ? ` · ${ch.edition}` : ''}
+                                  {otherChronicleName
+                                    ? ` · ${strings.chr_link_currently_in || "in"} ${otherChronicleName}`
+                                    : (!ch.chronicleId ? ` · ${strings.char_chronicle_unassigned || "Unassigned"}` : '')}
+                                </span>
+                              </span>
+                              <span
+                                className={`uppercase text-[10px] tracking-wider border px-1.5 rounded shrink-0 ${
+                                  isNpc
+                                    ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                                    : "border-primary/30 bg-primary/10 text-primary"
+                                }`}
+                              >
+                                {isNpc
+                                  ? (strings.char_type_short_npc || "NPC")
+                                  : (strings.char_type_short_pc || "PC")}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+
+                <div className="flex gap-3 justify-end mt-4 pt-3 border-t border-zinc-800">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLinkPickerOpen(false)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.close || "Close"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Reassign confirm modal: shown when the picked character is already
+          linked to a different Chronicle. Reassignment only happens on
+          explicit confirm. */}
+      <AnimatePresence>
+        {pendingReassign && editingId && (() => {
+          const targetChronicleId = editingId;
+          const targetChronicleName = chronicleNameById.get(targetChronicleId) || '';
+          const currentChronicleName = pendingReassign.chronicleId
+            ? chronicleNameById.get(pendingReassign.chronicleId) || ''
+            : '';
+          const handleConfirm = () => {
+            performLink(pendingReassign.id, targetChronicleId);
+            setPendingReassign(null);
+          };
+          return (
+            <motion.div
+              key="reassign-confirm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setPendingReassign(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {strings.chr_reassign_title || "Reassign Character?"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {strings.chr_reassign_desc || "This character is already linked to another Chronicle."}
+                </p>
+                <div className="text-sm space-y-1 mb-6">
+                  <div>
+                    <span className="text-muted-foreground">{strings.chr_reassign_character || "Character"}:</span>{' '}
+                    <span className="text-foreground font-medium">{pendingReassign.name}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{strings.chr_reassign_from || "Currently in"}:</span>{' '}
+                    <span className="text-foreground">{currentChronicleName}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">{strings.chr_reassign_to || "Move to"}:</span>{' '}
+                    <span className="text-foreground">{targetChronicleName}</span>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPendingReassign(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleConfirm}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {strings.chr_reassign_confirm || "Reassign"}
                   </Button>
                 </div>
               </motion.div>

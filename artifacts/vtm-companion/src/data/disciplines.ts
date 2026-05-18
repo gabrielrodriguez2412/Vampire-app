@@ -23,7 +23,7 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Drawing Out the Beast", level: 5, description: {es: "Transfiere tu frenesí a otra persona.", en: "Transfer your frenzy to another person.", pt: "", fr: "", de: "", it: ""}, tacticalUse: {es: "Evitar perder el control mientras causas caos.", en: "Avoid losing control while causing chaos.", pt: "", fr: "", de: "", it: ""} }
     ],
     narrativeUses: {es: ["Usar ratas como red de espías.", "Controlar lobos como guardianes del refugio."], en: ["Using rats as a spy network.", "Controlling wolves as haven guardians."], pt: [], fr: [], de: [], it: []},
-    clansWhoUse: ["gangrel", "nosferatu", "ravnos"]
+    clansWhoUse: ["gangrel", "nosferatu", "ravnos", "tzimisce"]
   },
   {
     id: "auspex",
@@ -44,7 +44,7 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Clairvoyance", level: 5, description: {es: "Proyectar los sentidos a lugares remotos.", en: "Project senses to remote locations.", pt: "", fr: "", de: "", it: ""}, tacticalUse: {es: "Espiar reuniones secretas sin estar físicamente presente.", en: "Spy on secret meetings without being physically present.", pt: "", fr: "", de: "", it: ""} }
     ],
     narrativeUses: {es: ["Resolver asesinatos.", "Encontrar objetos malditos."], en: ["Solving murders.", "Finding cursed objects."], pt: [], fr: [], de: [], it: []},
-    clansWhoUse: ["malkavian", "toreador", "tremere", "giovanni", "salubri"]
+    clansWhoUse: ["malkavian", "toreador", "tremere", "giovanni", "salubri", "tzimisce"]
   },
   {
     id: "blood_sorcery",
@@ -165,7 +165,7 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Unseen Passage", level: 2, description: fallbackStr("Move while invisible."), tacticalUse: fallbackStr("Infiltrate heavily guarded areas.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["nosferatu", "malkavian", "assamite", "followers_of_set", "ravnos"]
+    clansWhoUse: ["nosferatu", "malkavian", "assamite", "followers_of_set", "ravnos", "salubri"]
   },
   {
     id: "presence",
@@ -191,7 +191,7 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Feral Weapons", level: 2, description: fallbackStr("Grow claws."), tacticalUse: fallbackStr("Deal aggravated damage.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["gangrel", "followers_of_set"]
+    clansWhoUse: ["gangrel", "followers_of_set", "tzimisce"]
   },
   {
     id: "fortitude",
@@ -204,7 +204,7 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Toughness", level: 2, description: fallbackStr("Subtract damage."), tacticalUse: fallbackStr("Ignore minor hits.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["ventrue", "gangrel", "giovanni", "salubri"]
+    clansWhoUse: ["ventrue", "gangrel", "giovanni", "salubri", "ravnos"]
   },
   {
     id: "potence",
@@ -231,7 +231,7 @@ export const disciplines: DisciplineEntry[] = [
   },
   {
     id: "valeren",
-    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
+    editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Valeren",
     type: fallbackStr("Healing/Combat"),
     description: fallbackStr("The discipline of the Salubri."),
@@ -247,6 +247,6 @@ export const disciplines: DisciplineEntry[] = [
     description: fallbackStr("Counterfeit disciplines via alchemy."),
     powers: [],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: []
+    clansWhoUse: ["thin_blood"]
   }
 ];

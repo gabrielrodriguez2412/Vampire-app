@@ -101,6 +101,13 @@ export interface BaseCharacter {
   name: string;
   playerName?: string;
   chronicle?: string;
+  /**
+   * Optional link to a Chronicle's `id`. Legacy characters and characters
+   * created before this field was introduced will not have it; `getCharacters`
+   * normalizes missing/blank values to `undefined`. A Chronicle's deletion
+   * leaves dangling ids — the UI must tolerate ids that no longer resolve.
+   */
+  chronicleId?: string;
   concept?: string;
   edition: EditionId;
   clan: string;

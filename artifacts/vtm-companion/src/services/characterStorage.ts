@@ -63,6 +63,15 @@ export function getCharacters(): Character[] {
       .filter((c: any) => c && typeof c === 'object')
       .map((c: any) => {
       const edition = normalizeEditionId(c.edition);
+      // Normalize chronicleId: keep only non-empty strings. Missing/blank/non-string
+      // values are dropped (set to undefined) so the field stays optional and the
+      // UI treats them uniformly as "unassigned".
+      const chronicleIdRaw = c?.chronicleId;
+      const normalizedChronicleId =
+        typeof chronicleIdRaw === 'string' && chronicleIdRaw.trim()
+          ? chronicleIdRaw
+          : undefined;
+
       // Construct a safe base
       const base = {
         ...c,
@@ -76,9 +85,11 @@ export function getCharacters(): Character[] {
         // Normalize inventory to a valid InventoryItem[]; tolerates missing field,
         // legacy free-text strings, or malformed arrays.
         inventory: normalizeInventory(c?.inventory),
+        chronicleId: normalizedChronicleId,
         createdAt: typeof c?.createdAt === 'string' ? c.createdAt : new Date().toISOString(),
         updatedAt: typeof c?.updatedAt === 'string' ? c.updatedAt : new Date().toISOString(),
       };
+      if (!normalizedChronicleId) delete (base as Record<string, unknown>).chronicleId;
 
       // Provide fallback for deeply nested structs
       if (edition === 'V5') {
@@ -203,6 +214,31 @@ export function setCharacterType(id: string, type: CharacterType): Character | n
   chars[index] = updated;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
   return updated;
+}
+
+/**
+ * Set or clear the `chronicleId` link on a character. Pass `null` (or any
+ * non-string) to clear. Pure persistence: this function does NOT verify the
+ * chronicle exists — callers can rely on UI to filter dangling ids. Returns
+ * the updated character, or null if the character is not found.
+ */
+export function setCharacterChronicle(
+  id: string,
+  chronicleId: string | null | undefined
+): Character | null {
+  const chars = getCharacters();
+  const index = chars.findIndex(c => c.id === id);
+  if (index < 0) return null;
+
+  const next = { ...chars[index], updatedAt: new Date().toISOString() } as Character;
+  if (typeof chronicleId === 'string' && chronicleId.trim()) {
+    next.chronicleId = chronicleId;
+  } else {
+    delete (next as { chronicleId?: string }).chronicleId;
+  }
+  chars[index] = next;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  return next;
 }
 
 /** Rename a character. Returns the updated character, or null if name is blank or character not found. */

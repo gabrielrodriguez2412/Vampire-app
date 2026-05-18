@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
-  MoreHorizontal, X,
+  MoreHorizontal, X, User, Users,
 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
-import { Chronicle, ChronicleStatus, EditionId } from "@/types";
+import { Chronicle, ChronicleStatus, EditionId, Character } from "@/types";
 import { EDITION_LIST } from "@/data/editions";
 import {
   getChronicles,
@@ -28,6 +29,9 @@ import {
   setChronicleStatus,
   deleteChronicle,
 } from "@/services/chronicleStorage";
+import { getCharacters } from "@/services/characterStorage";
+import { clans } from "@/data/clans";
+import { getClanDisplayNameById } from "@/utils/content";
 
 type StatusFilter = 'all' | 'active' | 'archived';
 
@@ -44,8 +48,10 @@ export default function ChroniclePage() {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const [chronicles, setChronicles] = useState<Chronicle[]>([]);
+  const [characters, setCharacters] = useState<Character[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');
 
   // Create modal state
@@ -59,11 +65,57 @@ export default function ChroniclePage() {
   // Delete confirm state
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const refresh = () => setChronicles(getChronicles());
+  const refresh = () => {
+    setChronicles(getChronicles());
+    try {
+      setCharacters(getCharacters());
+    } catch (e) {
+      console.error('Failed to load characters', e);
+      setCharacters([]);
+    }
+  };
 
   useEffect(() => {
     refresh();
   }, []);
+
+  // Group linked characters by chronicle id, split into PCs vs NPCs. Linked
+  // characters whose chronicleId points to a missing chronicle are excluded
+  // (they appear as "unassigned" elsewhere). Pure derivation from current state.
+  const linkedByChronicle = useMemo(() => {
+    const validIds = new Set(chronicles.map(c => c.id));
+    const map = new Map<string, { pcs: Character[]; npcs: Character[] }>();
+    for (const c of chronicles) map.set(c.id, { pcs: [], npcs: [] });
+    for (const ch of characters) {
+      if (!ch.chronicleId || !validIds.has(ch.chronicleId)) continue;
+      const bucket = map.get(ch.chronicleId);
+      if (!bucket) continue;
+      if (ch.characterType === 'npc') bucket.npcs.push(ch);
+      else bucket.pcs.push(ch);
+    }
+    // Stable display order: alphabetical by name
+    const cmp = (a: Character, b: Character) =>
+      (a.name || '').localeCompare(b.name || '', activeLanguage);
+    for (const bucket of map.values()) {
+      bucket.pcs.sort(cmp);
+      bucket.npcs.sort(cmp);
+    }
+    return map;
+  }, [chronicles, characters, activeLanguage]);
+
+  const getClanIcon = (clanId: string) => {
+    const clan = clans.find(c => c.id === clanId);
+    return clan?.icon || "🦇";
+  };
+
+  const openCharacterSheet = (charId: string) => {
+    try {
+      sessionStorage.setItem('vtm-open-character-id', charId);
+    } catch {
+      // ignore — navigation still works, user just lands on the list
+    }
+    setLocation('/personaje');
+  };
 
   const displayed = useMemo(() => {
     const filtered = chronicles.filter(c => {
@@ -298,12 +350,18 @@ export default function ChroniclePage() {
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuItem
                             onClick={() => openEdit(chr)}
                             className="gap-2 cursor-pointer"
                           >
                             <Pencil className="w-4 h-4" /> {strings.edit || "Edit"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openEdit(chr)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Users className="w-4 h-4" /> {strings.chr_manage_characters || "Linked characters"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => toggleArchive(chr)}
@@ -334,18 +392,45 @@ export default function ChroniclePage() {
                   </div>
                 </CardHeader>
 
-                {(chr.description || chr.updatedAt) && (
-                  <CardContent className="pt-0">
-                    {chr.description && (
-                      <p className="text-sm text-foreground/80 line-clamp-2 mb-2">
-                        {chr.description}
-                      </p>
-                    )}
-                    <div className="text-[10px] text-muted-foreground/60">
-                      {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
-                    </div>
-                  </CardContent>
-                )}
+                {(() => {
+                  const linked = linkedByChronicle.get(chr.id);
+                  const pcCount = linked?.pcs.length ?? 0;
+                  const npcCount = linked?.npcs.length ?? 0;
+                  const hasFooter = chr.description || pcCount > 0 || npcCount > 0 || chr.updatedAt;
+                  if (!hasFooter) return null;
+                  return (
+                    <CardContent className="pt-0">
+                      {chr.description && (
+                        <p className="text-sm text-foreground/80 line-clamp-2 mb-2">
+                          {chr.description}
+                        </p>
+                      )}
+                      {(pcCount > 0 || npcCount > 0) && (
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          {pcCount > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[11px] border border-primary/30 bg-primary/10 text-primary px-1.5 rounded"
+                              title={strings.chr_linked_pcs || "Player Characters"}
+                            >
+                              <User className="w-3 h-3" /> {pcCount}
+                            </span>
+                          )}
+                          {npcCount > 0 && (
+                            <span
+                              className="inline-flex items-center gap-1 text-[11px] border border-zinc-700 bg-zinc-900 text-zinc-400 px-1.5 rounded"
+                              title={strings.chr_linked_npcs || "NPCs"}
+                            >
+                              <Users className="w-3 h-3" /> {npcCount}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-[10px] text-muted-foreground/60">
+                        {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
+                      </div>
+                    </CardContent>
+                  );
+                })()}
               </Card>
             );
           })}
@@ -394,41 +479,97 @@ export default function ChroniclePage() {
 
       {/* Edit modal */}
       <AnimatePresence>
-        {editingId && (
-          <motion.div
-            key="edit-chronicle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-            onClick={() => setEditingId(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
-              onClick={e => e.stopPropagation()}
+        {editingId && (() => {
+          const linked = linkedByChronicle.get(editingId);
+          const pcs = linked?.pcs ?? [];
+          const npcs = linked?.npcs ?? [];
+          const renderCharacterRow = (ch: Character) => (
+            <button
+              key={ch.id}
+              type="button"
+              onClick={() => openCharacterSheet(ch.id)}
+              className="w-full text-left flex items-center gap-2 px-2 py-1.5 rounded border border-transparent hover:border-primary/30 hover:bg-primary/5 transition-colors text-sm"
+              title={strings.chr_open_character || "Open sheet"}
             >
-              <h3 className="text-lg font-serif text-foreground mb-4">
-                {strings.chr_edit_chronicle || "Edit Chronicle"}
-              </h3>
-              <ChronicleFormFields
-                value={editForm}
-                onChange={setEditForm}
-                strings={strings}
-              />
-              <div className="flex gap-3 justify-end mt-6">
-                <Button variant="outline" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground">
-                  {strings.cancel || "Cancel"}
-                </Button>
-                <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  {strings.chr_save_changes || "Save Changes"}
-                </Button>
-              </div>
+              <span className="text-base shrink-0">{getClanIcon(ch.clan)}</span>
+              <span className="flex-1 min-w-0 truncate">{ch.name}</span>
+              <span className="uppercase text-[10px] tracking-wider text-muted-foreground shrink-0">
+                {getClanDisplayNameById(ch.clan, ch.edition as EditionId, activeLanguage)}
+              </span>
+            </button>
+          );
+          return (
+            <motion.div
+              key="edit-chronicle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setEditingId(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-4">
+                  {strings.chr_edit_chronicle || "Edit Chronicle"}
+                </h3>
+                <ChronicleFormFields
+                  value={editForm}
+                  onChange={setEditForm}
+                  strings={strings}
+                />
+
+                {/* Linked characters */}
+                <div className="mt-6 pt-4 border-t border-zinc-800">
+                  <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground mb-3">
+                    {strings.chr_linked_characters || "Linked characters"}
+                  </p>
+                  {pcs.length === 0 && npcs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">
+                      {strings.chr_no_linked_characters || "No linked characters yet."}
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {pcs.length > 0 && (
+                        <div>
+                          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-primary mb-1.5">
+                            <User className="w-3 h-3" /> {strings.chr_linked_pcs || "Player Characters"} ({pcs.length})
+                          </p>
+                          <div className="space-y-1">
+                            {pcs.map(renderCharacterRow)}
+                          </div>
+                        </div>
+                      )}
+                      {npcs.length > 0 && (
+                        <div>
+                          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                            <Users className="w-3 h-3" /> {strings.chr_linked_npcs || "NPCs"} ({npcs.length})
+                          </p>
+                          <div className="space-y-1">
+                            {npcs.map(renderCharacterRow)}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-3 justify-end mt-6">
+                  <Button variant="outline" size="sm" onClick={() => setEditingId(null)} className="text-muted-foreground">
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    {strings.chr_save_changes || "Save Changes"}
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
 
       {/* Delete confirm */}

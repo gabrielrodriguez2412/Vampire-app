@@ -6,12 +6,27 @@ export type CharacterSortKey = 'updated' | 'name' | 'clan' | 'edition' | 'type';
 export type CharacterTypeFilter = 'all' | 'player' | 'npc';
 export type CharacterEditionFilter = 'all' | EditionId;
 export type CharacterClanFilter = 'all' | string;
+/**
+ * Chronicle filter:
+ *   - 'all'        — no filter
+ *   - 'unassigned' — characters with no `chronicleId` (or whose id no longer resolves)
+ *   - any other string — a specific chronicle id
+ */
+export type CharacterChronicleFilter = 'all' | 'unassigned' | string;
 
 export interface CharacterListOptions {
   sortBy: CharacterSortKey;
   filterType?: CharacterTypeFilter;
   filterEdition?: CharacterEditionFilter;
   filterClan?: CharacterClanFilter;
+  filterChronicle?: CharacterChronicleFilter;
+  /**
+   * Optional set of currently-valid chronicle ids. When provided, characters
+   * whose `chronicleId` is not in this set are treated as 'unassigned' for
+   * filtering. Lets callers gracefully ignore dangling links to deleted
+   * chronicles without mutating storage.
+   */
+  validChronicleIds?: ReadonlySet<string>;
   /** Active language used for locale-aware string comparisons. */
   language: LangCode;
 }
@@ -41,6 +56,8 @@ export function sortAndFilterCharacters(
     filterType = 'all',
     filterEdition = 'all',
     filterClan = 'all',
+    filterChronicle = 'all',
+    validChronicleIds,
     language,
   } = options;
 
@@ -52,6 +69,18 @@ export function sortAndFilterCharacters(
     }
     if (filterEdition !== 'all' && c.edition !== filterEdition) return false;
     if (filterClan !== 'all' && c.clan !== filterClan) return false;
+    if (filterChronicle !== 'all') {
+      const linkedId = typeof c.chronicleId === 'string' && c.chronicleId ? c.chronicleId : undefined;
+      // Treat dangling ids (not in validChronicleIds, when provided) as unassigned.
+      const effectiveId = linkedId && (!validChronicleIds || validChronicleIds.has(linkedId))
+        ? linkedId
+        : undefined;
+      if (filterChronicle === 'unassigned') {
+        if (effectiveId) return false;
+      } else {
+        if (effectiveId !== filterChronicle) return false;
+      }
+    }
     return true;
   });
 

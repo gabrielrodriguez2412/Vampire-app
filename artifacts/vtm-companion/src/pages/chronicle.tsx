@@ -15,11 +15,12 @@ import {
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
   MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
+  MapPin,
 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
-import { Chronicle, ChronicleStatus, EditionId, Character, ChronicleSession } from "@/types";
+import { Chronicle, ChronicleStatus, EditionId, Character, ChronicleSession, ChronicleLocation, ChronicleLocationCategory } from "@/types";
 import { EDITION_LIST } from "@/data/editions";
 import {
   getChronicles,
@@ -38,6 +39,14 @@ import {
   deleteChronicleSession,
   deleteChronicleSessionsForChronicle,
 } from "@/services/chronicleSessionStorage";
+import {
+  getChronicleLocations,
+  saveChronicleLocation,
+  createEmptyChronicleLocation,
+  updateChronicleLocation,
+  deleteChronicleLocation,
+  deleteChronicleLocationsForChronicle,
+} from "@/services/chronicleLocationStorage";
 import { clans } from "@/data/clans";
 import { getClanDisplayNameById } from "@/utils/content";
 
@@ -45,7 +54,7 @@ type StatusFilter = 'all' | 'active' | 'archived';
 
 type LinkPickerFilter = 'all' | 'pc' | 'npc' | 'unassigned' | 'other_chronicle';
 
-type ManageTab = 'overview' | 'characters' | 'sessions';
+type ManageTab = 'overview' | 'characters' | 'sessions' | 'locations';
 
 interface ChronicleForm {
   name: string;
@@ -101,6 +110,20 @@ export default function ChroniclePage() {
   // Confirm modal for session deletion.
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
 
+  // Locations belonging to the chronicle currently being managed.
+  const [locations, setLocations] = useState<ChronicleLocation[]>([]);
+  // Location editor (create or edit). `id === null` while creating a new one.
+  const [locationEditor, setLocationEditor] = useState<{
+    id: string | null;
+    name: string;
+    category: ChronicleLocationCategory;
+    description: string;
+    district: string;
+    notes: string;
+    linkedCharacterIds: string[];
+  } | null>(null);
+  const [deletingLocationId, setDeletingLocationId] = useState<string | null>(null);
+
   const refresh = () => {
     setChronicles(getChronicles());
     try {
@@ -121,13 +144,19 @@ export default function ChroniclePage() {
   useEffect(() => {
     if (managingId) {
       setSessions(getChronicleSessions(managingId));
+      setLocations(getChronicleLocations(managingId));
     } else {
       setSessions([]);
+      setLocations([]);
     }
   }, [managingId]);
 
   const refreshSessions = () => {
     if (managingId) setSessions(getChronicleSessions(managingId));
+  };
+
+  const refreshLocations = () => {
+    if (managingId) setLocations(getChronicleLocations(managingId));
   };
 
   // Group linked characters by chronicle id, split into PCs vs NPCs. Linked
@@ -277,6 +306,8 @@ export default function ChroniclePage() {
     setPendingReassign(null);
     setSessionEditor(null);
     setDeletingSessionId(null);
+    setLocationEditor(null);
+    setDeletingLocationId(null);
   };
 
   const handleUpdate = () => {
@@ -316,10 +347,12 @@ export default function ChroniclePage() {
   // --- Delete ---
   const handleDeleteConfirm = () => {
     if (!deletingId) return;
-    // Cascade: drop sessions tied to this chronicle so they don't accumulate
-    // as orphans in localStorage. Character links are NOT touched — characters
-    // simply revert to "Unknown chronicle" until reassigned.
+    // Cascade: drop sessions and locations tied to this chronicle so they
+    // don't accumulate as orphans in localStorage. Character links are NOT
+    // touched — characters simply revert to "Unknown chronicle" until
+    // reassigned.
     deleteChronicleSessionsForChronicle(deletingId);
+    deleteChronicleLocationsForChronicle(deletingId);
     deleteChronicle(deletingId);
     setDeletingId(null);
     refresh();
@@ -402,6 +435,109 @@ export default function ChroniclePage() {
       };
     });
   };
+
+  // --- Location handlers (all scoped to `managingId`) ---
+  const openCreateLocation = () => {
+    if (!managingId) return;
+    setLocationEditor({
+      id: null,
+      name: '',
+      category: 'other',
+      description: '',
+      district: '',
+      notes: '',
+      linkedCharacterIds: [],
+    });
+  };
+
+  const openEditLocation = (loc: ChronicleLocation) => {
+    setLocationEditor({
+      id: loc.id,
+      name: loc.name,
+      category: loc.category,
+      description: loc.description || '',
+      district: loc.district || '',
+      notes: loc.notes || '',
+      linkedCharacterIds: [...loc.linkedCharacterIds],
+    });
+  };
+
+  const handleLocationSave = () => {
+    if (!managingId || !locationEditor) return;
+    const name = locationEditor.name.trim();
+    if (!name) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_location_name_required || "Name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (locationEditor.id) {
+      updateChronicleLocation(locationEditor.id, {
+        name,
+        category: locationEditor.category,
+        description: locationEditor.description,
+        district: locationEditor.district,
+        notes: locationEditor.notes,
+        linkedCharacterIds: locationEditor.linkedCharacterIds,
+      });
+      toast({ title: strings.chr_location_updated || "Location updated" });
+    } else {
+      const draft = createEmptyChronicleLocation(managingId);
+      saveChronicleLocation({
+        ...draft,
+        name,
+        category: locationEditor.category,
+        description: locationEditor.description || undefined,
+        district: locationEditor.district || undefined,
+        notes: locationEditor.notes || undefined,
+        linkedCharacterIds: locationEditor.linkedCharacterIds,
+      });
+      toast({ title: strings.chr_location_created || "Location created" });
+    }
+    setLocationEditor(null);
+    refreshLocations();
+  };
+
+  const handleLocationDeleteConfirm = () => {
+    if (!deletingLocationId) return;
+    deleteChronicleLocation(deletingLocationId);
+    setDeletingLocationId(null);
+    refreshLocations();
+    toast({ title: strings.chr_location_deleted || "Location deleted" });
+  };
+
+  const toggleLocationLink = (charId: string) => {
+    setLocationEditor(prev => {
+      if (!prev) return prev;
+      const has = prev.linkedCharacterIds.includes(charId);
+      return {
+        ...prev,
+        linkedCharacterIds: has
+          ? prev.linkedCharacterIds.filter(id => id !== charId)
+          : [...prev.linkedCharacterIds, charId],
+      };
+    });
+  };
+
+  const locationCategoryLabel = (cat: ChronicleLocationCategory): string => {
+    switch (cat) {
+      case 'haven':        return strings.chr_loc_cat_haven        || "Haven";
+      case 'elysium':      return strings.chr_loc_cat_elysium      || "Elysium";
+      case 'domain':       return strings.chr_loc_cat_domain       || "Domain";
+      case 'business':     return strings.chr_loc_cat_business     || "Business";
+      case 'street':       return strings.chr_loc_cat_street       || "Street";
+      case 'neighborhood': return strings.chr_loc_cat_neighborhood || "Neighborhood";
+      case 'enemy_base':   return strings.chr_loc_cat_enemy_base   || "Enemy Base";
+      case 'other':
+      default:             return strings.chr_loc_cat_other        || "Other";
+    }
+  };
+
+  const LOCATION_CATEGORIES: ChronicleLocationCategory[] = [
+    'haven', 'elysium', 'domain', 'business', 'street', 'neighborhood', 'enemy_base', 'other',
+  ];
 
   const deletingChronicleName = deletingId
     ? chronicles.find(c => c.id === deletingId)?.name
@@ -565,6 +701,12 @@ export default function ChroniclePage() {
                             className="gap-2 cursor-pointer"
                           >
                             <ScrollText className="w-4 h-4" /> {strings.chr_sessions || "Session summaries"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openManage(chr, 'locations')}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <MapPin className="w-4 h-4" /> {strings.chr_locations || "Locations"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => toggleArchive(chr)}
@@ -865,7 +1007,67 @@ export default function ChroniclePage() {
             { id: 'overview',   label: strings.chr_tab_overview   || "Overview" },
             { id: 'characters', label: strings.chr_tab_characters || "Characters" },
             { id: 'sessions',   label: strings.chr_tab_sessions   || "Sessions" },
+            { id: 'locations',  label: strings.chr_tab_locations  || "Locations" },
           ];
+
+          const renderLocationRow = (loc: ChronicleLocation) => (
+            <li
+              key={loc.id}
+              className="rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 transition-colors"
+            >
+              <div className="flex items-start gap-2 p-2.5">
+                <button
+                  type="button"
+                  onClick={() => openEditLocation(loc)}
+                  className="flex-1 min-w-0 text-left"
+                  title={strings.chr_location_edit || "Edit location"}
+                >
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="font-medium text-sm truncate">{loc.name}</span>
+                    <span className="uppercase text-[10px] tracking-wider border border-primary/30 bg-primary/10 text-primary px-1.5 rounded shrink-0">
+                      {locationCategoryLabel(loc.category)}
+                    </span>
+                    {loc.district && (
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        {loc.district}
+                      </span>
+                    )}
+                  </div>
+                  {loc.description && (
+                    <p className="text-xs text-foreground/70 line-clamp-2 mb-1.5">{loc.description}</p>
+                  )}
+                  {loc.linkedCharacterIds.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {loc.linkedCharacterIds.map(renderTagChip)}
+                    </div>
+                  )}
+                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditLocation(loc)}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    title={strings.chr_location_edit || "Edit location"}
+                    aria-label={strings.chr_location_edit || "Edit location"}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeletingLocationId(loc.id)}
+                    className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                    title={strings.chr_location_delete || "Delete location"}
+                    aria-label={strings.chr_location_delete || "Delete location"}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </li>
+          );
 
           return (
             <motion.div
@@ -955,7 +1157,7 @@ export default function ChroniclePage() {
                         </p>
                       )}
 
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800">
+                      <div className="grid grid-cols-3 gap-3 pt-3 border-t border-zinc-800">
                         <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                             {strings.chr_overview_characters || "Linked characters"}
@@ -973,6 +1175,12 @@ export default function ChroniclePage() {
                           <p className="text-[10px] text-muted-foreground">
                             {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
                           </p>
+                        </div>
+                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            {strings.chr_overview_locations || "Locations"}
+                          </p>
+                          <p className="text-2xl font-serif text-foreground">{locations.length}</p>
                         </div>
                       </div>
 
@@ -1084,6 +1292,36 @@ export default function ChroniclePage() {
                       ) : (
                         <ul className="space-y-2">
                           {sessions.map(renderSessionRow)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {manageTab === 'locations' && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <p className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                          <MapPin className="w-3.5 h-3.5" />
+                          {strings.chr_locations || "Locations"}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={openCreateLocation}
+                          className="gap-1.5 h-7 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          {strings.chr_location_new || "New location"}
+                        </Button>
+                      </div>
+                      {locations.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {strings.chr_no_locations || "No locations yet."}
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {locations.map(renderLocationRow)}
                         </ul>
                       )}
                     </div>
@@ -1536,6 +1774,257 @@ export default function ChroniclePage() {
                   <Button
                     size="sm"
                     onClick={handleSessionDeleteConfirm}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Location editor (create + edit). Linked characters of the current
+          Chronicle appear first as default link candidates; others fall under
+          "Other characters". Click chips to toggle. */}
+      <AnimatePresence>
+        {locationEditor && managingId && (() => {
+          const linked = linkedByChronicle.get(managingId);
+          const linkedAll = [...(linked?.pcs ?? []), ...(linked?.npcs ?? [])];
+          const linkedIds = new Set(linkedAll.map(c => c.id));
+          const others = characters
+            .filter(c => !linkedIds.has(c.id))
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', activeLanguage));
+          const isEditing = locationEditor.id !== null;
+
+          const renderEditChip = (ch: Character) => {
+            const selected = locationEditor.linkedCharacterIds.includes(ch.id);
+            return (
+              <button
+                key={ch.id}
+                type="button"
+                onClick={() => toggleLocationLink(ch.id)}
+                className={`inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded border transition-colors ${
+                  selected
+                    ? "border-primary/60 bg-primary/20 text-primary"
+                    : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500"
+                }`}
+                title={ch.name}
+              >
+                <span className="shrink-0">{getClanIcon(ch.clan)}</span>
+                <span className="truncate max-w-[10rem]">{ch.name}</span>
+                {ch.characterType === 'npc' && (
+                  <span className="uppercase text-[9px] tracking-wider opacity-70 shrink-0">
+                    {strings.char_type_short_npc || "NPC"}
+                  </span>
+                )}
+              </button>
+            );
+          };
+
+          return (
+            <motion.div
+              key="location-editor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              onClick={() => setLocationEditor(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                  <h3 className="text-lg font-serif text-foreground">
+                    {isEditing
+                      ? (strings.chr_location_edit || "Edit location")
+                      : (strings.chr_location_new || "New location")}
+                  </h3>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_location_name || "Name"}
+                    </label>
+                    <Input
+                      value={locationEditor.name}
+                      onChange={e =>
+                        setLocationEditor(prev => prev ? { ...prev, name: e.target.value } : prev)
+                      }
+                      className="bg-background border-border"
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        {strings.chr_location_category || "Category"}
+                      </label>
+                      <select
+                        value={locationEditor.category}
+                        onChange={e =>
+                          setLocationEditor(prev => prev ? {
+                            ...prev,
+                            category: e.target.value as ChronicleLocationCategory,
+                          } : prev)
+                        }
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                      >
+                        {LOCATION_CATEGORIES.map(cat => (
+                          <option key={cat} value={cat}>{locationCategoryLabel(cat)}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        {strings.chr_location_district || "District / Area"}
+                      </label>
+                      <Input
+                        value={locationEditor.district}
+                        onChange={e =>
+                          setLocationEditor(prev => prev ? { ...prev, district: e.target.value } : prev)
+                        }
+                        className="bg-background border-border"
+                        placeholder={strings.chr_location_district_placeholder || "Downtown, etc."}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_location_description || "Description"}
+                    </label>
+                    <Textarea
+                      value={locationEditor.description}
+                      onChange={e =>
+                        setLocationEditor(prev => prev ? { ...prev, description: e.target.value } : prev)
+                      }
+                      className="bg-background border-border min-h-[80px]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_location_notes || "Notes"}
+                    </label>
+                    <Textarea
+                      value={locationEditor.notes}
+                      onChange={e =>
+                        setLocationEditor(prev => prev ? { ...prev, notes: e.target.value } : prev)
+                      }
+                      className="bg-background border-border min-h-[60px]"
+                      placeholder={strings.chr_location_notes_placeholder || "Secrets, rules, hooks..."}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                    <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                      {strings.chr_location_link_characters || "Linked characters"}
+                    </p>
+
+                    {linkedAll.length === 0 && others.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        {strings.chr_location_no_characters || "No characters available."}
+                      </p>
+                    ) : (
+                      <div className="space-y-2.5">
+                        {linkedAll.length > 0 && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wider text-primary mb-1.5">
+                              {strings.chr_session_tag_linked || "Linked to this Chronicle"}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {linkedAll.map(renderEditChip)}
+                            </div>
+                          </div>
+                        )}
+                        {others.length > 0 && (
+                          <div>
+                            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                              {strings.chr_session_tag_other || "Other characters"}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {others.map(renderEditChip)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLocationEditor(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleLocationSave}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {strings.save || "Save"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Location delete confirm */}
+      <AnimatePresence>
+        {deletingLocationId && (() => {
+          const target = locations.find(l => l.id === deletingLocationId);
+          return (
+            <motion.div
+              key="delete-location"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setDeletingLocationId(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {strings.chr_location_confirm_delete || "Delete location?"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {strings.chr_location_confirm_delete_desc || "This action cannot be undone."}{' '}
+                  {target?.name && (
+                    <span className="text-foreground font-medium">{target.name}</span>
+                  )}
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeletingLocationId(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleLocationDeleteConfirm}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}

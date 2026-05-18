@@ -160,3 +160,24 @@ export interface ClassicCharacter extends BaseCharacter {
 }
 
 export type Character = V5Character | ClassicCharacter;
+
+/** Chronicle lifecycle status. `getChronicles` normalizes missing/unknown to 'active'. */
+export type ChronicleStatus = 'active' | 'archived';
+
+/**
+ * A Storyteller's Chronicle — top-level container for a campaign. Stored
+ * separately from characters (own localStorage key, own service). Future
+ * features (sessions, NPC linking, etc.) will attach to a Chronicle id.
+ */
+export interface Chronicle {
+  id: string;
+  name: string;
+  description?: string;
+  /** Free-text setting / city / region. */
+  setting?: string;
+  /** Optional edition for filtering & display. */
+  edition?: EditionId;
+  status: ChronicleStatus;
+  createdAt: string;
+  updatedAt: string;
+}

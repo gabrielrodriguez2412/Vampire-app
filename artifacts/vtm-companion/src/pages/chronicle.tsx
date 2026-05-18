@@ -45,6 +45,8 @@ type StatusFilter = 'all' | 'active' | 'archived';
 
 type LinkPickerFilter = 'all' | 'pc' | 'npc' | 'unassigned' | 'other_chronicle';
 
+type ManageTab = 'overview' | 'characters' | 'sessions';
+
 interface ChronicleForm {
   name: string;
   description: string;
@@ -68,21 +70,25 @@ export default function ChroniclePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ChronicleForm>(EMPTY_FORM);
 
-  // Edit modal state
+  // Basic edit modal (core fields only: name/description/setting/edition)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<ChronicleForm>(EMPTY_FORM);
+
+  // Manage modal (linked characters + sessions, tabbed)
+  const [managingId, setManagingId] = useState<string | null>(null);
+  const [manageTab, setManageTab] = useState<ManageTab>('overview');
 
   // Delete confirm state
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Link-picker modal state (opens from inside the edit modal)
+  // Link-picker modal state (opens from inside the manage modal)
   const [linkPickerOpen, setLinkPickerOpen] = useState(false);
   const [linkPickerFilter, setLinkPickerFilter] = useState<LinkPickerFilter>('all');
 
   // Reassignment confirm (when picking a character that's linked elsewhere)
   const [pendingReassign, setPendingReassign] = useState<Character | null>(null);
 
-  // Sessions belonging to the chronicle currently being edited.
+  // Sessions belonging to the chronicle currently being managed.
   const [sessions, setSessions] = useState<ChronicleSession[]>([]);
   // Session editor (create or edit). `id === null` while creating a new one.
   const [sessionEditor, setSessionEditor] = useState<{
@@ -109,19 +115,19 @@ export default function ChroniclePage() {
     refresh();
   }, []);
 
-  // Reload sessions whenever the user opens/switches the edit modal. Cleared
+  // Reload sessions whenever the user opens/switches the manage modal. Cleared
   // when the modal closes so we don't leak the previous chronicle's sessions
   // into a future open.
   useEffect(() => {
-    if (editingId) {
-      setSessions(getChronicleSessions(editingId));
+    if (managingId) {
+      setSessions(getChronicleSessions(managingId));
     } else {
       setSessions([]);
     }
-  }, [editingId]);
+  }, [managingId]);
 
   const refreshSessions = () => {
-    if (editingId) setSessions(getChronicleSessions(editingId));
+    if (managingId) setSessions(getChronicleSessions(managingId));
   };
 
   // Group linked characters by chronicle id, split into PCs vs NPCs. Linked
@@ -256,6 +262,17 @@ export default function ChroniclePage() {
   const closeEdit = () => {
     setEditingId(null);
     setEditForm(EMPTY_FORM);
+  };
+
+  // --- Manage modal (linked characters + sessions, tabbed) ---
+  const openManage = (chr: Chronicle, tab: ManageTab = 'overview') => {
+    setManagingId(chr.id);
+    setManageTab(tab);
+  };
+
+  const closeManage = () => {
+    setManagingId(null);
+    setManageTab('overview');
     setLinkPickerOpen(false);
     setPendingReassign(null);
     setSessionEditor(null);
@@ -309,9 +326,9 @@ export default function ChroniclePage() {
     toast({ title: strings.chr_deleted || "Chronicle deleted" });
   };
 
-  // --- Session handlers (all scoped to `editingId`) ---
+  // --- Session handlers (all scoped to `managingId`) ---
   const openCreateSession = () => {
-    if (!editingId) return;
+    if (!managingId) return;
     setSessionEditor({
       id: null,
       title: '',
@@ -332,7 +349,7 @@ export default function ChroniclePage() {
   };
 
   const handleSessionSave = () => {
-    if (!editingId || !sessionEditor) return;
+    if (!managingId || !sessionEditor) return;
     const title = sessionEditor.title.trim();
     if (!title) {
       toast({
@@ -351,7 +368,7 @@ export default function ChroniclePage() {
       });
       toast({ title: strings.chr_session_updated || "Session updated" });
     } else {
-      const draft = createEmptyChronicleSession(editingId);
+      const draft = createEmptyChronicleSession(managingId);
       saveChronicleSession({
         ...draft,
         title,
@@ -480,7 +497,7 @@ export default function ChroniclePage() {
             return (
               <Card
                 key={chr.id}
-                onClick={() => openEdit(chr)}
+                onClick={() => openManage(chr, 'overview')}
                 className={`bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group ${
                   isArchived ? "opacity-70" : ""
                 }`}
@@ -526,16 +543,28 @@ export default function ChroniclePage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuItem
-                            onClick={() => openEdit(chr)}
+                            onClick={() => openManage(chr, 'overview')}
                             className="gap-2 cursor-pointer"
                           >
-                            <Pencil className="w-4 h-4" /> {strings.edit || "Edit"}
+                            <BookOpen className="w-4 h-4" /> {strings.chr_open_manage || "Open"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => openEdit(chr)}
                             className="gap-2 cursor-pointer"
                           >
+                            <Pencil className="w-4 h-4" /> {strings.chr_edit_basic_info || "Edit basic info"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openManage(chr, 'characters')}
+                            className="gap-2 cursor-pointer"
+                          >
                             <Users className="w-4 h-4" /> {strings.chr_manage_characters || "Linked characters"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openManage(chr, 'sessions')}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <ScrollText className="w-4 h-4" /> {strings.chr_sessions || "Session summaries"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => toggleArchive(chr)}
@@ -651,12 +680,62 @@ export default function ChroniclePage() {
         )}
       </AnimatePresence>
 
-      {/* Edit modal */}
+      {/* Basic Edit modal — core fields only (name, description, setting, edition).
+          Linked characters and session summaries live in the Manage modal. */}
       <AnimatePresence>
-        {editingId && (() => {
-          const linked = linkedByChronicle.get(editingId);
+        {editingId && (
+          <motion.div
+            key="edit-chronicle"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28"
+            onClick={closeEdit}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                <h3 className="text-lg font-serif text-foreground">
+                  {strings.chr_edit_chronicle || "Edit Chronicle"}
+                </h3>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+                <ChronicleFormFields
+                  value={editForm}
+                  onChange={setEditForm}
+                  strings={strings}
+                />
+              </div>
+              <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                <Button variant="outline" size="sm" onClick={closeEdit} className="text-muted-foreground">
+                  {strings.cancel || "Cancel"}
+                </Button>
+                <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                  {strings.chr_save_changes || "Save Changes"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Manage modal — tabbed view (Overview / Characters / Sessions). Opens
+          via card click or the "Manage" dropdown item. Houses everything that
+          used to be in the edit modal beyond basic fields. */}
+      <AnimatePresence>
+        {managingId && (() => {
+          const chr = chronicles.find(c => c.id === managingId);
+          if (!chr) return null;
+          const linked = linkedByChronicle.get(managingId);
           const pcs = linked?.pcs ?? [];
           const npcs = linked?.npcs ?? [];
+          const isArchived = chr.status === 'archived';
+
           const renderCharacterRow = (ch: Character) => (
             <div
               key={ch.id}
@@ -687,20 +766,11 @@ export default function ChroniclePage() {
             </div>
           );
 
-          // Tag chip used inside session rows and inside the session editor.
-          // `onClick`: open the sheet from a saved session row; toggle the
-          // tag when used inside the editor. Missing characters render a
-          // disabled "Unknown character" chip that never crashes.
-          const renderTagChip = (
-            charId: string,
-            opts: { mode: 'display' | 'edit'; selected?: boolean }
-          ) => {
+          const renderTagChip = (charId: string) => {
             const ch = characterById.get(charId);
-            const missing = !ch;
-            const selected = !!opts.selected;
             const baseClass =
               "inline-flex items-center gap-1 max-w-full text-[11px] px-1.5 py-0.5 rounded border transition-colors";
-            if (missing) {
+            if (!ch) {
               return (
                 <span
                   key={charId}
@@ -714,20 +784,12 @@ export default function ChroniclePage() {
                 </span>
               );
             }
-            const cls = opts.mode === 'edit'
-              ? (selected
-                ? `${baseClass} border-primary/60 bg-primary/20 text-primary hover:bg-primary/30`
-                : `${baseClass} border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500`)
-              : `${baseClass} border-primary/30 bg-primary/10 text-primary hover:bg-primary/20`;
-            const handleClick = opts.mode === 'edit'
-              ? () => toggleSessionTag(charId)
-              : () => openCharacterSheet(charId);
             return (
               <button
                 key={charId}
                 type="button"
-                onClick={handleClick}
-                className={cls}
+                onClick={() => openCharacterSheet(charId)}
+                className={`${baseClass} border-primary/30 bg-primary/10 text-primary hover:bg-primary/20`}
                 title={ch.name}
               >
                 <span className="shrink-0">{getClanIcon(ch.clan)}</span>
@@ -768,9 +830,7 @@ export default function ChroniclePage() {
                     )}
                     {session.taggedCharacterIds.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {session.taggedCharacterIds.map(id =>
-                          renderTagChip(id, { mode: 'display' })
-                        )}
+                        {session.taggedCharacterIds.map(renderTagChip)}
                       </div>
                     )}
                   </button>
@@ -801,124 +861,238 @@ export default function ChroniclePage() {
             );
           };
 
+          const tabs: { id: ManageTab; label: string }[] = [
+            { id: 'overview',   label: strings.chr_tab_overview   || "Overview" },
+            { id: 'characters', label: strings.chr_tab_characters || "Characters" },
+            { id: 'sessions',   label: strings.chr_tab_sessions   || "Sessions" },
+          ];
+
           return (
             <motion.div
-              key="edit-chronicle"
+              key="manage-chronicle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28"
-              onClick={closeEdit}
+              onClick={closeManage}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-lg w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
-                {/* Header (fixed) */}
+                {/* Header: chronicle title + status, no tabs yet */}
                 <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
-                  <h3 className="text-lg font-serif text-foreground">
-                    {strings.chr_edit_chronicle || "Edit Chronicle"}
-                  </h3>
-                </div>
-
-                {/* Scrollable body */}
-                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
-                  <ChronicleFormFields
-                    value={editForm}
-                    onChange={setEditForm}
-                    strings={strings}
-                  />
-
-                  {/* Linked characters */}
-                  <div className="mt-6 pt-4 border-t border-zinc-800">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
-                        {strings.chr_linked_characters || "Linked characters"}
-                      </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setLinkPickerFilter('all');
-                          setLinkPickerOpen(true);
-                        }}
-                        className="gap-1.5 h-7 text-xs"
-                      >
-                        <Link2 className="w-3.5 h-3.5" />
-                        {strings.chr_link_existing_character || "Link character"}
-                      </Button>
-                    </div>
-                    {pcs.length === 0 && npcs.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic">
-                        {strings.chr_no_linked_characters || "No linked characters yet."}
-                      </p>
-                    ) : (
-                      <div className="space-y-4">
-                        {pcs.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-primary mb-1.5">
-                              <User className="w-3 h-3" /> {strings.chr_linked_pcs || "Player Characters"} ({pcs.length})
-                            </p>
-                            <div className="space-y-1">
-                              {pcs.map(renderCharacterRow)}
-                            </div>
-                          </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-lg font-serif text-foreground truncate">{chr.name}</h3>
+                      <div className="flex items-center flex-wrap gap-2 text-xs text-muted-foreground mt-1">
+                        {chr.setting && <span className="truncate">{chr.setting}</span>}
+                        {chr.setting && chr.edition && <span>•</span>}
+                        {chr.edition && (
+                          <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
+                            {chr.edition}
+                          </span>
                         )}
-                        {npcs.length > 0 && (
-                          <div>
-                            <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
-                              <Users className="w-3 h-3" /> {strings.chr_linked_npcs || "NPCs"} ({npcs.length})
-                            </p>
-                            <div className="space-y-1">
-                              {npcs.map(renderCharacterRow)}
-                            </div>
-                          </div>
-                        )}
+                        <span
+                          className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                            isArchived
+                              ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                              : "border-primary/30 bg-primary/10 text-primary"
+                          }`}
+                        >
+                          {isArchived
+                            ? (strings.chr_status_archived || "Archived")
+                            : (strings.chr_status_active || "Active")}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Session summaries */}
-                  <div className="mt-6 pt-4 border-t border-zinc-800">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <p className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-widest text-muted-foreground">
-                        <BookOpen className="w-3.5 h-3.5" />
-                        {strings.chr_sessions || "Session summaries"}
-                      </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={openCreateSession}
-                        className="gap-1.5 h-7 text-xs"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        {strings.chr_session_new || "New session"}
-                      </Button>
                     </div>
-                    {sessions.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic">
-                        {strings.chr_no_sessions || "No session summaries yet."}
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {sessions.map(s => renderSessionRow(s))}
-                      </ul>
-                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={closeManage}
+                      className="h-7 w-7 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
+                      aria-label={strings.close || "Close"}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
 
-                {/* Footer (fixed) */}
+                {/* Tab strip */}
+                <div className="shrink-0 flex gap-1 px-4 border-b border-zinc-800 overflow-x-auto">
+                  {tabs.map(t => {
+                    const active = manageTab === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setManageTab(t.id)}
+                        aria-pressed={active}
+                        className={`px-3 py-2 text-xs uppercase tracking-widest font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                          active
+                            ? "border-primary text-foreground"
+                            : "border-transparent text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Body */}
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+                  {manageTab === 'overview' && (
+                    <div className="space-y-4">
+                      {chr.description ? (
+                        <p className="text-sm text-foreground/85 whitespace-pre-wrap">{chr.description}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">
+                          {strings.chr_no_description || "No description."}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-zinc-800">
+                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            {strings.chr_overview_characters || "Linked characters"}
+                          </p>
+                          <p className="text-2xl font-serif text-foreground">{pcs.length + npcs.length}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {pcs.length} {strings.char_type_short_pc || "PC"} · {npcs.length} {strings.char_type_short_npc || "NPC"}
+                          </p>
+                        </div>
+                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            {strings.chr_overview_sessions || "Sessions"}
+                          </p>
+                          <p className="text-2xl font-serif text-foreground">{sessions.length}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-zinc-800 flex flex-wrap gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { closeManage(); openEdit(chr); }}
+                          className="gap-1.5"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          {strings.chr_edit_basic_info || "Edit basic info"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => toggleArchive(chr)}
+                          className="gap-1.5"
+                        >
+                          {isArchived ? (
+                            <>
+                              <ArchiveRestore className="w-3.5 h-3.5" />
+                              {strings.chr_unarchive || "Unarchive"}
+                            </>
+                          ) : (
+                            <>
+                              <Archive className="w-3.5 h-3.5" />
+                              {strings.chr_archive || "Archive"}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {manageTab === 'characters' && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <p className="text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                          {strings.chr_linked_characters || "Linked characters"}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setLinkPickerFilter('all');
+                            setLinkPickerOpen(true);
+                          }}
+                          className="gap-1.5 h-7 text-xs"
+                        >
+                          <Link2 className="w-3.5 h-3.5" />
+                          {strings.chr_link_existing_character || "Link character"}
+                        </Button>
+                      </div>
+                      {pcs.length === 0 && npcs.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {strings.chr_no_linked_characters || "No linked characters yet."}
+                        </p>
+                      ) : (
+                        <div className="space-y-4">
+                          {pcs.length > 0 && (
+                            <div>
+                              <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-primary mb-1.5">
+                                <User className="w-3 h-3" /> {strings.chr_linked_pcs || "Player Characters"} ({pcs.length})
+                              </p>
+                              <div className="space-y-1">
+                                {pcs.map(renderCharacterRow)}
+                              </div>
+                            </div>
+                          )}
+                          {npcs.length > 0 && (
+                            <div>
+                              <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">
+                                <Users className="w-3 h-3" /> {strings.chr_linked_npcs || "NPCs"} ({npcs.length})
+                              </p>
+                              <div className="space-y-1">
+                                {npcs.map(renderCharacterRow)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {manageTab === 'sessions' && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <p className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                          <BookOpen className="w-3.5 h-3.5" />
+                          {strings.chr_sessions || "Session summaries"}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={openCreateSession}
+                          className="gap-1.5 h-7 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          {strings.chr_session_new || "New session"}
+                        </Button>
+                      </div>
+                      {sessions.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {strings.chr_no_sessions || "No session summaries yet."}
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {sessions.map(renderSessionRow)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
-                  <Button variant="outline" size="sm" onClick={closeEdit} className="text-muted-foreground">
-                    {strings.cancel || "Cancel"}
-                  </Button>
-                  <Button size="sm" onClick={handleUpdate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                    {strings.chr_save_changes || "Save Changes"}
+                  <Button variant="outline" size="sm" onClick={closeManage} className="text-muted-foreground">
+                    {strings.close || "Close"}
                   </Button>
                 </div>
               </motion.div>
@@ -932,9 +1106,9 @@ export default function ChroniclePage() {
           Picking a character already linked elsewhere routes through a reassign
           confirm; otherwise links immediately. */}
       <AnimatePresence>
-        {linkPickerOpen && editingId && (() => {
+        {linkPickerOpen && managingId && (() => {
           // Candidates: everyone NOT already linked to this chronicle.
-          const targetChronicleId = editingId;
+          const targetChronicleId = managingId;
           const candidates = characters.filter(ch => ch.chronicleId !== targetChronicleId);
 
           const filtered = candidates.filter(ch => {
@@ -1088,8 +1262,8 @@ export default function ChroniclePage() {
           linked to a different Chronicle. Reassignment only happens on
           explicit confirm. */}
       <AnimatePresence>
-        {pendingReassign && editingId && (() => {
-          const targetChronicleId = editingId;
+        {pendingReassign && managingId && (() => {
+          const targetChronicleId = managingId;
           const targetChronicleName = chronicleNameById.get(targetChronicleId) || '';
           const currentChronicleName = pendingReassign.chronicleId
             ? chronicleNameById.get(pendingReassign.chronicleId) || ''
@@ -1161,8 +1335,8 @@ export default function ChroniclePage() {
           Chronicle appear first as "Linked" tag candidates; other characters
           fall under "Other". Tags toggle by click. */}
       <AnimatePresence>
-        {sessionEditor && editingId && (() => {
-          const linked = linkedByChronicle.get(editingId);
+        {sessionEditor && managingId && (() => {
+          const linked = linkedByChronicle.get(managingId);
           const linkedAll = [...(linked?.pcs ?? []), ...(linked?.npcs ?? [])];
           const linkedIds = new Set(linkedAll.map(c => c.id));
           const others = characters

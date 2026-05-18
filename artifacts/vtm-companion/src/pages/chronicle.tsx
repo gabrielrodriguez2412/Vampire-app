@@ -15,12 +15,16 @@ import {
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
   MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
-  MapPin,
+  MapPin, Heart, ArrowRight,
 } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
-import { Chronicle, ChronicleStatus, EditionId, Character, ChronicleSession, ChronicleLocation, ChronicleLocationCategory } from "@/types";
+import {
+  Chronicle, ChronicleStatus, EditionId, Character,
+  ChronicleSession, ChronicleLocation, ChronicleLocationCategory,
+  ChronicleRelationship, ChronicleRelationshipType, ChronicleRelationshipStatus,
+} from "@/types";
 import { EDITION_LIST } from "@/data/editions";
 import {
   getChronicles,
@@ -47,6 +51,14 @@ import {
   deleteChronicleLocation,
   deleteChronicleLocationsForChronicle,
 } from "@/services/chronicleLocationStorage";
+import {
+  getChronicleRelationships,
+  saveChronicleRelationship,
+  createEmptyChronicleRelationship,
+  updateChronicleRelationship,
+  deleteChronicleRelationship,
+  deleteChronicleRelationshipsForChronicle,
+} from "@/services/chronicleRelationshipStorage";
 import { clans } from "@/data/clans";
 import { getClanDisplayNameById } from "@/utils/content";
 
@@ -54,7 +66,7 @@ type StatusFilter = 'all' | 'active' | 'archived';
 
 type LinkPickerFilter = 'all' | 'pc' | 'npc' | 'unassigned' | 'other_chronicle';
 
-type ManageTab = 'overview' | 'characters' | 'sessions' | 'locations';
+type ManageTab = 'overview' | 'characters' | 'sessions' | 'locations' | 'relationships';
 
 interface ChronicleForm {
   name: string;
@@ -124,6 +136,18 @@ export default function ChroniclePage() {
   } | null>(null);
   const [deletingLocationId, setDeletingLocationId] = useState<string | null>(null);
 
+  // Relationships for the chronicle currently being managed.
+  const [relationships, setRelationships] = useState<ChronicleRelationship[]>([]);
+  const [relationshipEditor, setRelationshipEditor] = useState<{
+    id: string | null;
+    sourceCharacterId: string;
+    targetCharacterId: string;
+    relationshipType: ChronicleRelationshipType;
+    status: ChronicleRelationshipStatus;
+    description: string;
+  } | null>(null);
+  const [deletingRelationshipId, setDeletingRelationshipId] = useState<string | null>(null);
+
   const refresh = () => {
     setChronicles(getChronicles());
     try {
@@ -145,9 +169,11 @@ export default function ChroniclePage() {
     if (managingId) {
       setSessions(getChronicleSessions(managingId));
       setLocations(getChronicleLocations(managingId));
+      setRelationships(getChronicleRelationships(managingId));
     } else {
       setSessions([]);
       setLocations([]);
+      setRelationships([]);
     }
   }, [managingId]);
 
@@ -157,6 +183,10 @@ export default function ChroniclePage() {
 
   const refreshLocations = () => {
     if (managingId) setLocations(getChronicleLocations(managingId));
+  };
+
+  const refreshRelationships = () => {
+    if (managingId) setRelationships(getChronicleRelationships(managingId));
   };
 
   // Group linked characters by chronicle id, split into PCs vs NPCs. Linked
@@ -308,6 +338,8 @@ export default function ChroniclePage() {
     setDeletingSessionId(null);
     setLocationEditor(null);
     setDeletingLocationId(null);
+    setRelationshipEditor(null);
+    setDeletingRelationshipId(null);
   };
 
   const handleUpdate = () => {
@@ -353,6 +385,7 @@ export default function ChroniclePage() {
     // reassigned.
     deleteChronicleSessionsForChronicle(deletingId);
     deleteChronicleLocationsForChronicle(deletingId);
+    deleteChronicleRelationshipsForChronicle(deletingId);
     deleteChronicle(deletingId);
     setDeletingId(null);
     refresh();
@@ -539,6 +572,123 @@ export default function ChroniclePage() {
     'haven', 'elysium', 'domain', 'business', 'street', 'neighborhood', 'enemy_base', 'other',
   ];
 
+  // --- Relationship handlers (scoped to `managingId`) ---
+  const openCreateRelationship = () => {
+    if (!managingId) return;
+    setRelationshipEditor({
+      id: null,
+      sourceCharacterId: '',
+      targetCharacterId: '',
+      relationshipType: 'other',
+      status: 'active',
+      description: '',
+    });
+  };
+
+  const openEditRelationship = (rel: ChronicleRelationship) => {
+    setRelationshipEditor({
+      id: rel.id,
+      sourceCharacterId: rel.sourceCharacterId,
+      targetCharacterId: rel.targetCharacterId,
+      relationshipType: rel.relationshipType,
+      status: rel.status,
+      description: rel.description || '',
+    });
+  };
+
+  const handleRelationshipSave = () => {
+    if (!managingId || !relationshipEditor) return;
+    const sourceId = relationshipEditor.sourceCharacterId.trim();
+    const targetId = relationshipEditor.targetCharacterId.trim();
+    if (!sourceId || !targetId) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_rel_endpoints_required || "Both characters are required",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (sourceId === targetId) {
+      toast({
+        title: strings.missingData || "Missing data",
+        description: strings.chr_rel_same_endpoints || "Source and target must differ",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (relationshipEditor.id) {
+      updateChronicleRelationship(relationshipEditor.id, {
+        sourceCharacterId: sourceId,
+        targetCharacterId: targetId,
+        relationshipType: relationshipEditor.relationshipType,
+        status: relationshipEditor.status,
+        description: relationshipEditor.description,
+      });
+      toast({ title: strings.chr_rel_updated || "Relationship updated" });
+    } else {
+      const draft = createEmptyChronicleRelationship(managingId);
+      const saved = saveChronicleRelationship({
+        ...draft,
+        sourceCharacterId: sourceId,
+        targetCharacterId: targetId,
+        relationshipType: relationshipEditor.relationshipType,
+        status: relationshipEditor.status,
+        description: relationshipEditor.description || undefined,
+      });
+      if (!saved) {
+        toast({
+          title: strings.chr_rel_save_failed || "Could not save relationship",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({ title: strings.chr_rel_created || "Relationship created" });
+    }
+    setRelationshipEditor(null);
+    refreshRelationships();
+  };
+
+  const handleRelationshipDeleteConfirm = () => {
+    if (!deletingRelationshipId) return;
+    deleteChronicleRelationship(deletingRelationshipId);
+    setDeletingRelationshipId(null);
+    refreshRelationships();
+    toast({ title: strings.chr_rel_deleted || "Relationship deleted" });
+  };
+
+  const relationshipTypeLabel = (t: ChronicleRelationshipType): string => {
+    switch (t) {
+      case 'ally':         return strings.chr_rel_type_ally         || "Ally";
+      case 'enemy':        return strings.chr_rel_type_enemy        || "Enemy";
+      case 'sire':         return strings.chr_rel_type_sire         || "Sire";
+      case 'childe':       return strings.chr_rel_type_childe       || "Childe";
+      case 'rival':        return strings.chr_rel_type_rival        || "Rival";
+      case 'contact':      return strings.chr_rel_type_contact      || "Contact";
+      case 'mawla':        return strings.chr_rel_type_mawla        || "Mawla";
+      case 'touchstone':   return strings.chr_rel_type_touchstone   || "Touchstone";
+      case 'coterie_mate': return strings.chr_rel_type_coterie_mate || "Coterie Mate";
+      case 'other':
+      default:             return strings.chr_rel_type_other        || "Other";
+    }
+  };
+
+  const relationshipStatusLabel = (s: ChronicleRelationshipStatus): string => {
+    switch (s) {
+      case 'broken':  return strings.chr_rel_status_broken  || "Broken";
+      case 'unknown': return strings.chr_rel_status_unknown || "Unknown";
+      case 'secret':  return strings.chr_rel_status_secret  || "Secret";
+      case 'active':
+      default:        return strings.chr_rel_status_active  || "Active";
+    }
+  };
+
+  const RELATIONSHIP_TYPES: ChronicleRelationshipType[] = [
+    'ally', 'enemy', 'sire', 'childe', 'rival', 'contact', 'mawla', 'touchstone', 'coterie_mate', 'other',
+  ];
+  const RELATIONSHIP_STATUSES: ChronicleRelationshipStatus[] = [
+    'active', 'broken', 'unknown', 'secret',
+  ];
+
   const deletingChronicleName = deletingId
     ? chronicles.find(c => c.id === deletingId)?.name
     : '';
@@ -707,6 +857,12 @@ export default function ChroniclePage() {
                             className="gap-2 cursor-pointer"
                           >
                             <MapPin className="w-4 h-4" /> {strings.chr_locations || "Locations"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openManage(chr, 'relationships')}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Heart className="w-4 h-4" /> {strings.chr_relationships || "Relationships"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => toggleArchive(chr)}
@@ -1004,11 +1160,126 @@ export default function ChroniclePage() {
           };
 
           const tabs: { id: ManageTab; label: string }[] = [
-            { id: 'overview',   label: strings.chr_tab_overview   || "Overview" },
-            { id: 'characters', label: strings.chr_tab_characters || "Characters" },
-            { id: 'sessions',   label: strings.chr_tab_sessions   || "Sessions" },
-            { id: 'locations',  label: strings.chr_tab_locations  || "Locations" },
+            { id: 'overview',      label: strings.chr_tab_overview      || "Overview" },
+            { id: 'characters',    label: strings.chr_tab_characters    || "Characters" },
+            { id: 'sessions',      label: strings.chr_tab_sessions      || "Sessions" },
+            { id: 'locations',     label: strings.chr_tab_locations     || "Locations" },
+            { id: 'relationships', label: strings.chr_tab_relationships || "Relationships" },
           ];
+
+          // Endpoint pill used inside a relationship row: clickable when the
+          // character resolves, italic "Unknown" otherwise. Linked chips show
+          // a faint indicator when the character is NOT linked to this
+          // Chronicle, so the storyteller knows the link is "external".
+          const linkedToManagedIds = new Set(
+            [...(linked?.pcs ?? []), ...(linked?.npcs ?? [])].map(c => c.id)
+          );
+          const renderRelationshipEndpoint = (charId: string) => {
+            const ch = characterById.get(charId);
+            const baseClass =
+              "inline-flex items-center gap-1 max-w-full text-[11px] px-1.5 py-0.5 rounded border transition-colors";
+            if (!ch) {
+              return (
+                <span
+                  className={`${baseClass} border-zinc-700 bg-zinc-900 text-zinc-500 italic`}
+                  title={strings.chr_session_unknown_character || "Unknown character"}
+                >
+                  <X className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {strings.chr_session_unknown_character || "Unknown character"}
+                  </span>
+                </span>
+              );
+            }
+            const external = !linkedToManagedIds.has(ch.id);
+            return (
+              <button
+                type="button"
+                onClick={() => openCharacterSheet(charId)}
+                className={`${baseClass} ${
+                  external
+                    ? "border-zinc-600 bg-zinc-900 text-zinc-300 hover:border-primary/40"
+                    : "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+                }`}
+                title={external
+                  ? `${ch.name} · ${strings.chr_rel_external_character || "Not linked to this Chronicle"}`
+                  : ch.name}
+              >
+                <span className="shrink-0">{getClanIcon(ch.clan)}</span>
+                <span className="truncate">{ch.name}</span>
+                {ch.characterType === 'npc' && (
+                  <span className="uppercase text-[9px] tracking-wider opacity-70 shrink-0">
+                    {strings.char_type_short_npc || "NPC"}
+                  </span>
+                )}
+              </button>
+            );
+          };
+
+          const renderRelationshipRow = (rel: ChronicleRelationship) => (
+            <li
+              key={rel.id}
+              className="rounded border border-zinc-800 bg-zinc-950/40 hover:border-primary/30 transition-colors"
+            >
+              <div className="flex items-start gap-2 p-2.5">
+                <button
+                  type="button"
+                  onClick={() => openEditRelationship(rel)}
+                  className="flex-1 min-w-0 text-left"
+                  title={strings.chr_rel_edit || "Edit relationship"}
+                >
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                    {renderRelationshipEndpoint(rel.sourceCharacterId)}
+                    <ArrowRight className="w-3 h-3 text-muted-foreground shrink-0" />
+                    {renderRelationshipEndpoint(rel.targetCharacterId)}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="uppercase text-[10px] tracking-wider border border-primary/30 bg-primary/10 text-primary px-1.5 rounded">
+                      {relationshipTypeLabel(rel.relationshipType)}
+                    </span>
+                    <span
+                      className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                        rel.status === 'active'
+                          ? "border-emerald-700 bg-emerald-950/40 text-emerald-300"
+                          : rel.status === 'broken'
+                          ? "border-red-800 bg-red-950/40 text-red-300"
+                          : rel.status === 'secret'
+                          ? "border-violet-800 bg-violet-950/40 text-violet-300"
+                          : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                      }`}
+                    >
+                      {relationshipStatusLabel(rel.status)}
+                    </span>
+                  </div>
+                  {rel.description && (
+                    <p className="text-xs text-foreground/70 line-clamp-2 mt-1.5">{rel.description}</p>
+                  )}
+                </button>
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => openEditRelationship(rel)}
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    title={strings.chr_rel_edit || "Edit relationship"}
+                    aria-label={strings.chr_rel_edit || "Edit relationship"}
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setDeletingRelationshipId(rel.id)}
+                    className="h-7 w-7 text-muted-foreground hover:text-red-400"
+                    title={strings.chr_rel_delete || "Delete relationship"}
+                    aria-label={strings.chr_rel_delete || "Delete relationship"}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </li>
+          );
 
           const renderLocationRow = (loc: ChronicleLocation) => (
             <li
@@ -1123,8 +1394,10 @@ export default function ChroniclePage() {
                   </div>
                 </div>
 
-                {/* Tab strip */}
-                <div className="shrink-0 flex gap-1 px-4 border-b border-zinc-800 overflow-x-auto">
+                {/* Tab strip: wraps onto a second row when needed instead of
+                    requiring a horizontal scroll. Each tab is a generous,
+                    full-width-share tap target. */}
+                <div className="shrink-0 flex flex-wrap px-2 border-b border-zinc-800">
                   {tabs.map(t => {
                     const active = manageTab === t.id;
                     return (
@@ -1133,7 +1406,7 @@ export default function ChroniclePage() {
                         type="button"
                         onClick={() => setManageTab(t.id)}
                         aria-pressed={active}
-                        className={`px-3 py-2 text-xs uppercase tracking-widest font-medium transition-colors border-b-2 -mb-px whitespace-nowrap ${
+                        className={`flex-1 min-w-[5rem] px-2 py-2.5 text-[11px] uppercase tracking-wider font-medium text-center transition-colors border-b-2 -mb-px ${
                           active
                             ? "border-primary text-foreground"
                             : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1157,7 +1430,7 @@ export default function ChroniclePage() {
                         </p>
                       )}
 
-                      <div className="grid grid-cols-3 gap-3 pt-3 border-t border-zinc-800">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-zinc-800">
                         <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
                           <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                             {strings.chr_overview_characters || "Linked characters"}
@@ -1181,6 +1454,12 @@ export default function ChroniclePage() {
                             {strings.chr_overview_locations || "Locations"}
                           </p>
                           <p className="text-2xl font-serif text-foreground">{locations.length}</p>
+                        </div>
+                        <div className="rounded border border-zinc-800 bg-zinc-950/40 p-3">
+                          <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                            {strings.chr_overview_relationships || "Relationships"}
+                          </p>
+                          <p className="text-2xl font-serif text-foreground">{relationships.length}</p>
                         </div>
                       </div>
 
@@ -1322,6 +1601,36 @@ export default function ChroniclePage() {
                       ) : (
                         <ul className="space-y-2">
                           {locations.map(renderLocationRow)}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {manageTab === 'relationships' && (
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <p className="flex items-center gap-1.5 text-xs font-sans uppercase tracking-widest text-muted-foreground">
+                          <Heart className="w-3.5 h-3.5" />
+                          {strings.chr_relationships || "Relationships"}
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={openCreateRelationship}
+                          className="gap-1.5 h-7 text-xs"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          {strings.chr_rel_new || "New relationship"}
+                        </Button>
+                      </div>
+                      {relationships.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {strings.chr_no_relationships || "No relationships yet."}
+                        </p>
+                      ) : (
+                        <ul className="space-y-2">
+                          {relationships.map(renderRelationshipRow)}
                         </ul>
                       )}
                     </div>
@@ -2025,6 +2334,248 @@ export default function ChroniclePage() {
                   <Button
                     size="sm"
                     onClick={handleLocationDeleteConfirm}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Relationship editor. Source/Target are full character selects.
+          Characters linked to the current Chronicle appear first as the
+          natural choice; others fall under an "Other characters" group so
+          users can still wire NPCs or unlinked PCs into a story arc. */}
+      <AnimatePresence>
+        {relationshipEditor && managingId && (() => {
+          const linked = linkedByChronicle.get(managingId);
+          const linkedAll = [...(linked?.pcs ?? []), ...(linked?.npcs ?? [])];
+          const linkedIds = new Set(linkedAll.map(c => c.id));
+          const others = characters
+            .filter(c => !linkedIds.has(c.id))
+            .sort((a, b) => (a.name || '').localeCompare(b.name || '', activeLanguage));
+          const isEditing = relationshipEditor.id !== null;
+
+          // Build a <select> with two optgroups; show "[External]" suffix on
+          // others so the storyteller spots non-linked characters at a glance.
+          const renderCharacterSelect = (
+            value: string,
+            onChange: (id: string) => void,
+            id: string,
+          ) => (
+            <select
+              id={id}
+              value={value}
+              onChange={e => onChange(e.target.value)}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+            >
+              <option value="">
+                {strings.chr_rel_select_character || "Select character..."}
+              </option>
+              {linkedAll.length > 0 && (
+                <optgroup label={strings.chr_session_tag_linked || "Linked to this Chronicle"}>
+                  {linkedAll.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {c.characterType === 'npc' ? ` · ${strings.char_type_short_npc || "NPC"}` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {others.length > 0 && (
+                <optgroup label={strings.chr_session_tag_other || "Other characters"}>
+                  {others.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                      {c.characterType === 'npc' ? ` · ${strings.char_type_short_npc || "NPC"}` : ''}
+                      {` · ${strings.chr_rel_external_character || "Not linked"}`}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          );
+
+          return (
+            <motion.div
+              key="relationship-editor"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              onClick={() => setRelationshipEditor(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                  <h3 className="text-lg font-serif text-foreground">
+                    {isEditing
+                      ? (strings.chr_rel_edit || "Edit relationship")
+                      : (strings.chr_rel_new || "New relationship")}
+                  </h3>
+                </div>
+
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium" htmlFor="rel-source">
+                      {strings.chr_rel_source || "Source character"}
+                    </label>
+                    {renderCharacterSelect(
+                      relationshipEditor.sourceCharacterId,
+                      id => setRelationshipEditor(prev => prev ? { ...prev, sourceCharacterId: id } : prev),
+                      'rel-source',
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium" htmlFor="rel-target">
+                      {strings.chr_rel_target || "Target character"}
+                    </label>
+                    {renderCharacterSelect(
+                      relationshipEditor.targetCharacterId,
+                      id => setRelationshipEditor(prev => prev ? { ...prev, targetCharacterId: id } : prev),
+                      'rel-target',
+                    )}
+                    <p className="text-[10px] text-muted-foreground">
+                      {strings.chr_rel_direction_hint || "Source → Target"}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        {strings.chr_rel_type || "Type"}
+                      </label>
+                      <select
+                        value={relationshipEditor.relationshipType}
+                        onChange={e =>
+                          setRelationshipEditor(prev => prev ? {
+                            ...prev,
+                            relationshipType: e.target.value as ChronicleRelationshipType,
+                          } : prev)
+                        }
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                      >
+                        {RELATIONSHIP_TYPES.map(t => (
+                          <option key={t} value={t}>{relationshipTypeLabel(t)}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">
+                        {strings.chr_rel_status || "Status"}
+                      </label>
+                      <select
+                        value={relationshipEditor.status}
+                        onChange={e =>
+                          setRelationshipEditor(prev => prev ? {
+                            ...prev,
+                            status: e.target.value as ChronicleRelationshipStatus,
+                          } : prev)
+                        }
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                      >
+                        {RELATIONSHIP_STATUSES.map(s => (
+                          <option key={s} value={s}>{relationshipStatusLabel(s)}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">
+                      {strings.chr_rel_description || "Notes / description"}
+                    </label>
+                    <Textarea
+                      value={relationshipEditor.description}
+                      onChange={e =>
+                        setRelationshipEditor(prev => prev ? { ...prev, description: e.target.value } : prev)
+                      }
+                      className="bg-background border-border min-h-[100px]"
+                      placeholder={strings.chr_rel_description_placeholder || "How and why this matters..."}
+                    />
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRelationshipEditor(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleRelationshipSave}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {strings.save || "Save"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {/* Relationship delete confirm */}
+      <AnimatePresence>
+        {deletingRelationshipId && (() => {
+          const target = relationships.find(r => r.id === deletingRelationshipId);
+          const srcName = target ? (characterById.get(target.sourceCharacterId)?.name
+            || (strings.chr_session_unknown_character || "Unknown character")) : '';
+          const tgtName = target ? (characterById.get(target.targetCharacterId)?.name
+            || (strings.chr_session_unknown_character || "Unknown character")) : '';
+          return (
+            <motion.div
+              key="delete-relationship"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setDeletingRelationshipId(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {strings.chr_rel_confirm_delete || "Delete relationship?"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  {strings.chr_rel_confirm_delete_desc || "This action cannot be undone."}{' '}
+                  {target && (
+                    <span className="text-foreground font-medium">
+                      {srcName} → {tgtName}
+                    </span>
+                  )}
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeletingRelationshipId(null)}
+                    className="text-muted-foreground"
+                  >
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleRelationshipDeleteConfirm}
                     className="bg-red-600 hover:bg-red-700 text-white"
                   >
                     <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}

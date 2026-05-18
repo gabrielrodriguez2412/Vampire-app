@@ -1,4 +1,4 @@
-import { Character, EditionId, V5Character, ClassicCharacter } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, CharacterType } from '../types';
 import { normalizeEditionId } from '../utils/content';
 
 const STORAGE_KEY = 'vtm-characters';
@@ -22,6 +22,9 @@ export function getCharacters(): Character[] {
         name: typeof c?.name === 'string' ? c.name : 'Unnamed',
         clan: typeof c?.clan === 'string' ? c.clan : 'brujah',
         edition,
+        // Default unknown/missing/garbage characterType to 'player' so legacy
+        // saved characters (and any malformed entries) load safely.
+        characterType: (c?.characterType === 'npc' ? 'npc' : 'player') as CharacterType,
         createdAt: typeof c?.createdAt === 'string' ? c.createdAt : new Date().toISOString(),
         updatedAt: typeof c?.updatedAt === 'string' ? c.updatedAt : new Date().toISOString(),
       };
@@ -97,6 +100,7 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
     name,
     clan,
     edition,
+    characterType: 'player' as CharacterType,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     attributes: {},
@@ -129,6 +133,24 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
       backgrounds: {},
     } as ClassicCharacter;
   }
+}
+
+/** Update a character's `characterType` ('player' | 'npc'). Returns the updated character,
+ *  or null if the character doesn't exist. Any value other than 'npc' is coerced to 'player'. */
+export function setCharacterType(id: string, type: CharacterType): Character | null {
+  const chars = getCharacters();
+  const index = chars.findIndex(c => c.id === id);
+  if (index < 0) return null;
+
+  const normalized: CharacterType = type === 'npc' ? 'npc' : 'player';
+  const updated = {
+    ...chars[index],
+    characterType: normalized,
+    updatedAt: new Date().toISOString(),
+  } as Character;
+  chars[index] = updated;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  return updated;
 }
 
 /** Rename a character. Returns the updated character, or null if name is blank or character not found. */

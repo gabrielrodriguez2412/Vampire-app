@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -612,6 +612,116 @@ describe('characterStorage', () => {
       expect((result as any).imported).toBe(2);
       const names = getCharacters().map(c => c.name).sort();
       expect(names).toEqual(['Alice', 'Bob']);
+    });
+  });
+
+  // --- Character type tag (player / npc) ---
+
+  describe('characterType normalization', () => {
+    it('createEmptyCharacter defaults new characters to "player"', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      expect((c as any).characterType).toBe('player');
+    });
+
+    it('getCharacters defaults legacy entries (missing field) to "player"', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'Legacy', clan: 'brujah', edition: 'V5' }, // no characterType
+      ]));
+      const chars = getCharacters();
+      expect((chars[0] as any).characterType).toBe('player');
+    });
+
+    it('getCharacters preserves explicit "player"', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'PC', clan: 'brujah', edition: 'V5', characterType: 'player' },
+      ]));
+      expect((getCharacters()[0] as any).characterType).toBe('player');
+    });
+
+    it('getCharacters preserves explicit "npc"', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'NPC', clan: 'brujah', edition: 'V5', characterType: 'npc' },
+      ]));
+      expect((getCharacters()[0] as any).characterType).toBe('npc');
+    });
+
+    it('getCharacters coerces garbage values to "player"', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'A', clan: 'brujah', edition: 'V5', characterType: 'foo' },
+        { id: '2', name: 'B', clan: 'brujah', edition: 'V5', characterType: 42 },
+        { id: '3', name: 'C', clan: 'brujah', edition: 'V5', characterType: null },
+      ]));
+      const chars = getCharacters();
+      expect(chars.every(c => (c as any).characterType === 'player')).toBe(true);
+    });
+  });
+
+  describe('setCharacterType', () => {
+    it('updates the characterType and persists', () => {
+      const created = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      const updated = setCharacterType(created.id, 'npc');
+      expect(updated).not.toBeNull();
+      expect((updated as any).characterType).toBe('npc');
+      // Persisted across re-read
+      expect((getCharacters()[0] as any).characterType).toBe('npc');
+    });
+
+    it('returns null when the character is not found', () => {
+      expect(setCharacterType('does-not-exist', 'npc')).toBeNull();
+    });
+
+    it('refreshes updatedAt when the tag changes', () => {
+      const created = saveCharacter({ ...createEmptyCharacter('V5', 'brujah', 'A'), updatedAt: '2000-01-01T00:00:00.000Z' });
+      const updated = setCharacterType(created.id, 'npc');
+      expect((updated as any).updatedAt).not.toBe('2000-01-01T00:00:00.000Z');
+    });
+
+    it('coerces unknown type strings to "player"', () => {
+      const created = saveCharacter(createEmptyCharacter('V5', 'brujah', 'A'));
+      const updated = setCharacterType(created.id, 'something' as any);
+      expect((updated as any).characterType).toBe('player');
+    });
+  });
+
+  describe('characterType preservation through copy/export/backup paths', () => {
+    it('duplicateCharacter preserves the tag on the new copy', () => {
+      const created = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      setCharacterType(created.id, 'npc');
+      const copy = duplicateCharacter(created.id);
+      expect(copy).not.toBeNull();
+      expect((copy as any).characterType).toBe('npc');
+    });
+
+    it('renameCharacter preserves the tag', () => {
+      const created = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      setCharacterType(created.id, 'npc');
+      const renamed = renameCharacter(created.id, 'Renamed');
+      expect((renamed as any).characterType).toBe('npc');
+    });
+
+    it('single-character export → import preserves the tag', () => {
+      const created = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      setCharacterType(created.id, 'npc');
+      const exp = buildCharacterExport(created.id);
+      localStorageMock.clear();
+      const result = importCharacter(exp);
+      expect(typeof result).not.toBe('string');
+      expect((result as any).characterType).toBe('npc');
+    });
+
+    it('backup export → import preserves the tag for each character', () => {
+      const a = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+      const b = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Bob'));
+      setCharacterType(a.id, 'npc');
+      // b stays 'player' (default)
+      const backup = buildCharacterBackup();
+      localStorageMock.clear();
+      importCharacterBackup(backup);
+      const loaded = getCharacters();
+      const aReloaded = loaded.find(c => c.name === 'Alice');
+      const bReloaded = loaded.find(c => c.name === 'Bob');
+      expect((aReloaded as any).characterType).toBe('npc');
+      expect((bReloaded as any).characterType).toBe('player');
     });
   });
 });

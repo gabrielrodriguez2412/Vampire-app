@@ -165,6 +165,27 @@ export default function ChroniclePage() {
     refresh();
   }, []);
 
+  // Cross-page deep-link: home dashboard sets `vtm-open-chronicle-id` (and
+  // optionally `vtm-open-chronicle-tab`) in sessionStorage and navigates here;
+  // we consume it once on mount and open the manage modal for that chronicle.
+  useEffect(() => {
+    try {
+      const pendingId = sessionStorage.getItem('vtm-open-chronicle-id');
+      if (!pendingId) return;
+      const pendingTab = sessionStorage.getItem('vtm-open-chronicle-tab') as ManageTab | null;
+      sessionStorage.removeItem('vtm-open-chronicle-id');
+      sessionStorage.removeItem('vtm-open-chronicle-tab');
+      const target = getChronicles().find(c => c.id === pendingId);
+      if (target) {
+        setManagingId(target.id);
+        const validTabs: ManageTab[] = ['overview', 'characters', 'sessions', 'locations', 'relationships'];
+        setManageTab(pendingTab && validTabs.includes(pendingTab) ? pendingTab : 'overview');
+      }
+    } catch {
+      // sessionStorage may be unavailable — ignore.
+    }
+  }, []);
+
   // Reload sessions whenever the user opens/switches the manage modal. Cleared
   // when the modal closes so we don't leak the previous chronicle's sessions
   // into a future open.

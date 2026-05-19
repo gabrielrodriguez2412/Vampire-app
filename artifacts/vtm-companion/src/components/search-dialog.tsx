@@ -4,11 +4,15 @@ import { Command } from "cmdk";
 import { Search, FileText, Users, BookOpen, BookText } from "lucide-react";
 import { useSearch } from "@/hooks/useSearch";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { useAppContext } from "@/context/AppContext";
+import { UI_STRINGS } from "@/i18n/ui";
 
 export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [query, setQuery] = useState("");
   const [, setLocation] = useLocation();
   const results = useSearch(query);
+  const { activeLanguage } = useAppContext();
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -40,8 +44,8 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 border-none shadow-2xl bg-card max-w-2xl text-foreground font-sans">
-        <DialogTitle className="sr-only">Búsqueda Global</DialogTitle>
-        <Command 
+        <DialogTitle className="sr-only">{strings.searchTitle || 'Search'}</DialogTitle>
+        <Command
           className="rounded-lg border border-border shadow-md overflow-hidden bg-card"
           shouldFilter={false}
         >
@@ -51,15 +55,17 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               value={query}
               onValueChange={setQuery}
               className="flex h-12 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              placeholder="Buscar..."
+              placeholder={strings.searchGlobalPlaceholder || strings.search || 'Search...'}
             />
           </div>
           <Command.List className="max-h-[300px] overflow-y-auto overflow-x-hidden">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              {query.length > 1 ? "Sin resultados." : "Escribe al menos 2 caracteres."}
+              {query.length > 1
+                ? (strings.noResults || 'No results.')
+                : (strings.searchTypeAtLeast || 'Type at least 2 characters.')}
             </Command.Empty>
             {results.length > 0 && (
-              <Command.Group heading="Resultados" className="p-2 text-muted-foreground text-xs font-semibold">
+              <Command.Group heading={strings.searchResults || strings.searchTitle || 'Results'} className="p-2 text-muted-foreground text-xs font-semibold">
                 {results.map((result) => (
                   <Command.Item
                     key={result.id}

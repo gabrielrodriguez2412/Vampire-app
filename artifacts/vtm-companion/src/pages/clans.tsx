@@ -47,7 +47,10 @@ export default function Clans() {
           <h1 className="text-4xl font-serif uppercase tracking-tight text-on-surface mb-2">{strings.clansTitle}</h1>
           <p className="text-zinc-400 font-sans">{strings.clansSubtitle}</p>
           <div className="text-zinc-500 text-sm mt-2 font-sans tracking-wide">
-            Showing <strong className="text-on-surface">{filteredClans.length}</strong> clans for <strong className="text-on-surface uppercase">{activeEdition}</strong>
+            {strings.showingLabel || 'Showing'}{' '}
+            <strong className="text-on-surface">{filteredClans.length}</strong>{' '}
+            {strings.clansForLabel || 'clans for'}{' '}
+            <strong className="text-on-surface uppercase">{activeEdition}</strong>
           </div>
         </div>
         <div>

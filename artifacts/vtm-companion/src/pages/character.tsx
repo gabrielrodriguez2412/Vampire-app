@@ -19,7 +19,8 @@ import {
   CharacterChronicleFilter,
 } from "@/utils/characterFilter";
 import { useToast } from "@/hooks/use-toast";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, downloadCharacterBackup, importCharacterBackup, setCharacterType, setCharacterChronicle } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle } from "@/services/characterStorage";
+import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
@@ -321,7 +322,12 @@ export default function CharacterPage() {
 
   // --- Import ---
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const backupFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Shared Full-App-Backup actions (export + import). The Chronicle page uses
+  // the same hook so users have a single source of truth for backup behavior.
+  const backup = useAppBackupActions({
+    onAfterImport: () => setCharacters(getCharacters()),
+  });
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -357,70 +363,9 @@ export default function CharacterPage() {
     e.target.value = '';
   };
 
-  // --- Full library backup ---
-
-  const handleExportAll = () => {
-    if (characters.length === 0) {
-      toast({
-        title: strings.char_backup_no_characters || "Nothing to back up",
-        description: strings.char_backup_no_characters_desc || "Create at least one character first.",
-        variant: "destructive",
-      });
-      return;
-    }
-    downloadCharacterBackup();
-    toast({
-      title: strings.char_backup_downloaded || "Backup downloaded",
-      description: `${characters.length} ${characters.length === 1 ? "character" : "characters"}`,
-    });
-  };
-
-  const handleImportBackupClick = () => {
-    backupFileInputRef.current?.click();
-  };
-
-  const handleImportBackupFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result;
-        if (typeof text !== 'string') throw new Error('Failed to read file');
-
-        const parsed = JSON.parse(text);
-        const result = importCharacterBackup(parsed);
-
-        if (typeof result === 'string') {
-          toast({
-            title: strings.char_backup_import_failed || "Backup import failed",
-            description: result,
-            variant: "destructive",
-          });
-        } else {
-          setCharacters(getCharacters());
-          const renamedNote = result.renamed > 0
-            ? ` (${result.renamed} ${strings.char_backup_renamed || "renamed"})`
-            : "";
-          toast({
-            title: strings.char_backup_imported || "Backup imported",
-            description: `${result.imported} ${result.imported === 1 ? "character" : "characters"}${renamedNote}`,
-          });
-        }
-      } catch (err) {
-        toast({
-          title: strings.char_backup_import_failed || "Backup import failed",
-          description: strings.char_import_invalid_json || "The file is not valid JSON.",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsText(file);
-
-    // Reset so the same file can be re-selected
-    e.target.value = '';
-  };
+  // Full-App-Backup (v2) handlers are provided by `useAppBackupActions` above.
+  // They include the export download, the file-input click, and the import
+  // file reader with v2→v1 envelope auto-detection.
 
   const handleOpenSheet = (char: Character) => {
     setActiveChar(char);
@@ -597,13 +542,13 @@ export default function CharacterPage() {
               className="hidden"
               onChange={handleImportFile}
             />
-            {/* Hidden file input for full backup import */}
+            {/* Hidden file input for the Full App Backup import. */}
             <input
               type="file"
-              ref={backupFileInputRef}
+              ref={backup.fileInputRef}
               accept=".json"
               className="hidden"
-              onChange={handleImportBackupFile}
+              onChange={backup.handleImportFile}
             />
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-serif">{strings.myCharacters}</h2>
@@ -617,26 +562,28 @@ export default function CharacterPage() {
                       variant="outline"
                       size="sm"
                       className="gap-2 text-muted-foreground hover:text-foreground"
-                      aria-label={strings.char_backup || "Backup"}
-                      title={strings.char_backup || "Backup"}
+                      aria-label={strings.full_backup || "Full Backup"}
+                      title={strings.full_backup || "Full Backup"}
                     >
                       <Database className="w-4 h-4" />
-                      <span className="hidden sm:inline">{strings.char_backup || "Backup"}</span>
+                      <span className="hidden sm:inline">{strings.full_backup || "Full Backup"}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuContent align="end" className="w-72">
+                    <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
+                      {strings.full_backup_includes || "Includes characters, inventories, chronicles, sessions, locations, and relationships."}
+                    </div>
                     <DropdownMenuItem
-                      onClick={handleExportAll}
-                      disabled={characters.length === 0}
+                      onClick={backup.handleExportAll}
                       className="gap-2 cursor-pointer"
                     >
-                      <Download className="w-4 h-4" /> {strings.char_export_all || "Export all"}
+                      <Download className="w-4 h-4" /> {strings.full_backup_export || "Export Full Backup"}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={handleImportBackupClick}
+                      onClick={backup.handleImportClick}
                       className="gap-2 cursor-pointer"
                     >
-                      <Upload className="w-4 h-4" /> {strings.char_import_backup || "Import backup"}
+                      <Upload className="w-4 h-4" /> {strings.full_backup_import || "Import Full Backup"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

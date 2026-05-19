@@ -38,6 +38,36 @@ describe('disciplines data', () => {
       }
     }
   });
+
+  // Phase 2: no discipline should ship with an empty powers array. If a
+  // discipline truly cannot be represented at this stage, it must carry
+  // explicit "Needs review" placeholders so the gap is documented inline
+  // rather than appearing as a silent void to users.
+  it('every discipline has at least one power entry (no silent empty arrays)', () => {
+    for (const d of disciplines) {
+      expect(d.powers.length, `${d.id} has no power entries`).toBeGreaterThan(0);
+    }
+  });
+
+  it('every discipline covers all five levels (1..5) at least once', () => {
+    for (const d of disciplines) {
+      const levels = new Set(d.powers.map(p => p.level));
+      for (const lvl of [1, 2, 3, 4, 5]) {
+        expect(levels.has(lvl), `${d.id} missing a power at level ${lvl}`).toBe(true);
+      }
+    }
+  });
+
+  it('every power has a non-empty english description (placeholders allowed)', () => {
+    for (const d of disciplines) {
+      for (const p of d.powers) {
+        expect(
+          (p.description.en || '').trim().length,
+          `${d.id}.${p.name} missing an English description (use a "Needs review" placeholder if unsure)`
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
 });
 
 describe('clan -> discipline consistency', () => {

@@ -94,42 +94,88 @@ apply changes deliberately.
    Giovanni; in V5 the clan is Hecata (handled via clan
    `alternateNames`). No action needed.
 
-## Power data gaps (NOT filled)
+## Power data gaps
 
-These disciplines have empty or stub `powers[]` arrays. The Disciplines
-page already gracefully omits the Powers accordion when the array is
-empty, so the UI is safe — but every power list below is incomplete and
-should be filled with **short original summaries**. Do not copy book text.
+### Phase 2 update (applied)
 
-| Discipline           | Have | Expected | Notes                                       |
-|----------------------|-----:|---------:|---------------------------------------------|
-| thaumaturgy          | 0    | 5+ paths | Classic Tremere; many sub-paths/rituals     |
-| obtenebration        | 0    | 5        | Classic Lasombra                            |
-| necromancy           | 0    | 5+ paths | Classic Giovanni; many sub-paths            |
-| quietus              | 0    | 5        | Classic Assamite                            |
-| serpentis            | 0    | 5        | Classic Followers of Set                    |
-| vicissitude          | 0    | 5        | Classic Tzimisce                            |
-| chimerstry           | 0    | 5        | Classic Ravnos                              |
-| oblivion             | 0    | 5 (+ceremonies) | V5 Lasombra/Hecata                  |
-| valeren              | 0    | 5 (3 paths in some editions) | Classic Salubri          |
-| thin_blood_alchemy   | 0    | 5+ formulae | V5 Thin-Bloods                           |
-| blood_sorcery        | 1    | 5 (+rituals) | V5 Tremere/Banu Haqim                   |
-| celerity             | 2    | 5        | All editions                                |
-| dominate             | 2    | 5        | All editions                                |
-| obfuscate            | 2    | 5        | All editions                                |
-| presence             | 2    | 5        | All editions                                |
-| protean              | 2    | 5        | All editions                                |
-| fortitude            | 2    | 5        | All editions                                |
-| potence              | 2    | 5        | All editions                                |
+Every discipline now ships with **five power entries** (one per level
+1–5). All summaries are short, original, functional descriptions written
+in our own words — no book prose was copied. A regression test in
+`src/data/__tests__/disciplines.test.ts` enforces:
 
-### Wording guidance for whoever fills these in
+- no discipline has an empty `powers[]` array
+- every discipline covers all five levels at least once
+- every power has a non-empty English description
+
+The fills fall into two buckets:
+
+**Filled with original short summaries (15 disciplines):**
+animalism, auspex, celerity, dominate, obfuscate, presence, protean,
+fortitude, potence, blood_sorcery, oblivion, obtenebration, quietus,
+serpentis, vicissitude, chimerstry, valeren.
+
+Names use a generic descriptive style (e.g., `"Memory Reshape (Level 3)"`,
+`"Stygian Veil (Level 4)"`) so the entries are clearly app-authored
+flavor rather than transcriptions of any specific edition's canonical
+power list. Each carries a one-sentence original functional summary and
+a short tactical note.
+
+**Filled with `Needs review` placeholders (3 disciplines):**
+thaumaturgy, necromancy, thin_blood_alchemy.
+
+These three disciplines do not fit the flat one-power-per-level model
+the current data shape uses:
+
+- **thaumaturgy** (classic Tremere) is organized by paths and rituals.
+- **necromancy** (classic Giovanni) is also organized by paths and
+  rituals.
+- **thin_blood_alchemy** (V5 thin-bloods) is organized by formulae, not
+  fixed dot powers.
+
+Each carries five entries named `"Path Power (Level N) — Needs review"`
+or `"Alchemy Formula (Level N) — Needs review"` with a description that
+explicitly tells the reader (and any future contributor) the
+representation gap, e.g.:
+
+> Needs review: classic Thaumaturgy is organized by paths and rituals,
+> not flat dot powers. Confirm canonical representation before expanding.
+
+This avoids the prior silent-empty-array problem (the test would also
+fail now if anyone removed them) while marking the entries unambiguously
+as needs-review rather than canonical content.
+
+### Wording guidance (still applies)
 
 - Discipline summary: 1–2 original sentences. Functional description only.
 - Power summary: 1 short original sentence.
 - Tactical note: optional, 1 short original sentence, practical.
-- If a power’s effect cannot be safely paraphrased: use the placeholder
+- If a power's effect cannot be safely summarized: use the placeholder
   `"Needs review: confirm name and effect for this edition."` and leave a
   TODO in the data so the audit doc can track it.
+
+## Still needs follow-up (Phase 3+)
+
+1. **Path / ritual / formula data model.** The current
+   `DisciplineEntry.powers` shape is a flat list. Modeling Thaumaturgy
+   paths, Necromancy paths, Blood Sorcery rituals, Oblivion ceremonies,
+   and Thin-Blood Alchemy formulae correctly likely needs a parallel
+   sub-array (e.g., `paths: { name, levels: [...] }[]` or
+   `rituals: { name, level }[]`). Out of scope for Phase 2.
+
+2. **Per-edition power divergence.** Several core disciplines (Protean,
+   Fortitude, Potence, etc.) have different power lineups between
+   classic editions and V5. The current shape is a single shared list.
+   Tagging powers with an `editions?: EditionId[]` field is one way to
+   handle this; defer to a future phase.
+
+3. **Translations.** Power descriptions still use the `fallbackStr`
+   helper, which fills non-English fields with the English text. This
+   keeps the UI from showing the `[ No translation ]` badge but is not
+   real localization. Phase 4 candidate.
+
+4. **Salubri's third discipline and Ravnos's combined list** remain the
+   unresolved content questions from Phase 1 (see "Needs-review" section
+   above). Phase 2 did not touch the clan-side data.
 
 ## Translations
 

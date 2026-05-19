@@ -800,6 +800,45 @@ describe('characterStorage', () => {
       expect(result[1].quantity).toBeUndefined();
       expect(result[2].quantity).toBe(3);
     });
+
+    it('accepts the Phase 2 categories: document, vehicle, occult, personal', () => {
+      const result = normalizeInventory([
+        { id: 'd', name: 'Map', category: 'document' },
+        { id: 'v', name: 'Sedan', category: 'vehicle' },
+        { id: 'o', name: 'Amulet', category: 'occult' },
+        { id: 'p', name: 'Diary', category: 'personal' },
+      ]);
+      expect(result.map(i => i.category)).toEqual(['document', 'vehicle', 'occult', 'personal']);
+    });
+
+    it('preserves the legacy categories untouched (weapon/armor/tool/equipment/money/other)', () => {
+      const result = normalizeInventory([
+        { id: '1', name: 'A', category: 'weapon' },
+        { id: '2', name: 'B', category: 'armor' },
+        { id: '3', name: 'C', category: 'tool' },
+        { id: '4', name: 'D', category: 'equipment' },
+        { id: '5', name: 'E', category: 'money' },
+        { id: '6', name: 'F', category: 'other' },
+      ]);
+      expect(result.map(i => i.category)).toEqual(['weapon', 'armor', 'tool', 'equipment', 'money', 'other']);
+    });
+
+    it('keeps equipped=true and drops anything else (backward-compatible: missing field is normal)', () => {
+      const result = normalizeInventory([
+        { id: '1', name: 'A', equipped: true },
+        { id: '2', name: 'B', equipped: 'true' },
+        { id: '3', name: 'C', equipped: false },
+        { id: '4', name: 'D', equipped: 'false' },
+        { id: '5', name: 'E' /* no equipped field */ },
+        { id: '6', name: 'F', equipped: 1 },
+      ]);
+      expect(result[0].equipped).toBe(true);
+      expect(result[1].equipped).toBe(true);
+      expect(result[2].equipped).toBeUndefined();
+      expect(result[3].equipped).toBeUndefined();
+      expect(result[4].equipped).toBeUndefined();
+      expect(result[5].equipped).toBeUndefined();
+    });
   });
 
   describe('inventory integration with storage', () => {

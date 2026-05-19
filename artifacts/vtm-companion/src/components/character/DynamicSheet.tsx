@@ -411,7 +411,20 @@ function AddPowerInput({ placeholder, onAdd }: { placeholder: string; onAdd: (na
   );
 }
 
-const INVENTORY_CATEGORIES: InventoryCategory[] = ['weapon', 'armor', 'tool', 'equipment', 'money', 'other'];
+/**
+ * Category catalogue shown in the editor dropdown AND used for the
+ * view-mode grouping order. Keep this list explicit so the UI renders
+ * categories in the same intuitive order on every character.
+ */
+const INVENTORY_CATEGORIES: InventoryCategory[] = [
+  'weapon', 'armor', 'tool', 'equipment',
+  'document', 'vehicle', 'occult', 'personal',
+  'money', 'other',
+];
+
+/** Render order for view-mode grouping. `uncategorized` sinks to the end. */
+type GroupKey = InventoryCategory | 'uncategorized';
+const INVENTORY_GROUP_ORDER: GroupKey[] = [...INVENTORY_CATEGORIES, 'uncategorized'];
 
 function getInventoryCategoryLabel(category: string | undefined, strings: Record<string, string>): string {
   switch (category) {
@@ -419,14 +432,20 @@ function getInventoryCategoryLabel(category: string | undefined, strings: Record
     case 'armor': return strings.inventory_cat_armor || "Armor";
     case 'tool': return strings.inventory_cat_tool || "Tool";
     case 'equipment': return strings.inventory_cat_equipment || "Equipment";
-    case 'money': return strings.inventory_cat_money || "Money/Resource";
+    case 'document': return strings.inventory_cat_document || "Document";
+    case 'vehicle': return strings.inventory_cat_vehicle || "Vehicle";
+    case 'occult': return strings.inventory_cat_occult || "Occult Item";
+    case 'personal': return strings.inventory_cat_personal || "Personal Item";
+    case 'money': return strings.inventory_cat_money || "Cash / Resource";
     case 'other': return strings.inventory_cat_other || "Other";
+    case 'uncategorized': return strings.inventory_cat_uncategorized || "Uncategorized";
     default: return category || "—";
   }
 }
 
 function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, strings }: any) {
   const items: InventoryItem[] = Array.isArray(value) ? value : [];
+  const totalCount = items.length;
 
   const addItem = () => {
     const newItem: InventoryItem = {
@@ -446,10 +465,31 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
     handleUpdate(fieldId, items.filter(it => it.id !== id));
   };
 
+  // Group by category using the explicit render order so categories appear
+  // consistently across characters. Empty groups are filtered out below.
+  const groups = (() => {
+    const map = new Map<GroupKey, InventoryItem[]>();
+    for (const it of items) {
+      const key: GroupKey = it.category ?? 'uncategorized';
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(it);
+    }
+    return INVENTORY_GROUP_ORDER
+      .map(key => ({ key, items: map.get(key) ?? [] }))
+      .filter(g => g.items.length > 0);
+  })();
+
   return (
     <div className="col-span-full flex flex-col gap-3">
       <div className="flex items-center justify-between mb-2 border-b border-zinc-800/50 pb-2">
-        <label className="text-sm text-foreground font-serif uppercase tracking-wider">{label}</label>
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider flex items-center gap-2">
+          {label}
+          {totalCount > 0 && (
+            <span className="text-[10px] uppercase tracking-widest border border-border px-1.5 rounded bg-zinc-900 text-muted-foreground">
+              {totalCount}
+            </span>
+          )}
+        </label>
         {!isReadOnly && (
           <Button size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
             <Plus className="w-3.5 h-3.5" /> {strings.add_inventory_item || "Add item"}
@@ -462,84 +502,104 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
           {strings.no_inventory_items || "No inventory items yet."}
         </p>
       ) : (
-        <ul className="space-y-2.5">
-          {items.map(item => (
-            <li key={item.id}>
-              {isReadOnly ? (
-                <div className="border-b border-zinc-800/30 pb-2">
-                  <div className="flex items-baseline flex-wrap gap-2 text-sm">
-                    {item.category && (
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border px-1.5 rounded bg-zinc-900">
-                        {getInventoryCategoryLabel(item.category, strings)}
-                      </span>
+        <div className="space-y-4">
+          {groups.map(group => (
+            <section key={group.key} aria-label={getInventoryCategoryLabel(group.key, strings)}>
+              <h4 className="text-[11px] font-sans uppercase tracking-widest text-muted-foreground mb-1.5 flex items-center gap-2">
+                <span>{getInventoryCategoryLabel(group.key, strings)}</span>
+                <span className="text-zinc-600">({group.items.length})</span>
+              </h4>
+              <ul className="space-y-2">
+                {group.items.map(item => (
+                  <li key={item.id}>
+                    {isReadOnly ? (
+                      <div className="border-b border-zinc-800/30 pb-2">
+                        <div className="flex items-baseline flex-wrap gap-2 text-sm">
+                          <span className="text-foreground">{item.name || "—"}</span>
+                          {typeof item.quantity === 'number' && (
+                            <span className="text-muted-foreground text-xs">×{item.quantity}</span>
+                          )}
+                          {item.equipped && (
+                            <span className="text-[9px] uppercase tracking-widest border border-primary/40 bg-primary/10 text-primary px-1 rounded">
+                              {strings.inventory_equipped || "Equipped"}
+                            </span>
+                          )}
+                        </div>
+                        {item.notes && (
+                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
+                            {item.notes}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="border border-zinc-800 rounded-md bg-zinc-950/40 p-2 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <select
+                            value={item.category || 'equipment'}
+                            onChange={e => updateItem(item.id, { category: e.target.value as InventoryCategory })}
+                            className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground"
+                            aria-label={strings.inventory_item_category || "Category"}
+                          >
+                            {INVENTORY_CATEGORIES.map(cat => (
+                              <option key={cat} value={cat}>{getInventoryCategoryLabel(cat, strings)}</option>
+                            ))}
+                          </select>
+                          <Input
+                            value={item.name}
+                            onChange={e => updateItem(item.id, { name: e.target.value })}
+                            placeholder={strings.inventory_item_name || "Item name"}
+                            className="h-7 text-xs bg-zinc-950 border-zinc-800 flex-1 min-w-[120px]"
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            value={typeof item.quantity === 'number' ? item.quantity : ''}
+                            onChange={e => {
+                              const v = e.target.value;
+                              if (v === '') {
+                                updateItem(item.id, { quantity: undefined });
+                              } else {
+                                const n = parseInt(v, 10);
+                                if (Number.isFinite(n)) updateItem(item.id, { quantity: n });
+                              }
+                            }}
+                            placeholder="1"
+                            aria-label={strings.inventory_item_qty || "Quantity"}
+                            className="h-7 text-xs bg-zinc-950 border-zinc-800 w-16"
+                          />
+                          <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={!!item.equipped}
+                              onChange={e => updateItem(item.id, { equipped: e.target.checked || undefined })}
+                              className="accent-primary"
+                              aria-label={strings.inventory_equipped || "Equipped"}
+                            />
+                            {strings.inventory_equipped || "Equipped"}
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            aria-label={strings.remove_inventory_item || "Remove item"}
+                            className="text-red-500/50 hover:text-red-500"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <Textarea
+                          value={item.notes || ''}
+                          onChange={e => updateItem(item.id, { notes: e.target.value })}
+                          placeholder={strings.inventory_item_notes || "Notes (optional)"}
+                          className="bg-zinc-950 border-zinc-800 min-h-[40px] text-xs"
+                        />
+                      </div>
                     )}
-                    <span className="text-foreground">{item.name || "—"}</span>
-                    {typeof item.quantity === 'number' && (
-                      <span className="text-muted-foreground text-xs">×{item.quantity}</span>
-                    )}
-                  </div>
-                  {item.notes && (
-                    <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
-                      {item.notes}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="border border-zinc-800 rounded-md bg-zinc-950/40 p-2 space-y-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select
-                      value={item.category || 'equipment'}
-                      onChange={e => updateItem(item.id, { category: e.target.value as InventoryCategory })}
-                      className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground"
-                      aria-label={strings.inventory_item_category || "Category"}
-                    >
-                      {INVENTORY_CATEGORIES.map(cat => (
-                        <option key={cat} value={cat}>{getInventoryCategoryLabel(cat, strings)}</option>
-                      ))}
-                    </select>
-                    <Input
-                      value={item.name}
-                      onChange={e => updateItem(item.id, { name: e.target.value })}
-                      placeholder={strings.inventory_item_name || "Item name"}
-                      className="h-7 text-xs bg-zinc-950 border-zinc-800 flex-1 min-w-[120px]"
-                    />
-                    <Input
-                      type="number"
-                      min={0}
-                      value={typeof item.quantity === 'number' ? item.quantity : ''}
-                      onChange={e => {
-                        const v = e.target.value;
-                        if (v === '') {
-                          updateItem(item.id, { quantity: undefined });
-                        } else {
-                          const n = parseInt(v, 10);
-                          if (Number.isFinite(n)) updateItem(item.id, { quantity: n });
-                        }
-                      }}
-                      placeholder="1"
-                      aria-label={strings.inventory_item_qty || "Quantity"}
-                      className="h-7 text-xs bg-zinc-950 border-zinc-800 w-16"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      aria-label={strings.remove_inventory_item || "Remove item"}
-                      className="text-red-500/50 hover:text-red-500"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <Textarea
-                    value={item.notes || ''}
-                    onChange={e => updateItem(item.id, { notes: e.target.value })}
-                    placeholder={strings.inventory_item_notes || "Notes (optional)"}
-                    className="bg-zinc-950 border-zinc-800 min-h-[40px] text-xs"
-                  />
-                </div>
-              )}
-            </li>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

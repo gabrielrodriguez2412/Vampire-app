@@ -118,8 +118,17 @@ export type DisciplineValue = number | { rating: number; powers?: string[] };
  */
 export type CharacterType = 'player' | 'npc';
 
-/** Coarse categories used to tag inventory items. */
-export type InventoryCategory = 'weapon' | 'armor' | 'tool' | 'equipment' | 'money' | 'other';
+/**
+ * Coarse categories used to tag inventory items.
+ *
+ * Phase 2 (Inventory specialization) added: `document`, `vehicle`, `occult`,
+ * `personal`. The original 6 categories (weapon, armor, tool, equipment,
+ * money, other) are preserved for backward compatibility — existing saved
+ * inventories with those values keep working unchanged.
+ */
+export type InventoryCategory =
+  | 'weapon' | 'armor' | 'tool' | 'equipment' | 'money' | 'other'
+  | 'document' | 'vehicle' | 'occult' | 'personal';
 
 /** A single inventory entry on a character. */
 export interface InventoryItem {
@@ -128,6 +137,8 @@ export interface InventoryItem {
   quantity?: number;
   category?: InventoryCategory;
   notes?: string;
+  /** Whether the item is currently equipped / carried. Optional, backward-compatible. */
+  equipped?: boolean;
 }
 
 export interface BaseCharacter {

@@ -46,7 +46,11 @@ function getInventoryCategoryPrintLabel(
     case 'armor': return strings.inventory_cat_armor || "Armor";
     case 'tool': return strings.inventory_cat_tool || "Tool";
     case 'equipment': return strings.inventory_cat_equipment || "Equipment";
-    case 'money': return strings.inventory_cat_money || "Money/Resource";
+    case 'document': return strings.inventory_cat_document || "Document";
+    case 'vehicle': return strings.inventory_cat_vehicle || "Vehicle";
+    case 'occult': return strings.inventory_cat_occult || "Occult Item";
+    case 'personal': return strings.inventory_cat_personal || "Personal Item";
+    case 'money': return strings.inventory_cat_money || "Cash / Resource";
     case 'other': return strings.inventory_cat_other || "Other";
     default: return category;
   }

@@ -39,18 +39,27 @@ describe('disciplines data', () => {
     }
   });
 
-  // Phase 2: no discipline should ship with an empty powers array. If a
-  // discipline truly cannot be represented at this stage, it must carry
-  // explicit "Needs review" placeholders so the gap is documented inline
-  // rather than appearing as a silent void to users.
-  it('every discipline has at least one power entry (no silent empty arrays)', () => {
+  // Phase 3: a discipline must surface either a flat powers list OR at least
+  // one specialSystems section. Either prevents the silent-empty-array UX
+  // problem; the latter is the model for paths/rituals/ceremonies/formulae.
+  it('every discipline has at least one power entry or specialSystems section', () => {
     for (const d of disciplines) {
-      expect(d.powers.length, `${d.id} has no power entries`).toBeGreaterThan(0);
+      const hasPowers = d.powers.length > 0;
+      const hasSpecial = (d.specialSystems?.length ?? 0) > 0;
+      expect(
+        hasPowers || hasSpecial,
+        `${d.id} has no power entries and no specialSystems sections`
+      ).toBe(true);
     }
   });
 
-  it('every discipline covers all five levels (1..5) at least once', () => {
+  // For disciplines that DO use the flat powers list, still require full L1–5
+  // coverage. Disciplines that only use specialSystems are exempt because
+  // their content is grouped differently (paths, rituals, ceremonies,
+  // formulae) and may not span every dot level.
+  it('every powers-list discipline covers all five levels (1..5)', () => {
     for (const d of disciplines) {
+      if (d.powers.length === 0) continue;
       const levels = new Set(d.powers.map(p => p.level));
       for (const lvl of [1, 2, 3, 4, 5]) {
         expect(levels.has(lvl), `${d.id} missing a power at level ${lvl}`).toBe(true);
@@ -65,6 +74,59 @@ describe('disciplines data', () => {
           (p.description.en || '').trim().length,
           `${d.id}.${p.name} missing an English description (use a "Needs review" placeholder if unsure)`
         ).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe('discipline specialSystems shape', () => {
+  const KNOWN_KINDS = new Set(['paths', 'rituals', 'ceremonies', 'formulae', 'other']);
+
+  it('section ids are unique across all disciplines', () => {
+    const ids: string[] = [];
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) ids.push(s.id);
+    }
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('item ids are unique within each section', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        const ids = s.items.map(i => i.id);
+        expect(
+          new Set(ids).size,
+          `${d.id}.${s.id} has duplicate item ids`
+        ).toBe(ids.length);
+      }
+    }
+  });
+
+  it('every section has a known kind and a non-empty english title', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        expect(KNOWN_KINDS.has(s.kind), `${d.id}.${s.id} unknown kind ${s.kind}`).toBe(true);
+        expect(
+          (s.title.en || '').trim().length,
+          `${d.id}.${s.id} missing English title`
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every item has a non-empty english summary and (if level set) level in 1..5', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        for (const item of s.items) {
+          expect(
+            (item.summary.en || '').trim().length,
+            `${d.id}.${s.id}.${item.id} missing English summary`
+          ).toBeGreaterThan(0);
+          if (typeof item.level === 'number') {
+            expect(item.level, `${d.id}.${s.id}.${item.id} level out of 1-5`).toBeGreaterThanOrEqual(1);
+            expect(item.level, `${d.id}.${s.id}.${item.id} level out of 1-5`).toBeLessThanOrEqual(5);
+          }
+        }
       }
     }
   });

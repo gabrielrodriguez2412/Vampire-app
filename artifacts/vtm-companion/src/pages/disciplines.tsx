@@ -170,10 +170,10 @@ export default function Disciplines() {
                                   ) : (
                                     <span className="text-xs text-amber-600/80 italic block mb-2">[ {strings.noTranslation} ]</span>
                                   )}
-                                  
+
                                   {getText(p.tacticalUse, activeLanguage) && (
                                     <p className="text-xs text-muted-foreground italic bg-black/20 p-2 rounded border border-white/5 mt-3">
-                                      <span className="font-semibold text-foreground/70 not-italic mr-1">{strings.tacticalUse}</span> 
+                                      <span className="font-semibold text-foreground/70 not-italic mr-1">{strings.tacticalUse}</span>
                                       {getText(p.tacticalUse, activeLanguage)}
                                     </p>
                                   )}
@@ -182,6 +182,77 @@ export default function Disciplines() {
                             </div>
                           </AccordionContent>
                         </AccordionItem>
+                      )}
+
+                      {/* Special systems — paths / rituals / ceremonies / formulae.
+                          Each section is its own collapsible. Kept in a separate
+                          local `type="multiple"` accordion so toggling one does
+                          NOT interfere with the URL-synced outer Powers accordion
+                          and multiple sections can be open at once. Starts
+                          collapsed by default (no defaultValue). */}
+                      {disc.specialSystems && disc.specialSystems.length > 0 && (
+                        <div className="border-t border-border/40">
+                          <Accordion type="multiple" className="px-6">
+                            {disc.specialSystems.map(section => (
+                              <AccordionItem key={section.id} value={section.id} className="border-b-0">
+                                <AccordionTrigger className="py-4 hover:bg-white/[0.02] font-serif text-lg">
+                                  <span className="flex items-center gap-2 flex-wrap">
+                                    {getText(section.title, activeLanguage) || section.kind}
+                                    {section.needsReview && (
+                                      <Badge
+                                        variant="outline"
+                                        className="text-[10px] uppercase tracking-widest border-amber-500/40 text-amber-300 bg-amber-950/20"
+                                      >
+                                        {strings.needs_review || "Needs review"}
+                                      </Badge>
+                                    )}
+                                  </span>
+                                </AccordionTrigger>
+                                <AccordionContent className="pb-6">
+                                  {section.description && getText(section.description, activeLanguage) && (
+                                    <p className="text-xs text-muted-foreground mb-3 max-w-3xl">
+                                      {getText(section.description, activeLanguage)}
+                                    </p>
+                                  )}
+                                  <div className="space-y-2">
+                                    {section.items.map(item => (
+                                      <div
+                                        key={item.id}
+                                        className="bg-background/50 rounded-lg px-3 py-2 border border-border/50 flex flex-col gap-1"
+                                      >
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                          <h4 className="font-semibold text-primary text-sm flex items-center gap-2">
+                                            {item.name}
+                                            {item.needsReview && (
+                                              <span className="text-[9px] uppercase tracking-widest border border-amber-500/40 text-amber-300 bg-amber-950/20 px-1 py-0.5 rounded">
+                                                {strings.needs_review || "Needs review"}
+                                              </span>
+                                            )}
+                                          </h4>
+                                          {typeof item.level === 'number' && (
+                                            <span className="flex gap-1">
+                                              {Array.from({ length: 5 }).map((_, i) => (
+                                                <span
+                                                  key={i}
+                                                  className={`w-2 h-2 rounded-full ${i < (item.level ?? 0) ? 'bg-primary' : 'bg-primary/20'}`}
+                                                />
+                                              ))}
+                                            </span>
+                                          )}
+                                        </div>
+                                        {getText(item.summary, activeLanguage) && (
+                                          <p className="text-xs text-foreground/80">
+                                            {getText(item.summary, activeLanguage)}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))}
+                          </Accordion>
+                        </div>
                       )}
                     </CardContent>
                   </Card>

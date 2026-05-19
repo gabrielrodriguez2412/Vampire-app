@@ -153,29 +153,95 @@ as needs-review rather than canonical content.
   `"Needs review: confirm name and effect for this edition."` and leave a
   TODO in the data so the audit doc can track it.
 
-## Still needs follow-up (Phase 3+)
+## Phase 3 update (applied) — special systems model
 
-1. **Path / ritual / formula data model.** The current
-   `DisciplineEntry.powers` shape is a flat list. Modeling Thaumaturgy
-   paths, Necromancy paths, Blood Sorcery rituals, Oblivion ceremonies,
-   and Thin-Blood Alchemy formulae correctly likely needs a parallel
-   sub-array (e.g., `paths: { name, levels: [...] }[]` or
-   `rituals: { name, level }[]`). Out of scope for Phase 2.
+A backward-compatible `specialSystems` field was added to
+`DisciplineEntry` for the blood-magic style content that does not fit a
+flat dot-power list. The new shape (see `src/types/index.ts`):
 
-2. **Per-edition power divergence.** Several core disciplines (Protean,
-   Fortitude, Potence, etc.) have different power lineups between
-   classic editions and V5. The current shape is a single shared list.
-   Tagging powers with an `editions?: EditionId[]` field is one way to
-   handle this; defer to a future phase.
+```ts
+specialSystems?: DisciplineSpecialSection[];
 
-3. **Translations.** Power descriptions still use the `fallbackStr`
-   helper, which fills non-English fields with the English text. This
-   keeps the UI from showing the `[ No translation ]` badge but is not
-   real localization. Phase 4 candidate.
+interface DisciplineSpecialSection {
+  id: string;
+  kind: 'paths' | 'rituals' | 'ceremonies' | 'formulae' | 'other';
+  title: Record<LangCode, string>;
+  description?: Record<LangCode, string>;
+  needsReview?: boolean;
+  items: DisciplineSpecialItem[];
+}
 
+interface DisciplineSpecialItem {
+  id: string;
+  name: string;
+  level?: number;
+  summary: Record<LangCode, string>;
+  needsReview?: boolean;
+}
+```
+
+A discipline can declare any number of sections (e.g., Thaumaturgy
+declares both Paths and Rituals). Existing disciplines that don't use
+this field continue to work unchanged.
+
+### What was modeled with specialSystems
+
+| Discipline           | Powers list           | specialSystems sections |
+|----------------------|-----------------------|-------------------------|
+| thaumaturgy          | (empty)               | Paths (5 items, all Needs review), Rituals (3 items, all Needs review) |
+| necromancy           | (empty)               | Paths (5 items, all Needs review), Rituals (3 items, all Needs review) |
+| thin_blood_alchemy   | (empty)               | Formulae (5 items, all Needs review) |
+| blood_sorcery        | L1–L5 (Phase 2 fills) | Rituals (3 items, all Needs review) |
+| oblivion             | L1–L5 (Phase 2 fills) | Ceremonies (3 items, all Needs review) |
+
+The Phase 2 in-power `"Needs review"` placeholders for thaumaturgy,
+necromancy and thin_blood_alchemy were removed; the new sections take
+their place and the UI no longer shows fake powers for path/ritual/
+formula systems.
+
+### UI
+
+The Disciplines page renders `specialSystems` as a separate block
+beneath the (optional) Powers accordion. Each section shows:
+
+- The section title in the active language.
+- A small `Needs review` badge if `needsReview` is set on the section.
+- An optional one-line framing description.
+- One card per item, with its name, dot rating (when `level` is set),
+  per-item `Needs review` chip, and the item's short summary.
+
+This means a discipline with empty `powers` and a Needs-review
+specialSystems section now shows a clearly-marked panel instead of an
+empty Powers area.
+
+### Tests
+
+`src/data/__tests__/disciplines.test.ts` was updated to:
+
+- Replace the strict "every discipline has at least one power entry"
+  with "every discipline has at least one power entry OR specialSystems
+  section."
+- Only require the all-five-levels coverage on disciplines that actually
+  use the `powers` list.
+- Validate the new shape: unique section ids across disciplines, unique
+  item ids per section, known kinds, non-empty English titles and
+  summaries, and item levels in 1..5 when set.
+
+### What still needs follow-up
+
+1. **Fill the placeholder items.** Every section currently marked
+   `needsReview: true` is awaiting a manual content pass: real path /
+   ritual / ceremony / formula names + one-sentence original summaries.
+   Names should remain short and functional; do not paste book prose.
+2. **Per-edition power divergence.** Several core disciplines have
+   different power lineups between classic editions and V5. The current
+   shape is a single shared list. Tagging powers with an
+   `editions?: EditionId[]` field is the natural next step; deferred.
+3. **Translations.** Power and specialSystems strings still use
+   `fallbackStr`, which fills non-English fields with the English text.
+   Real localization is a separate phase.
 4. **Salubri's third discipline and Ravnos's combined list** remain the
-   unresolved content questions from Phase 1 (see "Needs-review" section
-   above). Phase 2 did not touch the clan-side data.
+   unresolved content questions from Phase 1.
 
 ## Translations
 

@@ -48,6 +48,40 @@ export interface DisciplineEntry {
   clansWhoUse: string[];
   isSubdiscipline?: boolean;
   parentDiscipline?: string;
+  /**
+   * Optional grouped sections for blood-magic style systems that don't fit
+   * the flat 1–5 powers list — Thaumaturgy / Necromancy paths and rituals,
+   * Blood Sorcery rituals, Oblivion ceremonies, Thin-Blood Alchemy formulae.
+   * Backwards-compatible: omitted on disciplines that only use `powers`.
+   */
+  specialSystems?: DisciplineSpecialSection[];
+}
+
+export type DisciplineSpecialKind = 'paths' | 'rituals' | 'ceremonies' | 'formulae' | 'other';
+
+/**
+ * A grouped block of special items inside a discipline. A discipline may
+ * have several sections (e.g., Thaumaturgy has both paths AND rituals).
+ */
+export interface DisciplineSpecialSection {
+  id: string;
+  kind: DisciplineSpecialKind;
+  title: Record<LangCode, string>;
+  /** Optional short framing sentence shown above the item list. */
+  description?: Record<LangCode, string>;
+  /** Marks the whole section as needing manual content review. */
+  needsReview?: boolean;
+  items: DisciplineSpecialItem[];
+}
+
+export interface DisciplineSpecialItem {
+  id: string;
+  name: string;
+  /** Optional dot/level for items that are level-gated (paths, formulae). */
+  level?: number;
+  summary: Record<LangCode, string>;
+  /** Per-item needs-review flag for individual placeholder entries. */
+  needsReview?: boolean;
 }
 
 export interface RuleEntry {

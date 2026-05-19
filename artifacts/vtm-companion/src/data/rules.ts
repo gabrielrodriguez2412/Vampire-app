@@ -233,5 +233,185 @@ export const rules: RuleEntry[] = [
       pt: [], fr: [], de: [], it: []
     },
     tags: ["sangre", "sociedad"]
-  }
+  },
+  // -------------------------------------------------------------------------
+  // Quick-reference expansion (Phase 1). Each new entry below uses short
+  // original wording and explicit "Needs review" markers in quickNotes where
+  // the exact canonical mechanics need manual confirmation before expanding.
+  // -------------------------------------------------------------------------
+  {
+    id: "blood-potency",
+    editions: ["V5"],
+    title: { es: "Potencia de Sangre", en: "Blood Potency", pt: "", fr: "", de: "", it: "" },
+    category: "Sangre",
+    shortExplanation: {
+      es: "La fuerza intrínseca de tu vitae. Sube con los años; afecta lo que puedes hacer con la sangre.",
+      en: "The intrinsic strength of your vitae. Rises with age; shapes what your blood can do.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    fullExplanation: {
+      es: "La Potencia de Sangre representa qué tan poderosa es tu vitae. Una potencia mayor potencia los efectos de las Disciplinas y la sanación, pero también dificulta alimentarte de presas humildes. Los detalles exactos por nivel deben confirmarse en la fuente antes de mostrarlos como tabla.",
+      en: "Blood Potency represents how powerful your vitae is. Higher potency strengthens Discipline effects and healing, but also makes feeding from weak prey harder. Exact per-level values should be confirmed against the source before being shown as a table.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    examples: {
+      es: ["Un vampiro joven con Potencia 1 puede alimentarse cómodamente de mortales.", "Un anciano con Potencia alta no se sacia con sangre mundana."],
+      en: ["A young vampire at Potency 1 can feed comfortably from mortals.", "An elder at high Potency is no longer satisfied by mundane blood."],
+      pt: [], fr: [], de: [], it: [],
+    },
+    quickNotes: {
+      es: [
+        "Potencia más alta = efectos de Disciplina más fuertes",
+        "Potencia más alta = presas humildes sacian menos",
+        "Necesita revisión: tabla exacta por nivel",
+      ],
+      en: [
+        "Higher potency = stronger Discipline effects",
+        "Higher potency = weaker prey sates less hunger",
+        "Needs review: exact per-level table",
+      ],
+      pt: [], fr: [], de: [], it: [],
+    },
+    tags: ["sangre", "potencia"],
+  },
+  {
+    id: "combat-overview",
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
+    title: { es: "Resumen de Combate", en: "Combat Overview", pt: "", fr: "", de: "", it: "" },
+    category: "Combate",
+    shortExplanation: {
+      es: "Flujo general de un turno: declarar acción, tirar dados, aplicar daño.",
+      en: "General turn flow: declare action, roll dice, apply damage.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    fullExplanation: {
+      es: "El combate corre por turnos. Cada personaje declara una acción (atacar, defender, moverse, usar una Disciplina), tira la reserva apropiada contra una Dificultad y aplica el resultado: daño Superficial para golpes mundanos, Agravado para fuego, sol o garras sobrenaturales. Los detalles exactos de iniciativa, distancia y modificadores se deben verificar en el libro antes de presentarse como reglas firmes.",
+      en: "Combat runs in turns. Each character declares an action (attack, defend, move, use a Discipline), rolls the appropriate pool against a Difficulty, and applies the result: Superficial damage for mundane hits, Aggravated for fire, sunlight, or supernatural claws. Exact initiative, range, and modifier details should be verified against the source before being presented as firm rules.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    examples: {
+      es: ["Pelea callejera: Fuerza + Pelea contra defensa del rival.", "Disparo a distancia: Destreza + Armas de Fuego."],
+      en: ["Street brawl: Strength + Brawl versus the opponent's defense.", "Ranged shot: Dexterity + Firearms."],
+      pt: [], fr: [], de: [], it: [],
+    },
+    quickNotes: {
+      es: [
+        "Daño Superficial: heridas mundanas",
+        "Daño Agravado: fuego, sol, garras de criatura",
+        "Necesita revisión: tabla detallada de iniciativa y modificadores",
+      ],
+      en: [
+        "Superficial damage: mundane wounds",
+        "Aggravated damage: fire, sun, supernatural claws",
+        "Needs review: detailed initiative and modifier table",
+      ],
+      pt: [], fr: [], de: [], it: [],
+    },
+    tags: ["combate", "resumen"],
+  },
+  {
+    id: "experience",
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
+    title: { es: "Experiencia y Avance", en: "Experience & Advancement", pt: "", fr: "", de: "", it: "" },
+    category: "Mecánica",
+    shortExplanation: {
+      es: "Los personajes ganan experiencia por sesión y la gastan para mejorar atributos, habilidades y Disciplinas.",
+      en: "Characters earn experience per session and spend it to improve attributes, skills, and Disciplines.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    fullExplanation: {
+      es: "Tras cada sesión el Narrador suele otorgar una pequeña cantidad de puntos de experiencia. Esos puntos se gastan entre sesiones para subir Atributos, Habilidades y Disciplinas, comprar nuevas ventajas o reducir defectos. El costo exacto por nivel y por categoría debe confirmarse en el libro antes de mostrarlo como tabla en la app.",
+      en: "After each session the Storyteller typically awards a small amount of experience. Those points are spent between sessions to raise Attributes, Skills, and Disciplines, buy new Merits, or reduce Flaws. Exact per-rating, per-category costs should be confirmed against the source before being shown as a table in the app.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    examples: {
+      es: ["Subir Pelea de 2 a 3 entre sesiones.", "Comprar el primer punto de una nueva Disciplina."],
+      en: ["Raising Brawl from 2 to 3 between sessions.", "Buying the first dot of a new Discipline."],
+      pt: [], fr: [], de: [], it: [],
+    },
+    quickNotes: {
+      es: [
+        "Gastar entre sesiones, no en medio de una escena",
+        "Mejoras pequeñas suelen ser más narrativas que enormes saltos",
+        "Necesita revisión: costos exactos por categoría",
+      ],
+      en: [
+        "Spend between sessions, not mid-scene",
+        "Small bumps usually feel more narrative than giant jumps",
+        "Needs review: exact costs by category",
+      ],
+      pt: [], fr: [], de: [], it: [],
+    },
+    tags: ["experiencia", "avance"],
+  },
+  {
+    id: "conditions",
+    editions: ["V5"],
+    title: { es: "Estados Comunes", en: "Common Conditions", pt: "", fr: "", de: "", it: "" },
+    category: "Mecánica",
+    shortExplanation: {
+      es: "Estados situacionales que afectan al personaje: frenesí, hambre alta, daño grave, miedo.",
+      en: "Situational states that affect the character: frenzy, high hunger, severe damage, fear.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    fullExplanation: {
+      es: "Un personaje puede entrar en distintos estados durante una escena: frenesí (pérdida de control de la Bestia), hambre crítica, daño impedidor, miedo o compulsión. Cada estado modifica lo que el personaje puede intentar y suele tener una duración natural. Los efectos mecánicos exactos deben confirmarse en el libro antes de mostrarse como reglas firmes.",
+      en: "A character can enter several states during a scene: frenzy (loss of control to the Beast), critical hunger, impairing damage, fear, or compulsion. Each state changes what the character can attempt and usually has a natural duration. Exact mechanical effects should be confirmed against the source before being presented as firm rules.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    examples: {
+      es: ["Frenesí de hambre tras una herida fea.", "Compulsión empuja al personaje a una acción específica."],
+      en: ["Hunger frenzy after a nasty wound.", "Compulsion pushes the character toward a specific action."],
+      pt: [], fr: [], de: [], it: [],
+    },
+    quickNotes: {
+      es: [
+        "El Narrador decide la duración y los desencadenantes finos",
+        "Algunos estados se resisten gastando Fuerza de Voluntad",
+        "Necesita revisión: lista canónica de estados y sus efectos exactos",
+      ],
+      en: [
+        "The Storyteller sets fine duration and triggers",
+        "Some states can be resisted by spending Willpower",
+        "Needs review: canonical state list and exact effects",
+      ],
+      pt: [], fr: [], de: [], it: [],
+    },
+    tags: ["estados", "mecánica"],
+  },
+  {
+    id: "storyteller-notes",
+    editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
+    title: { es: "Notas Rápidas para el Narrador", en: "Storyteller Quick Notes", pt: "", fr: "", de: "", it: "" },
+    category: "Narrador",
+    shortExplanation: {
+      es: "Recordatorios rápidos para correr una sesión sin frenar la mesa.",
+      en: "Quick reminders for running a session without grinding the table to a halt.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    fullExplanation: {
+      es: "Estas son notas de oficio para el Narrador, no reglas oficiales. Apuntan a mantener el ritmo de la sesión, dar voz a los PNJs y cerrar escenas a tiempo. Sirven de apoyo durante la mesa; no reemplazan los procedimientos del libro.",
+      en: "These are craft notes for the Storyteller, not official rules. They aim to keep session pacing brisk, give NPCs distinct voices, and close scenes on time. They support the table during play; they do not replace the book's procedures.",
+      pt: "", fr: "", de: "", it: "",
+    },
+    examples: {
+      es: ["Cerrar una escena en cuanto la decisión clave se tomó.", "Dar a cada PNJ un solo rasgo memorable."],
+      en: ["Close a scene as soon as the key decision is made.", "Give each NPC one memorable trait."],
+      pt: [], fr: [], de: [], it: [],
+    },
+    quickNotes: {
+      es: [
+        "Una sola decisión por escena suele bastar",
+        "Si la regla frena la mesa, narra y sigue",
+        "PNJs memorables > PNJs detallados",
+      ],
+      en: [
+        "One decision per scene is usually enough",
+        "If a rule grinds the table, narrate and move on",
+        "Memorable NPCs beat detailed NPCs",
+      ],
+      pt: [], fr: [], de: [], it: [],
+    },
+    tags: ["narrador", "consejos"],
+  },
 ];

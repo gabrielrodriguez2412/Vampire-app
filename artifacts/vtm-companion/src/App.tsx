@@ -41,6 +41,7 @@ function Router() {
           <Route path="/compendium/disciplinas" component={Disciplines} />
           <Route path="/compendium/disciplinas/:id" component={Disciplines} />
           <Route path="/compendium/reglas" component={Rules} />
+          <Route path="/compendium/reglas/:id" component={Rules} />
           <Route path="/compendium/roleplay" component={Roleplay} />
           <Route path="/compendium/herramientas" component={Tools} />
           <Route path="/compendium/glosario" component={Glossary} />

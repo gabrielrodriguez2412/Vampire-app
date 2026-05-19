@@ -397,7 +397,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:h-[320px]">
           <div
             className="md:col-span-2 md:row-span-2 bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group cursor-pointer"
-            onClick={() => setLocation('/compendium/reglas')}
+            onClick={() => setLocation('/compendium/reglas/combat-overview')}
           >
             <div className="absolute top-0 right-0 p-6 opacity-10 text-[80px] leading-none material-symbols-outlined">swords</div>
             <div>
@@ -432,7 +432,7 @@ export default function Home() {
 
           <div
             className="md:col-span-2 bg-zinc-900 border border-zinc-800 p-6 flex items-center justify-between hover:border-primary-container transition-colors group cursor-pointer"
-            onClick={() => setLocation('/compendium/reglas')}
+            onClick={() => setLocation('/compendium/reglas/humanity-loss')}
           >
             <div className="flex items-center gap-4">
               <span className="material-symbols-outlined text-3xl text-primary-container">heart_broken</span>

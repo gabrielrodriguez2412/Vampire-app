@@ -60,7 +60,21 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Killing Touch (Level 5)", level: 5, description: fallbackStr("Turn vitae itself into a weapon by touch or short range."), tacticalUse: fallbackStr("Cripple or kill in a single contact.") }
     ],
     narrativeUses: fallbackArr(["Warding a haven."]),
-    clansWhoUse: ["tremere", "assamite"]
+    clansWhoUse: ["tremere", "assamite"],
+    specialSystems: [
+      {
+        id: "blood-sorcery-rituals",
+        kind: "rituals",
+        title: fallbackStr("Rituals"),
+        description: fallbackStr("Blood Sorcery rituals are learned and cast separately from dot powers. No canonical ritual list is included here yet."),
+        needsReview: true,
+        items: [
+          { id: "blood-sorcery-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "blood-sorcery-ritual-2", name: "Ritual (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "blood-sorcery-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
+        ]
+      }
+    ]
   },
   {
     id: "thaumaturgy",
@@ -68,15 +82,37 @@ export const disciplines: DisciplineEntry[] = [
     name: "Thaumaturgy",
     type: fallbackStr("Sorcery"),
     description: fallbackStr("Old blood magic."),
-    powers: [
-      { name: "Path Power (Level 1) — Needs review", level: 1, description: fallbackStr("Needs review: classic Thaumaturgy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 2) — Needs review", level: 2, description: fallbackStr("Needs review: classic Thaumaturgy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 3) — Needs review", level: 3, description: fallbackStr("Needs review: classic Thaumaturgy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 4) — Needs review", level: 4, description: fallbackStr("Needs review: classic Thaumaturgy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 5) — Needs review", level: 5, description: fallbackStr("Needs review: classic Thaumaturgy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") }
-    ],
+    powers: [],
     narrativeUses: fallbackArr(["Rituals."]),
-    clansWhoUse: ["tremere"]
+    clansWhoUse: ["tremere"],
+    specialSystems: [
+      {
+        id: "thaumaturgy-paths",
+        kind: "paths",
+        title: fallbackStr("Paths"),
+        description: fallbackStr("Classic Thaumaturgy is organized into paths — each path is a separate progression of effects from level 1 to 5. Canonical path names are not listed here yet."),
+        needsReview: true,
+        items: [
+          { id: "thaumaturgy-path-1", name: "Path (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-path-2", name: "Path (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-path-3", name: "Path (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-path-4", name: "Path (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-path-5", name: "Path (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true }
+        ]
+      },
+      {
+        id: "thaumaturgy-rituals",
+        kind: "rituals",
+        title: fallbackStr("Rituals"),
+        description: fallbackStr("Thaumaturgy rituals are separate from paths and follow their own learning rules. No canonical ritual list is included here yet."),
+        needsReview: true,
+        items: [
+          { id: "thaumaturgy-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "thaumaturgy-ritual-5", name: "Ritual (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
+        ]
+      }
+    ]
   },
   {
     id: "obtenebration",
@@ -100,15 +136,37 @@ export const disciplines: DisciplineEntry[] = [
     name: "Necromancy",
     type: fallbackStr("Sorcery/Death"),
     description: fallbackStr("The magic of death and souls."),
-    powers: [
-      { name: "Path Power (Level 1) — Needs review", level: 1, description: fallbackStr("Needs review: classic Necromancy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 2) — Needs review", level: 2, description: fallbackStr("Needs review: classic Necromancy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 3) — Needs review", level: 3, description: fallbackStr("Needs review: classic Necromancy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 4) — Needs review", level: 4, description: fallbackStr("Needs review: classic Necromancy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Path Power (Level 5) — Needs review", level: 5, description: fallbackStr("Needs review: classic Necromancy is organized by paths and rituals, not flat dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") }
-    ],
+    powers: [],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["giovanni"]
+    clansWhoUse: ["giovanni"],
+    specialSystems: [
+      {
+        id: "necromancy-paths",
+        kind: "paths",
+        title: fallbackStr("Paths"),
+        description: fallbackStr("Classic Necromancy is organized into paths — each is a separate progression of death-themed effects from level 1 to 5. Canonical path names are not listed here yet."),
+        needsReview: true,
+        items: [
+          { id: "necromancy-path-1", name: "Path (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "necromancy-path-2", name: "Path (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "necromancy-path-3", name: "Path (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "necromancy-path-4", name: "Path (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
+          { id: "necromancy-path-5", name: "Path (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true }
+        ]
+      },
+      {
+        id: "necromancy-rituals",
+        kind: "rituals",
+        title: fallbackStr("Rituals"),
+        description: fallbackStr("Necromancy rituals are separate from paths and follow their own learning rules. No canonical ritual list is included here yet."),
+        needsReview: true,
+        items: [
+          { id: "necromancy-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "necromancy-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
+          { id: "necromancy-ritual-5", name: "Ritual (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
+        ]
+      }
+    ]
   },
   {
     id: "quietus",
@@ -300,7 +358,21 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Tenebrous Body (Level 5)", level: 5, description: fallbackStr("Take on a body of living shadow."), tacticalUse: fallbackStr("Move where light cannot and matter cannot stop you.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["lasombra", "giovanni"]
+    clansWhoUse: ["lasombra", "giovanni"],
+    specialSystems: [
+      {
+        id: "oblivion-ceremonies",
+        kind: "ceremonies",
+        title: fallbackStr("Ceremonies"),
+        description: fallbackStr("Oblivion ceremonies are death-touched rites learned and performed separately from dot powers. No canonical ceremony list is included here yet."),
+        needsReview: true,
+        items: [
+          { id: "oblivion-ceremony-1", name: "Ceremony (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true },
+          { id: "oblivion-ceremony-3", name: "Ceremony (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true },
+          { id: "oblivion-ceremony-5", name: "Ceremony (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true }
+        ]
+      }
+    ]
   },
   {
     id: "valeren",
@@ -324,14 +396,24 @@ export const disciplines: DisciplineEntry[] = [
     name: "Thin-Blood Alchemy",
     type: fallbackStr("Alchemy"),
     description: fallbackStr("Counterfeit disciplines via alchemy."),
-    powers: [
-      { name: "Alchemy Formula (Level 1) — Needs review", level: 1, description: fallbackStr("Needs review: Thin-Blood Alchemy uses formulae rather than fixed dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Alchemy Formula (Level 2) — Needs review", level: 2, description: fallbackStr("Needs review: Thin-Blood Alchemy uses formulae rather than fixed dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Alchemy Formula (Level 3) — Needs review", level: 3, description: fallbackStr("Needs review: Thin-Blood Alchemy uses formulae rather than fixed dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Alchemy Formula (Level 4) — Needs review", level: 4, description: fallbackStr("Needs review: Thin-Blood Alchemy uses formulae rather than fixed dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") },
-      { name: "Alchemy Formula (Level 5) — Needs review", level: 5, description: fallbackStr("Needs review: Thin-Blood Alchemy uses formulae rather than fixed dot powers. Confirm canonical representation before expanding."), tacticalUse: fallbackStr("Needs review.") }
-    ],
+    powers: [],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["thin_blood"]
+    clansWhoUse: ["thin_blood"],
+    specialSystems: [
+      {
+        id: "thin-blood-alchemy-formulae",
+        kind: "formulae",
+        title: fallbackStr("Formulae"),
+        description: fallbackStr("Thin-Blood Alchemy is built from formulae brewed by the alchemist, not flat dot powers. Each formula has a level and is learned individually. Canonical formula names are not listed here yet."),
+        needsReview: true,
+        items: [
+          { id: "thin-blood-alchemy-formula-1", name: "Formula (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
+          { id: "thin-blood-alchemy-formula-2", name: "Formula (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
+          { id: "thin-blood-alchemy-formula-3", name: "Formula (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
+          { id: "thin-blood-alchemy-formula-4", name: "Formula (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
+          { id: "thin-blood-alchemy-formula-5", name: "Formula (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true }
+        ]
+      }
+    ]
   }
 ];

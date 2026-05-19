@@ -7,7 +7,10 @@ import { DamageTracker } from "./DamageTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X, ChevronDown, ExternalLink } from "lucide-react";
+import {
+  Plus, X, ChevronDown, ExternalLink,
+  Sword, Shield, Wrench, Backpack, FileText, Car, Sparkles, Heart, Coins, Package2, Package,
+} from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
@@ -443,6 +446,25 @@ function getInventoryCategoryLabel(category: string | undefined, strings: Record
   }
 }
 
+/** Visual identity glyph for each inventory category — used in group headings
+ *  so users can scan the inventory by silhouette without reading the label. */
+function InventoryCategoryIcon({ category, className }: { category: string; className?: string }) {
+  const props = { className: className || "w-3.5 h-3.5", "aria-hidden": true as const };
+  switch (category) {
+    case 'weapon': return <Sword {...props} />;
+    case 'armor': return <Shield {...props} />;
+    case 'tool': return <Wrench {...props} />;
+    case 'equipment': return <Backpack {...props} />;
+    case 'document': return <FileText {...props} />;
+    case 'vehicle': return <Car {...props} />;
+    case 'occult': return <Sparkles {...props} />;
+    case 'personal': return <Heart {...props} />;
+    case 'money': return <Coins {...props} />;
+    case 'other': return <Package2 {...props} />;
+    default: return <Package {...props} />;
+  }
+}
+
 function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, strings }: any) {
   const items: InventoryItem[] = Array.isArray(value) ? value : [];
   const totalCount = items.length;
@@ -481,17 +503,18 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
 
   return (
     <div className="col-span-full flex flex-col gap-3">
-      <div className="flex items-center justify-between mb-2 border-b border-zinc-800/50 pb-2">
-        <label className="text-sm text-foreground font-serif uppercase tracking-wider flex items-center gap-2">
-          {label}
+      {/* Section header — title with optional count badge + Add Item action. */}
+      <div className="flex items-center justify-between gap-3 mb-1 border-b border-zinc-800/50 pb-2">
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider flex items-center gap-2 min-w-0">
+          <span className="truncate">{label}</span>
           {totalCount > 0 && (
-            <span className="text-[10px] uppercase tracking-widest border border-border px-1.5 rounded bg-zinc-900 text-muted-foreground">
+            <span className="text-[10px] uppercase tracking-widest border border-border px-1.5 py-0.5 rounded bg-zinc-900 text-muted-foreground shrink-0">
               {totalCount}
             </span>
           )}
         </label>
         {!isReadOnly && (
-          <Button size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1">
+          <Button size="sm" variant="outline" onClick={addItem} className="h-7 px-2 text-xs gap-1 shrink-0">
             <Plus className="w-3.5 h-3.5" /> {strings.add_inventory_item || "Add item"}
           </Button>
         )}
@@ -502,72 +525,101 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
           {strings.no_inventory_items || "No inventory items yet."}
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {groups.map(group => (
             <section key={group.key} aria-label={getInventoryCategoryLabel(group.key, strings)}>
-              <h4 className="text-[11px] font-sans uppercase tracking-widest text-muted-foreground mb-1.5 flex items-center gap-2">
-                <span>{getInventoryCategoryLabel(group.key, strings)}</span>
-                <span className="text-zinc-600">({group.items.length})</span>
+              {/* Category heading — icon + label + subtle count chip, separated
+                  from items by a thin line so the group reads as a block. */}
+              <h4 className="text-[11px] font-sans uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2 border-b border-zinc-800/30 pb-1">
+                <InventoryCategoryIcon category={group.key} className="w-3.5 h-3.5 text-primary/70 shrink-0" />
+                <span className="truncate">{getInventoryCategoryLabel(group.key, strings)}</span>
+                <span className="text-[10px] text-zinc-500 normal-case tracking-normal shrink-0">{group.items.length}</span>
               </h4>
-              <ul className="space-y-2">
+              <ul className={isReadOnly ? "divide-y divide-zinc-800/30" : "space-y-2"}>
                 {group.items.map(item => (
                   <li key={item.id}>
                     {isReadOnly ? (
-                      <div className="border-b border-zinc-800/30 pb-2">
-                        <div className="flex items-baseline flex-wrap gap-2 text-sm">
-                          <span className="text-foreground">{item.name || "—"}</span>
+                      /* View mode — compact row:
+                         left side has name + (compact) notes underneath,
+                         right side has the quantity tally and the equipped chip. */
+                      <div className="flex items-start justify-between gap-3 py-1.5 group">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-foreground truncate">{item.name || "—"}</p>
+                          {item.notes && (
+                            <p className="text-xs text-muted-foreground/90 mt-0.5 whitespace-pre-wrap leading-snug">
+                              {item.notes}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 pt-0.5">
                           {typeof item.quantity === 'number' && (
-                            <span className="text-muted-foreground text-xs">×{item.quantity}</span>
+                            <span className="text-xs text-zinc-400 tabular-nums">×{item.quantity}</span>
                           )}
                           {item.equipped && (
-                            <span className="text-[9px] uppercase tracking-widest border border-primary/40 bg-primary/10 text-primary px-1 rounded">
+                            <span
+                              className="text-[9px] uppercase tracking-widest border border-primary/30 bg-primary/5 text-primary/90 px-1.5 py-0.5 rounded"
+                              title={strings.inventory_equipped || "Equipped"}
+                            >
                               {strings.inventory_equipped || "Equipped"}
                             </span>
                           )}
                         </div>
-                        {item.notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">
-                            {item.notes}
-                          </p>
-                        )}
                       </div>
                     ) : (
-                      <div className="border border-zinc-800 rounded-md bg-zinc-950/40 p-2 space-y-2">
+                      /* Edit mode — tight bordered card with two rows:
+                         row 1 holds the inline controls (category, name, qty,
+                         equipped, delete); row 2 holds the notes textarea. */
+                      <div className="border border-zinc-800 rounded-md bg-zinc-950/40 hover:border-zinc-700 transition-colors p-2.5 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <select
-                            value={item.category || 'equipment'}
-                            onChange={e => updateItem(item.id, { category: e.target.value as InventoryCategory })}
-                            className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground"
-                            aria-label={strings.inventory_item_category || "Category"}
-                          >
-                            {INVENTORY_CATEGORIES.map(cat => (
-                              <option key={cat} value={cat}>{getInventoryCategoryLabel(cat, strings)}</option>
-                            ))}
-                          </select>
+                          <span className="inline-flex items-center gap-1 shrink-0">
+                            <InventoryCategoryIcon
+                              category={item.category || 'equipment'}
+                              className="w-3.5 h-3.5 text-zinc-500"
+                            />
+                            <select
+                              value={item.category || 'equipment'}
+                              onChange={e => updateItem(item.id, { category: e.target.value as InventoryCategory })}
+                              className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground hover:border-zinc-700 focus:outline-none focus:border-primary/40"
+                              aria-label={strings.inventory_item_category || "Category"}
+                            >
+                              {INVENTORY_CATEGORIES.map(cat => (
+                                <option key={cat} value={cat}>{getInventoryCategoryLabel(cat, strings)}</option>
+                              ))}
+                            </select>
+                          </span>
                           <Input
                             value={item.name}
                             onChange={e => updateItem(item.id, { name: e.target.value })}
                             placeholder={strings.inventory_item_name || "Item name"}
-                            className="h-7 text-xs bg-zinc-950 border-zinc-800 flex-1 min-w-[120px]"
+                            className="h-7 text-xs bg-zinc-950 border-zinc-800 flex-1 min-w-[140px] focus-visible:border-primary/40"
                           />
-                          <Input
-                            type="number"
-                            min={0}
-                            value={typeof item.quantity === 'number' ? item.quantity : ''}
-                            onChange={e => {
-                              const v = e.target.value;
-                              if (v === '') {
-                                updateItem(item.id, { quantity: undefined });
-                              } else {
-                                const n = parseInt(v, 10);
-                                if (Number.isFinite(n)) updateItem(item.id, { quantity: n });
-                              }
-                            }}
-                            placeholder="1"
-                            aria-label={strings.inventory_item_qty || "Quantity"}
-                            className="h-7 text-xs bg-zinc-950 border-zinc-800 w-16"
-                          />
-                          <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
+                          <div className="inline-flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] text-muted-foreground">×</span>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={typeof item.quantity === 'number' ? item.quantity : ''}
+                              onChange={e => {
+                                const v = e.target.value;
+                                if (v === '') {
+                                  updateItem(item.id, { quantity: undefined });
+                                } else {
+                                  const n = parseInt(v, 10);
+                                  if (Number.isFinite(n)) updateItem(item.id, { quantity: n });
+                                }
+                              }}
+                              placeholder="1"
+                              aria-label={strings.inventory_item_qty || "Quantity"}
+                              className="h-7 text-xs bg-zinc-950 border-zinc-800 w-14 tabular-nums focus-visible:border-primary/40"
+                            />
+                          </div>
+                          <label
+                            className={`inline-flex items-center gap-1.5 text-[11px] cursor-pointer select-none rounded px-1.5 py-1 border transition-colors shrink-0 ${
+                              item.equipped
+                                ? "border-primary/30 bg-primary/5 text-primary/90"
+                                : "border-zinc-800 text-muted-foreground hover:border-zinc-700"
+                            }`}
+                          >
                             <input
                               type="checkbox"
                               checked={!!item.equipped}
@@ -581,7 +633,7 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
                             type="button"
                             onClick={() => removeItem(item.id)}
                             aria-label={strings.remove_inventory_item || "Remove item"}
-                            className="text-red-500/50 hover:text-red-500"
+                            className="ml-auto text-zinc-500 hover:text-red-500 transition-colors shrink-0 p-1"
                           >
                             <X className="w-4 h-4" />
                           </button>
@@ -590,7 +642,7 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
                           value={item.notes || ''}
                           onChange={e => updateItem(item.id, { notes: e.target.value })}
                           placeholder={strings.inventory_item_notes || "Notes (optional)"}
-                          className="bg-zinc-950 border-zinc-800 min-h-[40px] text-xs"
+                          className="bg-zinc-950 border-zinc-800 min-h-[36px] text-xs leading-snug focus-visible:border-primary/40"
                         />
                       </div>
                     )}

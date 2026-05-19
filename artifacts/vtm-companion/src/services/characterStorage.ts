@@ -5,6 +5,7 @@ const STORAGE_KEY = 'vtm-characters';
 
 const VALID_INVENTORY_CATEGORIES: InventoryCategory[] = [
   'weapon', 'armor', 'tool', 'equipment', 'money', 'other',
+  'document', 'vehicle', 'occult', 'personal',
 ];
 
 /**
@@ -29,6 +30,7 @@ export function normalizeInventory(raw: unknown): InventoryItem[] {
         const qtyVal = x.quantity;
         const catVal = x.category;
         const notesVal = x.notes;
+        const equippedVal = x.equipped;
         const item: InventoryItem = {
           id,
           name: x.name as string,
@@ -38,6 +40,10 @@ export function normalizeInventory(raw: unknown): InventoryItem[] {
           item.category = catVal as InventoryCategory;
         }
         if (typeof notesVal === 'string') item.notes = notesVal;
+        // Equipped is optional — only persist when explicitly true. Tolerates
+        // booleans, the strings "true"/"false", and ignores anything else so
+        // old data without this field stays untouched.
+        if (equippedVal === true || equippedVal === 'true') item.equipped = true;
         return item;
       });
   }

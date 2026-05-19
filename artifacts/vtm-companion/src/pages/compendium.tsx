@@ -13,8 +13,8 @@ export default function Compendium() {
     { title: strings.clansTitle, desc: strings.clansSubtitle, icon: Crown, href: "/compendium/clanes", color: "text-blue-400" },
     { title: strings.disciplinesTitle, desc: strings.disciplinesSubtitle, icon: Flame, href: "/compendium/disciplinas", color: "text-red-500" },
     { title: strings.rulesTitle, desc: strings.rulesSubtitle, icon: ScrollText, href: "/compendium/reglas", color: "text-amber-400" },
-    { title: strings.roleplaylabel, desc: "Consejos para interpretar tu personaje.", icon: Drama, href: "/compendium/roleplay", color: "text-purple-400" },
-    { title: strings.toolsTitle, desc: "Herramientas para usar durante el juego.", icon: Swords, href: "/compendium/herramientas", color: "text-emerald-400" },
+    { title: strings.roleplaylabel, desc: strings.roleplaySubtitle || '', icon: Drama, href: "/compendium/roleplay", color: "text-purple-400" },
+    { title: strings.toolsTitle, desc: strings.toolsSubtitle || '', icon: Swords, href: "/compendium/herramientas", color: "text-emerald-400" },
     { title: strings.glossaryTitle, desc: strings.glossarySubtitle, icon: BookOpen, href: "/compendium/glosario", color: "text-slate-400" },
   ];
 

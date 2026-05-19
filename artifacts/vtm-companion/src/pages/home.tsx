@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { clans } from "@/data/clans";
+import { FEATURED_CLAN_IDS } from "@/data/featuredClans";
 import { getClanDisplayName, getClanDisplayNameById, getText } from "@/utils/content";
 import { getCharacters } from "@/services/characterStorage";
 import { getChronicles } from "@/services/chronicleStorage";
@@ -38,7 +39,8 @@ const clanImages: Record<string, string> = {
   salubri: "/images/salubri.png",
 };
 
-const FEATURED_CLAN_IDS = ["ventrue", "tremere", "brujah", "toreador", "nosferatu", "gangrel", "malkavian", "banu_haqim", "hecata", "lasombra", "ministry", "ravnos", "salubri"];
+// `FEATURED_CLAN_IDS` lives in `@/data/featuredClans` so the regression test
+// can lock its ids against `clans.ts` without pulling in this React module.
 
 /** Newer items first using `updatedAt` if present, otherwise `createdAt`. */
 function byRecency<T extends { updatedAt?: string; createdAt?: string }>(a: T, b: T): number {

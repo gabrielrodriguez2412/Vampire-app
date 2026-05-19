@@ -15,8 +15,9 @@ import {
 import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
   MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
-  MapPin, Heart, ArrowRight,
+  MapPin, Heart, ArrowRight, Database, Download, Upload,
 } from "lucide-react";
+import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
@@ -164,6 +165,13 @@ export default function ChroniclePage() {
   useEffect(() => {
     refresh();
   }, []);
+
+  // Full-App-Backup actions (shared with the Character page). Users browsing
+  // the Chronicle area also need a way to back up — Chronicles, sessions,
+  // locations, and relationships are all part of the same v2 backup.
+  const backup = useAppBackupActions({
+    onAfterImport: () => refresh(),
+  });
 
   // Cross-page deep-link: home dashboard sets `vtm-open-chronicle-id` (and
   // optionally `vtm-open-chronicle-tab`) in sessionStorage and navigates here;
@@ -753,15 +761,51 @@ export default function ChroniclePage() {
         </p>
       </div>
 
+      {/* Hidden file input for Full App Backup import (driven by the hook). */}
+      <input
+        type="file"
+        ref={backup.fileInputRef}
+        accept=".json"
+        className="hidden"
+        onChange={backup.handleImportFile}
+      />
+
       {/* Top action row */}
       <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
         <h2 className="text-xl font-serif">{strings.chronicleSection || "Chronicles"}</h2>
-        <Button
-          onClick={openCreate}
-          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4" /> {strings.chr_new_chronicle || "New Chronicle"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 text-muted-foreground hover:text-foreground"
+                aria-label={strings.full_backup || "Full Backup"}
+                title={strings.full_backup || "Full Backup"}
+              >
+                <Database className="w-4 h-4" />
+                <span className="hidden sm:inline">{strings.full_backup || "Full Backup"}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-72">
+              <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
+                {strings.full_backup_includes || "Includes characters, inventories, chronicles, sessions, locations, and relationships."}
+              </div>
+              <DropdownMenuItem onClick={backup.handleExportAll} className="gap-2 cursor-pointer">
+                <Download className="w-4 h-4" /> {strings.full_backup_export || "Export Full Backup"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={backup.handleImportClick} className="gap-2 cursor-pointer">
+                <Upload className="w-4 h-4" /> {strings.full_backup_import || "Import Full Backup"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            onClick={openCreate}
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="w-4 h-4" /> {strings.chr_new_chronicle || "New Chronicle"}
+          </Button>
+        </div>
       </div>
 
       {/* Status filter tabs */}

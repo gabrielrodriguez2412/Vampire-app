@@ -453,14 +453,18 @@ export default function CharacterPage() {
 
   return (
     <CharacterErrorBoundary key={boundaryKey} onReset={resetCharacterData}>
-      <div className="p-6 md:p-10 max-w-5xl mx-auto w-full">
-        <div className="mb-8">
-        <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
-          <User className="w-8 h-8" />
-          {strings.character}
-        </h1>
-        <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
-      </div>
+      <div className={`max-w-5xl mx-auto w-full ${activeView === 'sheet' ? 'px-4 md:px-10 pt-4 md:pt-6 pb-6' : 'p-6 md:p-10'}`}>
+        {/* Generic page header — redundant once a sheet is open (the sheet has
+            its own large name + metadata header), so hide in sheet view. */}
+        {activeView !== 'sheet' && (
+          <div className="mb-8">
+            <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
+              <User className="w-8 h-8" />
+              {strings.character}
+            </h1>
+            <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
+          </div>
+        )}
 
       {/* Chronicle assignment modal */}
       <AnimatePresence>
@@ -1085,162 +1089,233 @@ export default function CharacterPage() {
           <motion.div key="sheet" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}>
             {activeChar ? (
               <>
-                {/* In-flow sheet header (visible at top of sheet) */}
-                <div className="border-b border-border pb-4 mb-8">
-                  {/* Top row: back button + mode/print/edit controls */}
-                  <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-                    <Button variant="ghost" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-2 text-muted-foreground hover:text-foreground -ml-4">
-                      <ChevronLeft className="w-4 h-4" /> {strings.sheet_back}
-                    </Button>
-                    <div className="flex items-center gap-3">
-                      <div className={`px-3 py-1 rounded text-xs font-bold tracking-widest uppercase flex items-center gap-1.5 transition-colors ${
-                        isEditing
-                          ? "bg-primary/20 border border-primary/40 text-primary-foreground"
-                          : "bg-zinc-800/60 border border-zinc-700/50 text-muted-foreground"
-                      }`}>
-                        {isEditing ? (
-                          <>{strings.sheet_mode_edit || "Edit Mode"}</>
-                        ) : (
-                          <>{strings.sheet_mode_view || "View Mode"}</>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPrintingId(activeChar.id)}
-                        aria-label={strings.char_print || "Print / PDF"}
-                        title={strings.char_print || "Print / PDF"}
-                        className="gap-2 text-muted-foreground hover:text-foreground"
-                      >
-                        <Printer className="w-4 h-4" />
-                        <span className="hidden sm:inline">{strings.char_print || "Print"}</span>
-                      </Button>
-                      <Button
-                        variant={isEditing ? "default" : "outline"}
-                        onClick={() => setIsEditing(!isEditing)}
-                        size="sm"
-                        className={`gap-2 ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground"}`}
-                      >
-                        {isEditing ? (
-                          <>
-                            <Check className="w-4 h-4" /> {strings.sheet_done || "Done"}
-                          </>
-                        ) : (
-                          <>
-                            <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
+                {/* Sheet header — see SheetHeader below for the layout. */}
+                {(() => {
+                  const linkedChr = activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId) : undefined;
+                  const hasLink = Boolean(activeChar.chronicleId);
+                  const isMissing = hasLink && !linkedChr;
+                  const openAssignModal = () => {
+                    refreshChronicles();
+                    setAssigningChronicleForId(activeChar.id);
+                    setAssignChronicleSelection(activeChar.chronicleId || "");
+                  };
+                  const handleUnlink = () => {
+                    const updated = setCharacterChronicle(activeChar.id, null);
+                    if (updated) {
+                      setCharacters(getCharacters());
+                      setActiveChar(updated);
+                      toast({ title: strings.char_chronicle_cleared || "Chronicle link removed" });
+                    }
+                  };
+                  const handleToggleType = () => {
+                    const next: CharacterType = activeChar.characterType === 'npc' ? 'player' : 'npc';
+                    const updated = setCharacterType(activeChar.id, next);
+                    if (updated) {
+                      setCharacters(getCharacters());
+                      setActiveChar(updated);
+                      toast({
+                        title: next === 'npc'
+                          ? (strings.char_marked_npc || "Marked as NPC")
+                          : (strings.char_marked_player || "Marked as Player Character"),
+                      });
+                    }
+                  };
+                  const isRenamingThis = renamingId === activeChar.id;
 
-                  {/* Bottom row: character name + clan/edition subtitle */}
-                  <div>
-                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary leading-tight break-words">
-                      {activeChar.name?.trim() || strings.unnamed_character || "Unnamed Character"}
-                    </h2>
-                    <p className="text-sm text-muted-foreground flex items-center flex-wrap gap-2 mt-1">
-                      <span>
-                        {getClanIcon(activeChar.clan)} {getClanName(activeChar.clan, activeChar.edition as EditionId)}
-                      </span>
-                      <span aria-hidden="true">•</span>
-                      <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
-                        {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
-                      </span>
-                      <span
-                        className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
-                          activeChar.characterType === 'npc'
-                            ? "border-zinc-700 bg-zinc-900 text-zinc-400"
-                            : "border-primary/30 bg-primary/10 text-primary"
-                        }`}
-                        title={activeChar.characterType === 'npc' ? (strings.char_type_npc || "NPC") : (strings.char_type_player || "Player Character")}
-                      >
-                        {getTypeShortLabel(activeChar.characterType)}
-                      </span>
-                    </p>
-                  </div>
-
-                  {/* Linked Chronicle panel — management metadata, always visible
-                      regardless of View/Edit mode. Reuses the existing assignment
-                      modal driven by `assigningChronicleForId`. */}
-                  {(() => {
-                    const linkedChr = activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId) : undefined;
-                    const hasLink = Boolean(activeChar.chronicleId);
-                    const isMissing = hasLink && !linkedChr;
-                    const openAssignModal = () => {
-                      refreshChronicles();
-                      setAssigningChronicleForId(activeChar.id);
-                      setAssignChronicleSelection(activeChar.chronicleId || "");
-                    };
-                    const handleUnlink = () => {
-                      const updated = setCharacterChronicle(activeChar.id, null);
-                      if (updated) {
-                        setCharacters(getCharacters());
-                        setActiveChar(updated);
-                        toast({ title: strings.char_chronicle_cleared || "Chronicle link removed" });
-                      }
-                    };
-                    return (
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                        <ScrollText className="w-4 h-4 text-primary shrink-0" aria-hidden="true" />
-                        <span className="text-muted-foreground">
-                          {strings.char_chronicle_label || "Linked Chronicle"}:
-                        </span>
-                        {hasLink ? (
+                  return (
+                    <div className="border-b border-border/60 pb-3 mb-4">
+                      {/* Top row — Back on the left, primary controls + More menu on the right.
+                          Same flex row so the action cluster sits visually attached to the identity below. */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <Button variant="ghost" size="sm" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-1.5 -ml-2 h-8 px-2 text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground">
+                          <ChevronLeft className="w-3.5 h-3.5" /> {strings.sheet_back}
+                        </Button>
+                        <div className="flex items-center gap-2">
                           <span
-                            className={`inline-flex items-center gap-1.5 text-xs border px-2 py-0.5 rounded max-w-[16rem] ${
-                              isMissing
-                                ? "border-zinc-700 bg-zinc-900 text-zinc-500 italic"
-                                : "border-primary/30 bg-primary/5 text-foreground"
+                            className={`px-2.5 py-1 rounded text-[10px] font-bold tracking-widest uppercase items-center gap-1.5 transition-colors hidden sm:inline-flex ${
+                              isEditing
+                                ? "bg-primary/20 border border-primary/40 text-primary-foreground"
+                                : "bg-zinc-800/60 border border-zinc-700/50 text-muted-foreground"
                             }`}
-                            title={linkedChr?.name || (strings.char_chronicle_missing || "Unknown chronicle")}
                           >
-                            <span className="truncate">
-                              {linkedChr?.name || (strings.char_chronicle_missing || "Unknown chronicle")}
-                            </span>
-                            {linkedChr?.edition && (
-                              <span className="uppercase text-[9px] tracking-wider border border-border px-1 rounded bg-zinc-900 text-muted-foreground">
-                                {linkedChr.edition}
-                              </span>
-                            )}
-                            {linkedChr?.status === 'archived' && (
-                              <span className="uppercase text-[9px] tracking-wider border border-zinc-700 px-1 rounded bg-zinc-900 text-zinc-400">
-                                {strings.chr_status_archived || "Archived"}
-                              </span>
-                            )}
+                            {isEditing ? (strings.sheet_mode_edit || "Edit Mode") : (strings.sheet_mode_view || "View Mode")}
                           </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">
-                            {strings.char_chronicle_no_link || "No Chronicle linked"}
-                          </span>
-                        )}
-                        <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
                           <Button
+                            type="button"
                             variant="outline"
                             size="sm"
-                            onClick={openAssignModal}
-                            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => setPrintingId(activeChar.id)}
+                            aria-label={strings.char_print || "Print / PDF"}
+                            title={strings.char_print || "Print / PDF"}
+                            className="gap-2 text-muted-foreground hover:text-foreground"
                           >
-                            {hasLink
-                              ? (strings.char_change_chronicle || "Change Chronicle")
-                              : (strings.char_assign_chronicle || "Assign Chronicle")}
+                            <Printer className="w-4 h-4" />
+                            <span className="hidden sm:inline">{strings.char_print || "Print"}</span>
                           </Button>
-                          {hasLink && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={handleUnlink}
-                              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                            >
-                              {strings.char_unlink_chronicle || "Unlink Chronicle"}
-                            </Button>
-                          )}
+                          <Button
+                            variant={isEditing ? "default" : "outline"}
+                            onClick={() => setIsEditing(!isEditing)}
+                            size="sm"
+                            className={`gap-2 ${isEditing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "text-muted-foreground hover:text-foreground"}`}
+                          >
+                            {isEditing ? (
+                              <>
+                                <Check className="w-4 h-4" /> {strings.sheet_done || "Done"}
+                              </>
+                            ) : (
+                              <>
+                                <Edit3 className="w-4 h-4" /> {strings.sheet_edit || "Edit"}
+                              </>
+                            )}
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                aria-label={strings.more_actions || "More actions"}
+                                title={strings.more_actions || "More actions"}
+                                className="px-2 text-muted-foreground hover:text-foreground"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60">
+                              <DropdownMenuItem
+                                onClick={() => { setRenamingId(activeChar.id); setRenameValue(activeChar.name); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Pencil className="w-4 h-4" /> {strings.char_rename || "Rename"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { duplicateCharacter(activeChar.id); setCharacters(getCharacters()); toast({ title: strings.char_duplicated || "Character duplicated" }); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Copy className="w-4 h-4" /> {strings.char_duplicate || "Duplicate"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { downloadCharacterExport(activeChar.id); toast({ title: strings.char_exported || "Character exported" }); }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Download className="w-4 h-4" /> {strings.char_export || "Export"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={handleToggleType}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <User className="w-4 h-4" />
+                                {activeChar.characterType === 'npc'
+                                  ? (strings.char_mark_as_player || "Mark as Player Character")
+                                  : (strings.char_mark_as_npc || "Mark as NPC")}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={openAssignModal}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <ScrollText className="w-4 h-4" />
+                                {hasLink
+                                  ? (strings.char_change_chronicle || "Change Chronicle")
+                                  : (strings.char_assign_chronicle || "Assign Chronicle")}
+                              </DropdownMenuItem>
+                              {hasLink && (
+                                <DropdownMenuItem
+                                  onClick={handleUnlink}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <X className="w-4 h-4" /> {strings.char_unlink_chronicle || "Unlink Chronicle"}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeletingId(activeChar.id)}
+                                className="gap-2 cursor-pointer text-red-400 focus:text-red-400 focus:bg-red-950/30"
+                              >
+                                <Trash2 className="w-4 h-4" /> {strings.delete}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                    );
-                  })()}
-                </div>
+
+                      {/* Identity block — name (inline-editable when renaming) */}
+                      {isRenamingThis ? (
+                        <div className="flex items-center gap-2 mb-1">
+                          <Input
+                            value={renameValue}
+                            onChange={e => setRenameValue(e.target.value)}
+                            className="h-10 text-2xl md:text-3xl font-serif font-bold bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary"
+                            autoFocus
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRenameConfirm();
+                              if (e.key === 'Escape') handleRenameCancel();
+                            }}
+                          />
+                          <Button variant="ghost" size="icon" onClick={handleRenameConfirm} className="h-9 w-9 text-green-400 hover:text-green-300 hover:bg-green-950/30 shrink-0">
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={handleRenameCancel} className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0">
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary leading-tight break-words">
+                          {activeChar.name?.trim() || strings.unnamed_character || "Unnamed Character"}
+                        </h2>
+                      )}
+
+                      {/* Metadata pill row — clan, edition, PC/NPC, chronicle.
+                          All inline, pill-styled, mobile-friendly via flex-wrap. */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
+                          <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
+                        </span>
+                        <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
+                          {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
+                        </span>
+                        <span
+                          className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                            activeChar.characterType === 'npc'
+                              ? "border-zinc-700 bg-zinc-900 text-zinc-400"
+                              : "border-primary/30 bg-primary/10 text-primary"
+                          }`}
+                          title={activeChar.characterType === 'npc' ? (strings.char_type_npc || "NPC") : (strings.char_type_player || "Player Character")}
+                        >
+                          {getTypeShortLabel(activeChar.characterType)}
+                        </span>
+                        {/* Chronicle pill — click to assign/change. Always visible
+                            (management metadata, not gated on Edit Mode). */}
+                        <button
+                          type="button"
+                          onClick={openAssignModal}
+                          title={hasLink
+                            ? (strings.char_change_chronicle || "Change Chronicle")
+                            : (strings.char_assign_chronicle || "Assign Chronicle")}
+                          className={`inline-flex items-center gap-1.5 text-[11px] border px-1.5 py-0.5 rounded max-w-[16rem] hover:border-primary/60 transition-colors ${
+                            !hasLink
+                              ? "border-zinc-700 bg-zinc-900 text-zinc-400 italic"
+                              : isMissing
+                                ? "border-zinc-700 bg-zinc-900 text-zinc-500 italic"
+                                : "border-primary/30 bg-primary/5 text-foreground"
+                          }`}
+                        >
+                          <ScrollText className="w-3 h-3 shrink-0" aria-hidden="true" />
+                          <span className="truncate">
+                            {hasLink
+                              ? (linkedChr?.name || (strings.char_chronicle_missing || "Unknown chronicle"))
+                              : (strings.char_chronicle_no_link || "No Chronicle linked")}
+                          </span>
+                          {linkedChr?.status === 'archived' && (
+                            <span className="uppercase text-[9px] tracking-wider border border-zinc-700 px-1 rounded bg-zinc-900 text-zinc-400">
+                              {strings.chr_status_archived || "Archived"}
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <DynamicSheet
                   character={activeChar}

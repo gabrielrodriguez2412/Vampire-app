@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { rules } from "@/data/rules";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -15,6 +16,30 @@ import { getText, getTextArray, filterByEdition, isAvailableInLang } from "@/uti
 export default function Rules() {
   const [filter, setFilter] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("__all__");
+  const params = useParams();
+
+  // Deep-link: when navigating to /compendium/reglas/:id, ensure the target
+  // rule is included in the active filter (clear the category filter) and
+  // scroll it into view. The Accordion is `type="multiple"` so we also seed
+  // `openIds` with the target id so the body is already expanded on arrival.
+  const [openIds, setOpenIds] = useState<string[]>(params.id ? [params.id] : []);
+  useEffect(() => {
+    if (!params.id) return;
+    const targetId = params.id;
+    setActiveCategory("__all__");
+    setFilter("");
+    setOpenIds(prev => (prev.includes(targetId) ? prev : [...prev, targetId]));
+    // Defer scroll until the accordion has had a chance to expand so the
+    // scroll target includes the open body height.
+    const HEADER_OFFSET = 80;
+    const timer = window.setTimeout(() => {
+      const el = document.getElementById(`rule-${targetId}`);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - HEADER_OFFSET;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [params.id]);
 
   const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
@@ -87,18 +112,25 @@ export default function Rules() {
           </div>
 
           <div className="space-y-4">
-            <Accordion type="multiple" className="w-full space-y-4">
+            <Accordion
+              type="multiple"
+              value={openIds}
+              onValueChange={setOpenIds}
+              className="w-full space-y-4"
+            >
               <AnimatePresence>
                 {filtered.map((rule, i) => {
                   const isMissingLang = !isAvailableInLang(rule.shortExplanation, activeLanguage);
                   return (
-                    <motion.div 
+                    <motion.div
                       key={rule.id}
+                      id={`rule-${rule.id}`}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
                       transition={{ delay: i * 0.05 }}
                       layout
+                      className="scroll-mt-24"
                     >
                       <AccordionItem value={rule.id} className="border border-border rounded-lg bg-card overflow-hidden">
                         <div className="flex items-center justify-between pr-4 bg-white/[0.01]">

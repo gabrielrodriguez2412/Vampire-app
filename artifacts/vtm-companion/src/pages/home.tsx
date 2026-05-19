@@ -12,6 +12,16 @@ import {
   User, ScrollText, CalendarDays, BookOpen, Users, Flame, ArrowRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
+/**
+ * Home preview override map. Keys are the canonical clan ids used in
+ * `clans.ts` — the previous version of this map used V5 alt-name slugs
+ * (`banu_haqim`, `hecata`, `ministry`) which never matched any real clan
+ * id, so those entries silently fell back to opengraph. Each entry below
+ * mirrors the matching clan's `bannerImage`; `clans.ts` remains the
+ * source of truth for what is actually rendered on the dedicated clan
+ * page, and we now fall through to `clan.bannerImage` when this map has
+ * no entry for an id.
+ */
 const clanImages: Record<string, string> = {
   brujah: "/images/brujah.png",
   ventrue: "/images/ventrue.png",
@@ -20,10 +30,10 @@ const clanImages: Record<string, string> = {
   toreador: "/images/toreador.png",
   malkavian: "/images/malkavian.png",
   gangrel: "/images/gangrel.png",
-  "banu_haqim": "/images/banu-haquim.png",
-  hecata: "/images/hecata.png",
+  assamite: "/images/banu-haquim.png",       // V5: Banu Haqim
+  giovanni: "/images/hecata.png",            // V5: Hecata
+  followers_of_set: "/images/ministry.png",  // V5: The Ministry
   lasombra: "/images/lasombra.png",
-  ministry: "/images/ministry.png",
   ravnos: "/images/ravnos.png",
   salubri: "/images/salubri.png",
 };
@@ -353,7 +363,7 @@ export default function Home() {
                 <div className="flex-none w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">
                   <div className="h-72 relative">
                     <img
-                      src={clanImages[clan.id] || "/opengraph.jpg"}
+                      src={clanImages[clan.id] || clan.bannerImage || "/opengraph.jpg"}
                       alt={clanName}
                       className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity grayscale contrast-125"
                     />

@@ -360,8 +360,8 @@ export default function Home() {
             const clanDesc = getText(clan.summary, activeLanguage) || '';
             return (
               <Link key={clan.id} href={`/compendium/clanes/${clan.id}`}>
-                <div className="flex-none w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">
-                  <div className="h-72 relative">
+                <div className="flex-none w-52 sm:w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">
+                  <div className="h-60 sm:h-72 relative">
                     <img
                       src={clanImages[clan.id] || clan.bannerImage || "/opengraph.jpg"}
                       alt={clanName}
@@ -369,9 +369,9 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
                   </div>
-                  <div className="absolute bottom-0 p-5 w-full">
-                    <p className="font-sans text-xs font-semibold text-primary-container tracking-[0.2em] mb-1 uppercase">{strings.clanLabel}</p>
-                    <h3 className="font-serif text-3xl leading-none text-on-surface mb-1.5 font-semibold tracking-tight uppercase">{clanName}</h3>
+                  <div className="absolute bottom-0 p-4 sm:p-5 w-full">
+                    <p className="font-sans text-[10px] sm:text-xs font-semibold text-primary-container tracking-[0.2em] mb-1 uppercase">{strings.clanLabel}</p>
+                    <h3 className="font-serif text-2xl sm:text-3xl leading-none text-on-surface mb-1.5 font-semibold tracking-tight uppercase break-words">{clanName}</h3>
                     <p className="text-zinc-400 font-sans text-xs line-clamp-2">{clanDesc}</p>
                   </div>
                 </div>

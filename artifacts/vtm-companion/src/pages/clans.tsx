@@ -6,6 +6,7 @@ import { disciplines } from "@/data/disciplines";
 import { ClanEntry, EditionId, LangCode } from "@/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ChevronLeft } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -149,27 +150,44 @@ export default function Clans() {
               <div className="h-1 w-full" style={{ backgroundColor: selectedClan.colorTheme }} />
               <ScrollArea className="max-h-[85vh]">
                 <div className="p-0">
-                  <div className="relative h-64 border-b border-zinc-900">
-                    <img 
-                      src={selectedClan.bannerImage || "/opengraph.jpg"} 
+                  <div className="relative h-52 sm:h-64 border-b border-zinc-900">
+                    <img
+                      src={selectedClan.bannerImage || "/opengraph.jpg"}
                       alt={getClanDisplayName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}
                       className="w-full h-full object-cover opacity-40 grayscale contrast-125"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
-                    <div className="absolute bottom-6 left-8 right-8 flex justify-between items-end">
-                      <div>
-                        <div className="text-sm font-sans font-bold uppercase tracking-widest mb-1" style={{ color: selectedClan.colorTheme }}>
+
+                    {/* Back-to-Clans control. Sits over the banner so it
+                        remains reachable on mobile/tablet even when the modal
+                        is large; on desktop it stays visible too. */}
+                    <button
+                      type="button"
+                      onClick={() => handleClose(false)}
+                      className="absolute top-3 left-3 sm:top-4 sm:left-5 inline-flex items-center gap-1.5 h-8 px-2.5 rounded-md bg-black/60 hover:bg-black/80 backdrop-blur border border-zinc-700/60 text-xs uppercase tracking-widest text-zinc-200 hover:text-on-surface transition-colors"
+                      aria-label={strings.back_to_clans || "Back to Clans"}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="hidden xs:inline sm:inline">{strings.back_to_clans || "Back to Clans"}</span>
+                    </button>
+
+                    {/* Title row — wrapping flex so the favourite button can
+                        drop under the title on the narrowest viewports rather
+                        than squeezing the name into ellipsis. */}
+                    <div className="absolute bottom-4 left-5 right-5 sm:bottom-6 sm:left-8 sm:right-8 flex flex-wrap justify-between items-end gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs sm:text-sm font-sans font-bold uppercase tracking-widest mb-1" style={{ color: selectedClan.colorTheme }}>
                           {getText(selectedClan.sect, activeLanguage) || "Unknown Sect"}
                         </div>
-                        <h2 className="font-serif text-5xl text-on-surface uppercase tracking-tight flex items-center gap-3">
+                        <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-on-surface uppercase tracking-tight flex items-center gap-2 sm:gap-3 break-words">
                           <span>{selectedClan.icon}</span> {getClanDisplayName(selectedClan, activeEdition, activeLanguage)}
                         </h2>
                       </div>
-                      <FavoriteButton id={selectedClan.id} className="bg-black/50 border border-zinc-800" />
+                      <FavoriteButton id={selectedClan.id} className="bg-black/50 border border-zinc-800 shrink-0" />
                     </div>
                   </div>
 
-                  <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="p-5 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                     <div className="md:col-span-2 space-y-8 font-sans text-zinc-300">
                       {!isAvailableInLang(selectedClan.summary, activeLanguage) && (
                         <div className="bg-amber-950/30 text-amber-500 p-3 text-xs border border-amber-900/50 uppercase tracking-widest">

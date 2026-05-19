@@ -550,9 +550,14 @@ export default function CharacterPage() {
               className="hidden"
               onChange={backup.handleImportFile}
             />
-            <div className="flex justify-between items-center mb-6">
+            {/* On narrow screens we stack the title above the action row and
+                give the action row a wrapping layout so Import/Backup/Create
+                never overflow. The Create button is the visually primary
+                action and gets full-width treatment on the smallest viewports
+                so it stays reachable. */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <h2 className="text-xl font-serif">{strings.myCharacters}</h2>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" onClick={handleImportClick} className="gap-2 text-muted-foreground hover:text-foreground" size="sm">
                   <Upload className="w-4 h-4" /> {strings.char_import || "Import"}
                 </Button>
@@ -569,8 +574,8 @@ export default function CharacterPage() {
                       <span className="hidden sm:inline">{strings.full_backup || "Full Backup"}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-72">
-                    <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
+                  <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1rem))]">
+                    <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic leading-snug">
                       {strings.full_backup_includes || "Includes characters, inventories, chronicles, sessions, locations, and relationships."}
                     </div>
                     <DropdownMenuItem
@@ -587,7 +592,10 @@ export default function CharacterPage() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={() => { refreshChronicles(); setActiveView('create'); }} className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button
+                  onClick={() => { refreshChronicles(); setActiveView('create'); }}
+                  className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 ml-auto sm:ml-0"
+                >
                   <Plus className="w-4 h-4" /> {strings.createCharacter}
                 </Button>
               </div>

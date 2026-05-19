@@ -787,8 +787,8 @@ export default function ChroniclePage() {
                 <span className="hidden sm:inline">{strings.full_backup || "Full Backup"}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-72">
-              <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic">
+            <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-1rem))]">
+              <div className="px-2 py-1.5 text-[11px] text-muted-foreground italic leading-snug">
                 {strings.full_backup_includes || "Includes characters, inventories, chronicles, sessions, locations, and relationships."}
               </div>
               <DropdownMenuItem onClick={backup.handleExportAll} className="gap-2 cursor-pointer">
@@ -1478,7 +1478,7 @@ export default function ChroniclePage() {
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-lg w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-lg md:max-w-2xl lg:max-w-3xl shadow-xl max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-10rem)] md:max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
                 {/* Header: chronicle title + status, no tabs yet */}
@@ -1544,7 +1544,7 @@ export default function ChroniclePage() {
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
                   {manageTab === 'overview' && (() => {
                     const latestLocation = locations.length > 0
                       ? locations.reduce((a, b) => a.updatedAt > b.updatedAt ? a : b)

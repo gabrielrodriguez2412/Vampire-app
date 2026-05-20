@@ -141,6 +141,35 @@ export interface InventoryItem {
   equipped?: boolean;
 }
 
+/**
+ * Categories used to tag character journal entries. Unknown / legacy values
+ * are normalized to `'other'` by `normalizeCharacterNotes`.
+ */
+export type CharacterNoteCategory =
+  | 'general'
+  | 'backstory'
+  | 'goals'
+  | 'secrets'
+  | 'contacts'
+  | 'session'
+  | 'other';
+
+/**
+ * One journal entry on a character. Stored as an array on `BaseCharacter`
+ * under `characterNotes`. The legacy free-text `notes: string` field is kept
+ * untouched for backward compatibility — `normalizeCharacterNotes` seeds a
+ * single 'general' entry from it when no structured notes exist, but never
+ * deletes it.
+ */
+export interface CharacterNote {
+  id: string;
+  category: CharacterNoteCategory;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BaseCharacter {
   id: string;
   name: string;
@@ -159,6 +188,13 @@ export interface BaseCharacter {
   sire?: string;
   sect?: string;
   notes?: string;
+  /**
+   * Structured journal entries. Optional and backward-compatible — characters
+   * saved before this field existed simply omit it. `getCharacters` normalizes
+   * missing/malformed values to `[]` (or seeds a single entry from a non-empty
+   * legacy `notes` string if no structured notes exist yet).
+   */
+  characterNotes?: CharacterNote[];
   /** 'player' or 'npc'. Defaults to 'player' on load via getCharacters normalization. */
   characterType?: CharacterType;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */

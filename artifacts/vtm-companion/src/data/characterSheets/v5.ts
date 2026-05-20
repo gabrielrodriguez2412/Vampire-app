@@ -820,10 +820,10 @@ export const v5Schema: SheetSchema = {
       ]
     },
     {
-      id: 'notes',
-      labelKey: 'sheet_section_notes',
+      id: 'journal',
+      labelKey: 'sheet_section_journal',
       fields: [
-        { id: 'notes', labelKey: 'sheet_notes', type: 'textarea' },
+        { id: 'characterNotes', labelKey: 'sheet_section_journal', type: 'journal' },
       ]
     }
   ]

@@ -1,4 +1,4 @@
-import { Character, EditionId, V5Character, ClassicCharacter, CharacterType, InventoryItem, InventoryCategory } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, CharacterType, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
 import { normalizeEditionId } from '../utils/content';
 
 const STORAGE_KEY = 'vtm-characters';
@@ -7,6 +7,76 @@ const VALID_INVENTORY_CATEGORIES: InventoryCategory[] = [
   'weapon', 'armor', 'tool', 'equipment', 'money', 'other',
   'document', 'vehicle', 'occult', 'personal',
 ];
+
+const VALID_NOTE_CATEGORIES: CharacterNoteCategory[] = [
+  'general', 'backstory', 'goals', 'secrets', 'contacts', 'session', 'other',
+];
+
+/**
+ * Coerce any value into a valid `CharacterNote[]`.
+ *
+ * - Array  → keep only entries that look like notes (object with at least one
+ *            string field among `title` / `body`), assign a fresh UUID when
+ *            missing, normalize unknown categories to `'other'`, fill in
+ *            timestamps from whatever's available (or `now`).
+ * - Other  → empty array.
+ *
+ * Pure transformation; does not mutate input. Used by `getCharacters` to
+ * normalize storage on read. Callers may pass `legacyNotes` so a non-empty
+ * legacy free-text `notes: string` field can seed a single 'general' journal
+ * entry when no structured notes exist yet — keeping pre-journal characters
+ * useful in the new UI without ever discarding the original text (the
+ * legacy `notes` string stays in storage untouched).
+ */
+export function normalizeCharacterNotes(
+  raw: unknown,
+  legacyNotes?: unknown
+): CharacterNote[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .filter((x): x is Record<string, unknown> => !!x && typeof x === 'object')
+      .map(x => {
+        const titleVal = typeof x.title === 'string' ? x.title : '';
+        const bodyVal = typeof x.body === 'string' ? x.body : '';
+        // A note must carry at least one of title/body to be kept.
+        return { titleVal, bodyVal, x };
+      })
+      .filter(({ titleVal, bodyVal }) => titleVal.trim() || bodyVal.trim())
+      .map(({ titleVal, bodyVal, x }) => {
+        const idVal = x.id;
+        const id = typeof idVal === 'string' && idVal ? idVal : crypto.randomUUID();
+        const catVal = x.category;
+        const category: CharacterNoteCategory =
+          typeof catVal === 'string' && VALID_NOTE_CATEGORIES.includes(catVal as CharacterNoteCategory)
+            ? (catVal as CharacterNoteCategory)
+            : 'other';
+        const createdVal = x.createdAt;
+        const updatedVal = x.updatedAt;
+        const nowIso = new Date().toISOString();
+        const createdAt = typeof createdVal === 'string' && createdVal ? createdVal : nowIso;
+        const updatedAt = typeof updatedVal === 'string' && updatedVal ? updatedVal : createdAt;
+        return { id, category, title: titleVal, body: bodyVal, createdAt, updatedAt };
+      });
+  }
+
+  // No structured notes yet. If the legacy free-text `notes` field has
+  // content, seed a single 'general' entry so the journal UI surfaces it.
+  // We do NOT clear the legacy field — it stays in storage so older clients
+  // and re-imports still see the original text.
+  if (typeof legacyNotes === 'string' && legacyNotes.trim()) {
+    const nowIso = new Date().toISOString();
+    return [{
+      id: crypto.randomUUID(),
+      category: 'general',
+      title: '',
+      body: legacyNotes,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    }];
+  }
+
+  return [];
+}
 
 /**
  * Coerce any value into a valid `InventoryItem[]`.
@@ -91,6 +161,9 @@ export function getCharacters(): Character[] {
         // Normalize inventory to a valid InventoryItem[]; tolerates missing field,
         // legacy free-text strings, or malformed arrays.
         inventory: normalizeInventory(c?.inventory),
+        // Normalize structured journal entries; seeds a single 'general' entry
+        // from the legacy free-text `notes` string when no journal exists yet.
+        characterNotes: normalizeCharacterNotes(c?.characterNotes, c?.notes),
         chronicleId: normalizedChronicleId,
         createdAt: typeof c?.createdAt === 'string' ? c.createdAt : new Date().toISOString(),
         updatedAt: typeof c?.updatedAt === 'string' ? c.updatedAt : new Date().toISOString(),
@@ -170,6 +243,7 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
     edition,
     characterType: 'player' as CharacterType,
     inventory: [] as InventoryItem[],
+    characterNotes: [] as CharacterNote[],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     attributes: {},

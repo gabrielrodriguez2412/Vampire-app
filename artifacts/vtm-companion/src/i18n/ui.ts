@@ -1,12 +1,12 @@
 import { LangCode } from '../types';
 
 export const RULE_CATEGORIES: Record<LangCode, Record<string, string>> = {
-  es: { Tiradas: 'Tiradas', Hambre: 'Hambre', Bestia: 'Bestia', Combate: 'Combate', Mecánica: 'Mecánica', Moralidad: 'Moralidad', Sangre: 'Sangre' },
-  en: { Tiradas: 'Rolls', Hambre: 'Hunger', Bestia: 'Beast', Combate: 'Combat', Mecánica: 'Mechanics', Moralidad: 'Morality', Sangre: 'Blood' },
-  pt: { Tiradas: 'Rolagens', Hambre: 'Fome', Bestia: 'Besta', Combate: 'Combate', Mecánica: 'Mecânica', Moralidad: 'Moralidade', Sangre: 'Sangue' },
-  fr: { Tiradas: 'Jets', Hambre: 'Faim', Bestia: 'Bête', Combate: 'Combat', Mecánica: 'Mécanique', Moralidad: 'Moralité', Sangre: 'Sang' },
-  de: { Tiradas: 'Würfe', Hambre: 'Hunger', Bestia: 'Bestie', Combate: 'Kampf', Mecánica: 'Mechanik', Moralidad: 'Moral', Sangre: 'Blut' },
-  it: { Tiradas: 'Tiri', Hambre: 'Fame', Bestia: 'Bestia', Combate: 'Combattimento', Mecánica: 'Meccanica', Moralidad: 'Moralità', Sangre: 'Sangue' }
+  es: { Tiradas: 'Tiradas', Hambre: 'Hambre', Bestia: 'Bestia', Combate: 'Combate', Mecánica: 'Mecánica', Moralidad: 'Moralidad', Sangre: 'Sangre', Narrador: 'Narrador' },
+  en: { Tiradas: 'Rolls', Hambre: 'Hunger', Bestia: 'Beast', Combate: 'Combat', Mecánica: 'Mechanics', Moralidad: 'Morality', Sangre: 'Blood', Narrador: 'Storyteller' },
+  pt: { Tiradas: 'Rolagens', Hambre: 'Fome', Bestia: 'Besta', Combate: 'Combate', Mecánica: 'Mecânica', Moralidad: 'Moralidade', Sangre: 'Sangue', Narrador: 'Narrador' },
+  fr: { Tiradas: 'Jets', Hambre: 'Faim', Bestia: 'Bête', Combate: 'Combat', Mecánica: 'Mécanique', Moralidad: 'Moralité', Sangre: 'Sang', Narrador: 'Conteur' },
+  de: { Tiradas: 'Würfe', Hambre: 'Hunger', Bestia: 'Bestie', Combate: 'Kampf', Mecánica: 'Mechanik', Moralidad: 'Moral', Sangre: 'Blut', Narrador: 'Erzähler' },
+  it: { Tiradas: 'Tiri', Hambre: 'Fame', Bestia: 'Bestia', Combate: 'Combattimento', Mecánica: 'Meccanica', Moralidad: 'Moralità', Sangre: 'Sangue', Narrador: 'Narratore' }
 };
 
 export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
@@ -32,6 +32,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     clansUsing: 'Clanes que la usan:', powers: 'Poderes', tacticalUse: 'Uso táctico:', noDisciplines: 'No hay disciplinas', noDisciplineFound: 'Disciplina no encontrada', level: 'Nivel',
     noTranslation: 'Sin traducción', contentUnavailable: 'Contenido no disponible en este idioma',
     needs_review: 'Necesita revisión',
+    rule_edition_all: 'Todas', rule_edition_classic: 'Clásico',
     home_continue: 'Continuar',
     home_continue_subtitle: 'Tu personaje más reciente',
     home_quick_actions: 'Acciones rápidas',
@@ -407,6 +408,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     clansUsing: 'Clans using it:', powers: 'Powers', tacticalUse: 'Tactical use:', noDisciplines: 'No disciplines', noDisciplineFound: 'Discipline not found', level: 'Level',
     noTranslation: 'No translation', contentUnavailable: 'Content not available in this language',
     needs_review: 'Needs review',
+    rule_edition_all: 'All', rule_edition_classic: 'Classic',
     home_continue: 'Continue',
     home_continue_subtitle: 'Your most recent character',
     home_quick_actions: 'Quick actions',
@@ -778,6 +780,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bloodlines: 'Linhagens', noClanFound: 'Clã não encontrado', noClansForEdition: 'Sem clãs para esta edição', searchResultsFor: 'Resultados para', clickDisciplineHint: 'Clique em uma disciplina',
     clansUsing: 'Clãs que usam:', powers: 'Poderes', tacticalUse: 'Uso tático:', noDisciplines: 'Sem disciplinas', noDisciplineFound: 'Disciplina não encontrada', level: 'Nível',
     noTranslation: 'Sem tradução', contentUnavailable: 'Conteúdo indisponível',
+    needs_review: 'Precisa revisão', rule_edition_all: 'Todas', rule_edition_classic: 'Clássico',
     expandAll: 'Expandir Todos', collapseAll: 'Recolher Todos', examples: 'Exemplos:', quickNotes: 'Notas Rápidas:', tags: 'Tags',
     myCharacters: 'Meus Personagens', createCharacter: 'Criar Personagem', characterSheet: 'Ficha de Personagem', attributes: 'Atributos', skills: 'Habilidades',
     humanity: 'Humanidade', bloodPotency: 'Potência de Sangue', hunger: 'Fome', health: 'Saúde', willpower: 'Força de Vontade', generation: 'Geração', generation_label: 'Geração',
@@ -868,6 +871,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bloodlines: 'Lignées', noClanFound: 'Clan non trouvé', noClansForEdition: 'Aucun clan', searchResultsFor: 'Résultats pour', clickDisciplineHint: 'Cliquez',
     clansUsing: 'Clans:', powers: 'Pouvoirs', tacticalUse: 'Tactique:', noDisciplines: 'Aucune discipline', noDisciplineFound: 'Non trouvé', level: 'Niveau',
     noTranslation: 'Non traduit', contentUnavailable: 'Non disponible',
+    needs_review: 'À vérifier', rule_edition_all: 'Toutes', rule_edition_classic: 'Classique',
     expandAll: 'Développer', collapseAll: 'Réduire', examples: 'Exemples:', quickNotes: 'Notes:', tags: 'Tags',
     myCharacters: 'Personnages', createCharacter: 'Créer', characterSheet: 'Fiche', attributes: 'Attributs', skills: 'Compétences',
     humanity: 'Humanité', bloodPotency: 'Puissance', hunger: 'Faim', health: 'Santé', willpower: 'Volonté', generation: 'Génération', generation_label: 'Génération',
@@ -958,6 +962,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bloodlines: 'Blutlinien', noClanFound: 'Nicht gefunden', noClansForEdition: 'Keine Clans', searchResultsFor: 'Ergebnisse für', clickDisciplineHint: 'Klicken',
     clansUsing: 'Clans:', powers: 'Kräfte', tacticalUse: 'Taktik:', noDisciplines: 'Keine', noDisciplineFound: 'Nicht gefunden', level: 'Stufe',
     noTranslation: 'Keine Übersetzung', contentUnavailable: 'Nicht verfügbar',
+    needs_review: 'Prüfen', rule_edition_all: 'Alle', rule_edition_classic: 'Klassisch',
     expandAll: 'Alle ausklappen', collapseAll: 'Alle einklappen', examples: 'Beispiele:', quickNotes: 'Notizen:', tags: 'Tags',
     myCharacters: 'Meine Charaktere', createCharacter: 'Erstellen', characterSheet: 'Bogen', attributes: 'Attribute', skills: 'Fähigkeiten',
     humanity: 'Menschlichkeit', bloodPotency: 'Blutmacht', hunger: 'Hunger', health: 'Gesundheit', willpower: 'Willenskraft', generation: 'Generation', generation_label: 'Generation',
@@ -1048,6 +1053,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bloodlines: 'Linee di Sangue', noClanFound: 'Non trovato', noClansForEdition: 'Nessun clan', searchResultsFor: 'Risultati per', clickDisciplineHint: 'Clicca',
     clansUsing: 'Clan:', powers: 'Poteri', tacticalUse: 'Tattica:', noDisciplines: 'Nessuna', noDisciplineFound: 'Non trovata', level: 'Livello',
     noTranslation: 'Nessuna traduzione', contentUnavailable: 'Non disponibile',
+    needs_review: 'Da rivedere', rule_edition_all: 'Tutte', rule_edition_classic: 'Classico',
     expandAll: 'Espandi', collapseAll: 'Riduci', examples: 'Esempi:', quickNotes: 'Note:', tags: 'Tag',
     myCharacters: 'Personaggi', createCharacter: 'Crea', characterSheet: 'Scheda', attributes: 'Attributi', skills: 'Abilità',
     humanity: 'Umanità', bloodPotency: 'Potenza', hunger: 'Fame', health: 'Salute', willpower: 'Volontà', generation: 'Generazione', generation_label: 'Generazione',

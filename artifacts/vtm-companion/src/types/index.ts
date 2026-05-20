@@ -271,6 +271,26 @@ export interface Chronicle {
 }
 
 /**
+ * Optional advanced log fields on a ChronicleSession. Everything inside is
+ * optional and may be omitted entirely. `normalizeSessionDetails` in the
+ * session storage service collapses empty groups back to `undefined` so
+ * minimal storage stays minimal.
+ *
+ * - `keyEvents`: short bullet-style milestones from the session.
+ * - `unresolvedQuestions`: open threads the table still needs to answer.
+ * - `rewards`: free-text XP / boons / loot summary.
+ * - `nextHooks`: free-text setup for next session.
+ *
+ * Strings are kept as plain text; arrays hold one entry per item.
+ */
+export interface ChronicleSessionDetails {
+  keyEvents?: string[];
+  unresolvedQuestions?: string[];
+  rewards?: string;
+  nextHooks?: string;
+}
+
+/**
  * A single session summary attached to a Chronicle. Sessions are stored in
  * their own localStorage bucket (own service) and reference characters by
  * id only — never embed full character objects. Orphan sessions (whose
@@ -285,6 +305,12 @@ export interface ChronicleSession {
   /** ISO date string (YYYY-MM-DD or full ISO). Optional, user-supplied. */
   sessionDate?: string;
   taggedCharacterIds: string[];
+  /**
+   * Optional advanced detail group. Backward-compatible — sessions saved
+   * before this field existed simply omit it. Empty groups are dropped on
+   * normalization so storage stays minimal.
+   */
+  details?: ChronicleSessionDetails;
   createdAt: string;
   updatedAt: string;
 }

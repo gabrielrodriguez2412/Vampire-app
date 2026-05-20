@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import {
   ScrollText, Plus, Pencil, Trash2, Archive, ArchiveRestore,
   MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
   MapPin, Heart, ArrowRight, Database, Download, Upload,
+  ChevronDown, ListChecks, HelpCircle, Gift, Sparkles,
 } from "lucide-react";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { useAppContext } from "@/context/AppContext";
@@ -23,7 +24,8 @@ import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
 import {
   Chronicle, ChronicleStatus, EditionId, Character,
-  ChronicleSession, ChronicleLocation, ChronicleLocationCategory,
+  ChronicleSession, ChronicleSessionDetails,
+  ChronicleLocation, ChronicleLocationCategory,
   ChronicleRelationship, ChronicleRelationshipType, ChronicleRelationshipStatus,
 } from "@/types";
 import { EDITION_LIST } from "@/data/editions";
@@ -116,13 +118,27 @@ export default function ChroniclePage() {
   // Sessions belonging to the chronicle currently being managed.
   const [sessions, setSessions] = useState<ChronicleSession[]>([]);
   // Session editor (create or edit). `id === null` while creating a new one.
+  // Advanced detail fields are edited as plain text — array fields use
+  // one-entry-per-line; the splitter that converts back to string[] lives in
+  // `handleSessionSave` so the editor state stays simple.
   const [sessionEditor, setSessionEditor] = useState<{
     id: string | null;
     title: string;
     summary: string;
     sessionDate: string;
     taggedCharacterIds: string[];
+    keyEventsText: string;
+    unresolvedQuestionsText: string;
+    rewards: string;
+    nextHooks: string;
   } | null>(null);
+  /** Local-only collapsed state for the editor's advanced detail group.
+   *  Starts collapsed for new sessions (keeps the editor light) and opens
+   *  automatically when an existing session already has detail content. */
+  const [sessionAdvancedOpen, setSessionAdvancedOpen] = useState(false);
+  /** Ref to the native date input in the session editor — used by the
+   *  explicit "open picker" button to invoke showPicker() / focus(). */
+  const sessionDateInputRef = useRef<HTMLInputElement>(null);
   // Confirm modal for session deletion.
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
 
@@ -440,6 +456,61 @@ export default function ChroniclePage() {
   };
 
   // --- Session handlers (all scoped to `managingId`) ---
+
+  /**
+   * Open the native date picker for the session-date input. Prefers
+   * `HTMLInputElement.showPicker()` (modern Chromium / Firefox / Edge) so a
+   * click on the explicit calendar button feels identical to clicking the
+   * native calendar indicator. Falls back to focusing the input on browsers
+   * without `showPicker` (older Safari), and swallows any thrown error
+   * (`showPicker` can throw `NotAllowedError` if not triggered by user
+   * activation, which our button-click satisfies but defensively guard
+   * against to keep keyboard date entry usable everywhere).
+   */
+  const openSessionDatePicker = () => {
+    const el = sessionDateInputRef.current;
+    if (!el) return;
+    const showPicker = (el as HTMLInputElement & { showPicker?: () => void }).showPicker;
+    if (typeof showPicker === 'function') {
+      try {
+        showPicker.call(el);
+        return;
+      } catch {
+        // Fall through to focus().
+      }
+    }
+    el.focus();
+  };
+
+  /** Convert a string[] from storage back to a newline-joined string for the
+   *  array-style textareas in the editor. Empty/missing → empty string. */
+  const arrayToText = (arr?: string[]): string =>
+    Array.isArray(arr) && arr.length > 0 ? arr.join('\n') : '';
+
+  /** Convert the editor's newline-joined text back to a clean string[].
+   *  Storage's `normalizeSessionDetails` will re-validate, but doing it here
+   *  too keeps the in-memory state honest before persistence. */
+  const textToArray = (text: string): string[] =>
+    text.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+  /** Builds the `ChronicleSessionDetails | null` to pass to storage from the
+   *  current editor state. Returns `null` when nothing meaningful remains so
+   *  the caller can clear the field on the session. */
+  const buildEditorDetails = (
+    editor: NonNullable<typeof sessionEditor>
+  ): ChronicleSessionDetails | null => {
+    const keyEvents = textToArray(editor.keyEventsText);
+    const unresolvedQuestions = textToArray(editor.unresolvedQuestionsText);
+    const rewards = editor.rewards.trim();
+    const nextHooks = editor.nextHooks.trim();
+    const details: ChronicleSessionDetails = {};
+    if (keyEvents.length > 0) details.keyEvents = keyEvents;
+    if (unresolvedQuestions.length > 0) details.unresolvedQuestions = unresolvedQuestions;
+    if (rewards) details.rewards = rewards;
+    if (nextHooks) details.nextHooks = nextHooks;
+    return Object.keys(details).length > 0 ? details : null;
+  };
+
   const openCreateSession = () => {
     if (!managingId) return;
     setSessionEditor({
@@ -448,17 +519,38 @@ export default function ChroniclePage() {
       summary: '',
       sessionDate: '',
       taggedCharacterIds: [],
+      keyEventsText: '',
+      unresolvedQuestionsText: '',
+      rewards: '',
+      nextHooks: '',
     });
+    // New sessions start with the advanced group collapsed — keeps the
+    // editor light for the common "title + summary + tags" use case.
+    setSessionAdvancedOpen(false);
   };
 
   const openEditSession = (session: ChronicleSession) => {
+    const d = session.details;
+    const hasAdvanced = !!(
+      d?.keyEvents?.length ||
+      d?.unresolvedQuestions?.length ||
+      d?.rewards ||
+      d?.nextHooks
+    );
     setSessionEditor({
       id: session.id,
       title: session.title,
       summary: session.summary || '',
       sessionDate: session.sessionDate || '',
       taggedCharacterIds: [...session.taggedCharacterIds],
+      keyEventsText: arrayToText(d?.keyEvents),
+      unresolvedQuestionsText: arrayToText(d?.unresolvedQuestions),
+      rewards: d?.rewards || '',
+      nextHooks: d?.nextHooks || '',
     });
+    // Auto-expand the advanced group when there's existing content so the
+    // user doesn't think their notes were lost.
+    setSessionAdvancedOpen(hasAdvanced);
   };
 
   const handleSessionSave = () => {
@@ -472,12 +564,14 @@ export default function ChroniclePage() {
       });
       return;
     }
+    const details = buildEditorDetails(sessionEditor);
     if (sessionEditor.id) {
       updateChronicleSession(sessionEditor.id, {
         title,
         summary: sessionEditor.summary,
         sessionDate: sessionEditor.sessionDate,
         taggedCharacterIds: sessionEditor.taggedCharacterIds,
+        details,
       });
       toast({ title: strings.chr_session_updated || "Session updated" });
     } else {
@@ -488,6 +582,7 @@ export default function ChroniclePage() {
         summary: sessionEditor.summary || undefined,
         sessionDate: sessionEditor.sessionDate || undefined,
         taggedCharacterIds: sessionEditor.taggedCharacterIds,
+        details: details ?? undefined,
       });
       toast({ title: strings.chr_session_created || "Session created" });
     }
@@ -1228,6 +1323,12 @@ export default function ChroniclePage() {
 
           const renderSessionRow = (session: ChronicleSession) => {
             const dateLabel = session.sessionDate ? formatSessionDate(session.sessionDate) : '';
+            const d = session.details;
+            const keyEventCount = d?.keyEvents?.length ?? 0;
+            const questionCount = d?.unresolvedQuestions?.length ?? 0;
+            const hasRewards = !!d?.rewards;
+            const hasHooks = !!d?.nextHooks;
+            const hasAnyIndicator = keyEventCount > 0 || questionCount > 0 || hasRewards || hasHooks;
             return (
               <li
                 key={session.id}
@@ -1240,7 +1341,7 @@ export default function ChroniclePage() {
                     className="flex-1 min-w-0 text-left"
                     title={strings.chr_session_edit || "Edit session"}
                   >
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-medium text-sm truncate">{session.title}</span>
                       {dateLabel && (
                         <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">
@@ -1250,6 +1351,47 @@ export default function ChroniclePage() {
                     </div>
                     {session.summary && (
                       <p className="text-xs text-foreground/70 line-clamp-2 mb-1.5">{session.summary}</p>
+                    )}
+                    {hasAnyIndicator && (
+                      /* Compact at-a-glance detail indicators. Count chips for
+                         the array fields; plain icon pills for the free-text
+                         fields so the row stays one line of badges. */
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {keyEventCount > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300"
+                            title={strings.chr_session_key_events || "Key events"}
+                          >
+                            <ListChecks className="w-3 h-3 text-primary/80" aria-hidden="true" />
+                            {keyEventCount}
+                          </span>
+                        )}
+                        {questionCount > 0 && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300"
+                            title={strings.chr_session_unresolved_questions || "Unresolved questions"}
+                          >
+                            <HelpCircle className="w-3 h-3 text-amber-400/80" aria-hidden="true" />
+                            {questionCount}
+                          </span>
+                        )}
+                        {hasRewards && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300"
+                            title={strings.chr_session_rewards || "Rewards / XP"}
+                          >
+                            <Gift className="w-3 h-3 text-emerald-400/80" aria-hidden="true" />
+                          </span>
+                        )}
+                        {hasHooks && (
+                          <span
+                            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300"
+                            title={strings.chr_session_next_hooks || "Next session hooks"}
+                          >
+                            <Sparkles className="w-3 h-3 text-purple-400/80" aria-hidden="true" />
+                          </span>
+                        )}
+                      </div>
                     )}
                     {session.taggedCharacterIds.length > 0 && (
                       <div className="flex flex-wrap gap-1">
@@ -2179,17 +2321,42 @@ export default function ChroniclePage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-medium">
+                    <label htmlFor="chr-session-date-input" className="text-sm font-medium">
                       {strings.chr_session_date || "Session date"}
                     </label>
-                    <Input
-                      type="date"
-                      value={sessionEditor.sessionDate}
-                      onChange={e =>
-                        setSessionEditor(prev => prev ? { ...prev, sessionDate: e.target.value } : prev)
-                      }
-                      className="bg-background border-border"
-                    />
+                    {/* The native ::-webkit-calendar-picker-indicator is made
+                        visible on dark background via index.css (color-scheme:
+                        dark + filter on the indicator). We also surface an
+                        explicit calendar button as a discoverability
+                        belt-and-suspenders for browsers (e.g. some Safari
+                        builds) that render no indicator at all. The button
+                        calls input.showPicker() — supported in modern
+                        Chromium / Firefox / Edge — and falls back to
+                        focusing the input so keyboard date entry still
+                        works everywhere. */}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="chr-session-date-input"
+                        ref={sessionDateInputRef}
+                        type="date"
+                        value={sessionEditor.sessionDate}
+                        onChange={e =>
+                          setSessionEditor(prev => prev ? { ...prev, sessionDate: e.target.value } : prev)
+                        }
+                        className="bg-background border-border flex-1 min-w-0"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={openSessionDatePicker}
+                        aria-label={strings.chr_session_date_open_picker || strings.chr_session_date || "Open date picker"}
+                        title={strings.chr_session_date_open_picker || strings.chr_session_date || "Open date picker"}
+                        className="h-9 w-9 shrink-0 bg-background border-border hover:bg-primary/10 hover:border-primary/40"
+                      >
+                        <CalendarDays className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
@@ -2237,6 +2404,88 @@ export default function ChroniclePage() {
                             </div>
                           </div>
                         )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Collapsible "Advanced" group — keeps the editor compact
+                      for simple sessions; all four detail fields are optional
+                      and each rolls up to omitted-from-storage when blank. */}
+                  <div className="pt-2 border-t border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => setSessionAdvancedOpen(o => !o)}
+                      aria-expanded={sessionAdvancedOpen}
+                      aria-controls="session-editor-advanced"
+                      className="w-full flex items-center justify-between gap-2 py-1 text-xs font-sans uppercase tracking-widest text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+                    >
+                      <span>{strings.chr_session_advanced || "Advanced details"}</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${sessionAdvancedOpen ? '' : '-rotate-90'}`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                    {sessionAdvancedOpen && (
+                      <div id="session-editor-advanced" className="mt-3 space-y-4">
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium inline-flex items-center gap-1.5">
+                            <ListChecks className="w-3.5 h-3.5 text-primary/80" aria-hidden="true" />
+                            {strings.chr_session_key_events || "Key events"}
+                          </label>
+                          <Textarea
+                            value={sessionEditor.keyEventsText}
+                            onChange={e =>
+                              setSessionEditor(prev => prev ? { ...prev, keyEventsText: e.target.value } : prev)
+                            }
+                            placeholder={strings.chr_session_key_events_placeholder || "One per line"}
+                            className="bg-background border-border min-h-[72px] text-sm leading-snug"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium inline-flex items-center gap-1.5">
+                            <HelpCircle className="w-3.5 h-3.5 text-amber-400/80" aria-hidden="true" />
+                            {strings.chr_session_unresolved_questions || "Unresolved questions"}
+                          </label>
+                          <Textarea
+                            value={sessionEditor.unresolvedQuestionsText}
+                            onChange={e =>
+                              setSessionEditor(prev => prev ? { ...prev, unresolvedQuestionsText: e.target.value } : prev)
+                            }
+                            placeholder={strings.chr_session_unresolved_questions_placeholder || "One per line"}
+                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium inline-flex items-center gap-1.5">
+                            <Gift className="w-3.5 h-3.5 text-emerald-400/80" aria-hidden="true" />
+                            {strings.chr_session_rewards || "Rewards / XP"}
+                          </label>
+                          <Textarea
+                            value={sessionEditor.rewards}
+                            onChange={e =>
+                              setSessionEditor(prev => prev ? { ...prev, rewards: e.target.value } : prev)
+                            }
+                            placeholder={strings.chr_session_rewards_placeholder || "XP, boons, loot…"}
+                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium inline-flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-400/80" aria-hidden="true" />
+                            {strings.chr_session_next_hooks || "Next session hooks"}
+                          </label>
+                          <Textarea
+                            value={sessionEditor.nextHooks}
+                            onChange={e =>
+                              setSessionEditor(prev => prev ? { ...prev, nextHooks: e.target.value } : prev)
+                            }
+                            placeholder={strings.chr_session_next_hooks_placeholder || "Where the story goes next…"}
+                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

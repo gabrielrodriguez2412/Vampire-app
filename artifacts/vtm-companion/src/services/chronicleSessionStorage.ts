@@ -1,6 +1,48 @@
-import { ChronicleSession } from '../types';
+import { ChronicleSession, ChronicleSessionDetails } from '../types';
 
 const STORAGE_KEY = 'vtm-chronicle-sessions';
+
+/**
+ * Coerce a raw `details` value into a clean `ChronicleSessionDetails`.
+ *
+ * - Arrays  → trimmed entries, blanks dropped, non-strings filtered out.
+ * - Strings → trimmed; empty becomes undefined.
+ * - Object  → unknown keys are ignored.
+ * - Other   → returns `undefined`.
+ *
+ * Returns `undefined` when nothing meaningful remains so the field can be
+ * omitted from storage and old simple sessions stay byte-identical.
+ */
+export function normalizeSessionDetails(raw: unknown): ChronicleSessionDetails | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const r = raw as Record<string, unknown>;
+
+  const trimStringArray = (val: unknown): string[] | undefined => {
+    if (!Array.isArray(val)) return undefined;
+    const out = val
+      .filter((x): x is string => typeof x === 'string')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    return out.length > 0 ? out : undefined;
+  };
+  const trimString = (val: unknown): string | undefined => {
+    if (typeof val !== 'string') return undefined;
+    const t = val.trim();
+    return t.length > 0 ? t : undefined;
+  };
+
+  const out: ChronicleSessionDetails = {};
+  const keyEvents = trimStringArray(r.keyEvents);
+  if (keyEvents) out.keyEvents = keyEvents;
+  const unresolvedQuestions = trimStringArray(r.unresolvedQuestions);
+  if (unresolvedQuestions) out.unresolvedQuestions = unresolvedQuestions;
+  const rewards = trimString(r.rewards);
+  if (rewards) out.rewards = rewards;
+  const nextHooks = trimString(r.nextHooks);
+  if (nextHooks) out.nextHooks = nextHooks;
+
+  return Object.keys(out).length > 0 ? out : undefined;
+}
 
 /**
  * Read every session from localStorage, normalizing legacy/corrupted entries.
@@ -43,6 +85,10 @@ export function getAllChronicleSessions(): ChronicleSession[] {
       }
       if (typeof raw.sessionDate === 'string' && raw.sessionDate.trim()) {
         session.sessionDate = raw.sessionDate;
+      }
+      const details = normalizeSessionDetails(raw.details);
+      if (details) {
+        session.details = details;
       }
 
       out.push(session);
@@ -109,6 +155,14 @@ export function saveChronicleSession(session: ChronicleSession): ChronicleSessio
       : [],
     updatedAt: new Date().toISOString(),
   };
+  // Re-normalize details on save so we never persist whitespace-only entries
+  // or empty groups. Drop the key entirely when nothing meaningful remains.
+  const details = normalizeSessionDetails(session.details);
+  if (details) {
+    toSave.details = details;
+  } else {
+    delete toSave.details;
+  }
   if (index >= 0) {
     all[index] = toSave;
   } else {
@@ -122,6 +176,11 @@ export function saveChronicleSession(session: ChronicleSession): ChronicleSessio
  * Patch editable fields on an existing session. Pass an empty string to
  * clear an optional field (summary / sessionDate); pass `undefined` to leave
  * unchanged. A blank/whitespace title is ignored (cannot clear).
+ *
+ * For `details`, pass a `ChronicleSessionDetails` to set/replace, or `null`
+ * to clear the field entirely. Empty groups inside the object are pruned
+ * via `normalizeSessionDetails`, so `details: { keyEvents: [] }` is the
+ * same as `details: null`.
  */
 export function updateChronicleSession(
   id: string,
@@ -130,6 +189,7 @@ export function updateChronicleSession(
     summary?: string;
     sessionDate?: string;
     taggedCharacterIds?: string[];
+    details?: ChronicleSessionDetails | null;
   }
 ): ChronicleSession | null {
   const all = getAllChronicleSessions();
@@ -157,6 +217,18 @@ export function updateChronicleSession(
     next.taggedCharacterIds = Array.isArray(updates.taggedCharacterIds)
       ? updates.taggedCharacterIds.filter(x => typeof x === 'string' && !!x)
       : [];
+  }
+  if (updates.details !== undefined) {
+    if (updates.details === null) {
+      delete next.details;
+    } else {
+      const normalized = normalizeSessionDetails(updates.details);
+      if (normalized) {
+        next.details = normalized;
+      } else {
+        delete next.details;
+      }
+    }
   }
 
   all[index] = next;

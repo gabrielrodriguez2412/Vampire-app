@@ -9,6 +9,7 @@ import {
   deleteChronicleSession,
   deleteChronicleSessionsForChronicle,
   clearChronicleSessionStorage,
+  normalizeSessionDetails,
 } from '../chronicleSessionStorage';
 import { ChronicleSession } from '../../types';
 
@@ -305,6 +306,164 @@ describe('chronicleSessionStorage', () => {
       expect(s.summary).toBe('Things happened.');
       expect(s.sessionDate).toBe('2025-03-15');
       expect(s.taggedCharacterIds).toEqual(['pc1', 'npc7']);
+    });
+  });
+
+  describe('normalizeSessionDetails', () => {
+    it('returns undefined for nullish / non-object / array inputs', () => {
+      expect(normalizeSessionDetails(undefined)).toBeUndefined();
+      expect(normalizeSessionDetails(null)).toBeUndefined();
+      expect(normalizeSessionDetails(42)).toBeUndefined();
+      expect(normalizeSessionDetails('string')).toBeUndefined();
+      expect(normalizeSessionDetails([])).toBeUndefined();
+    });
+
+    it('returns undefined when every field is empty / blank', () => {
+      expect(normalizeSessionDetails({})).toBeUndefined();
+      expect(normalizeSessionDetails({ keyEvents: [], unresolvedQuestions: [], rewards: '   ', nextHooks: '' })).toBeUndefined();
+    });
+
+    it('trims and filters array entries, dropping empty/whitespace/non-string', () => {
+      const out = normalizeSessionDetails({
+        keyEvents: ['  found the haven  ', '', null, 42, 'killed ghoul', '   '],
+        unresolvedQuestions: ['who is the sire?'],
+      });
+      expect(out?.keyEvents).toEqual(['found the haven', 'killed ghoul']);
+      expect(out?.unresolvedQuestions).toEqual(['who is the sire?']);
+    });
+
+    it('omits the array key entirely when nothing meaningful remains', () => {
+      const out = normalizeSessionDetails({
+        keyEvents: ['', '   ', null],
+        rewards: '2 XP',
+      });
+      expect(out?.keyEvents).toBeUndefined();
+      expect(out?.rewards).toBe('2 XP');
+    });
+
+    it('trims string fields and drops blanks', () => {
+      const out = normalizeSessionDetails({
+        rewards: '  3 XP, +1 dot Streetwise  ',
+        nextHooks: '   ',
+      });
+      expect(out?.rewards).toBe('3 XP, +1 dot Streetwise');
+      expect(out?.nextHooks).toBeUndefined();
+    });
+
+    it('ignores unknown keys', () => {
+      const out = normalizeSessionDetails({
+        keyEvents: ['a'],
+        bogus: 'should be dropped',
+      } as unknown);
+      expect(out).toEqual({ keyEvents: ['a'] });
+    });
+
+    it('handles non-array array fields by dropping them', () => {
+      const out = normalizeSessionDetails({
+        keyEvents: 'not an array',
+        rewards: 'kept',
+      });
+      expect(out?.keyEvents).toBeUndefined();
+      expect(out?.rewards).toBe('kept');
+    });
+  });
+
+  describe('details persistence through save / update / read', () => {
+    it('saveChronicleSession persists details with all four fields and round-trips them', () => {
+      const seed = createEmptyChronicleSession('c1');
+      const saved = saveChronicleSession({
+        ...seed,
+        title: 'With details',
+        details: {
+          keyEvents: ['Met the Prince', 'Saw a ghoul'],
+          unresolvedQuestions: ['Who burned the haven?'],
+          rewards: '2 XP',
+          nextHooks: 'Tracking the killer.',
+        },
+      });
+      expect(saved.details).toEqual({
+        keyEvents: ['Met the Prince', 'Saw a ghoul'],
+        unresolvedQuestions: ['Who burned the haven?'],
+        rewards: '2 XP',
+        nextHooks: 'Tracking the killer.',
+      });
+      const [reloaded] = getChronicleSessions('c1');
+      expect(reloaded.details).toEqual(saved.details);
+    });
+
+    it('saveChronicleSession drops the details key entirely when the payload normalizes to empty', () => {
+      const seed = createEmptyChronicleSession('c1');
+      const saved = saveChronicleSession({
+        ...seed,
+        title: 'No details after norm',
+        details: { keyEvents: ['  '], rewards: '' },
+      });
+      expect(saved.details).toBeUndefined();
+      const raw = JSON.parse(localStorageMock.getItem(KEY) as string);
+      expect('details' in raw[0]).toBe(false);
+    });
+
+    it('updateChronicleSession can SET details on a session that had none', () => {
+      const seed = saveChronicleSession({ ...createEmptyChronicleSession('c1'), title: 'Plain' });
+      expect(seed.details).toBeUndefined();
+      const updated = updateChronicleSession(seed.id, {
+        details: { keyEvents: ['a', 'b'], rewards: '1 XP' },
+      });
+      expect(updated?.details?.keyEvents).toEqual(['a', 'b']);
+      expect(updated?.details?.rewards).toBe('1 XP');
+    });
+
+    it('updateChronicleSession with details=null clears the field', () => {
+      const seed = saveChronicleSession({
+        ...createEmptyChronicleSession('c1'),
+        title: 'WithDetails',
+        details: { keyEvents: ['x'] },
+      });
+      expect(seed.details).toBeDefined();
+      const updated = updateChronicleSession(seed.id, { details: null });
+      expect(updated?.details).toBeUndefined();
+      const reloaded = getChronicleSessionById(seed.id);
+      expect(reloaded?.details).toBeUndefined();
+    });
+
+    it('updateChronicleSession with details=undefined leaves existing details untouched', () => {
+      const seed = saveChronicleSession({
+        ...createEmptyChronicleSession('c1'),
+        title: 'WithDetails',
+        details: { rewards: 'kept' },
+      });
+      const updated = updateChronicleSession(seed.id, { summary: 'something' });
+      expect(updated?.details?.rewards).toBe('kept');
+    });
+
+    it('reads back normalized details from raw localStorage with messy content', () => {
+      localStorageMock.setItem(KEY, JSON.stringify([
+        {
+          id: 's1', chronicleId: 'c1', title: 'Messy', taggedCharacterIds: [],
+          createdAt: 'x', updatedAt: 'y',
+          details: {
+            keyEvents: ['  trimmed ', '', null, 7],
+            unresolvedQuestions: [],
+            rewards: '   ',
+            nextHooks: '  loose threads  ',
+            extraneous: 'drop me',
+          },
+        },
+      ]));
+      const [s] = getAllChronicleSessions();
+      expect(s.details).toEqual({
+        keyEvents: ['trimmed'],
+        nextHooks: 'loose threads',
+      });
+    });
+
+    it('legacy sessions without a details field stay backward-compatible', () => {
+      localStorageMock.setItem(KEY, JSON.stringify([
+        { id: 's1', chronicleId: 'c1', title: 'Legacy', taggedCharacterIds: [], createdAt: 'x', updatedAt: 'y' },
+      ]));
+      const [s] = getAllChronicleSessions();
+      expect(s.details).toBeUndefined();
+      expect(s.title).toBe('Legacy');
     });
   });
 });

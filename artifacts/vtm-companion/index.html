@@ -2,9 +2,28 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover" />
     <title>VTM Companion</title>
+    <meta name="description" content="An unofficial fan-made companion for Vampire: The Masquerade tabletop play." />
+
+    <!-- PWA / installability -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#8b0000" />
+
+    <!-- Browser tab favicon (SVG). The PWA app icons live in the manifest
+         as PNGs (see public/manifest.webmanifest + public/icon-*.png) so
+         Chrome's manifest validator never has to chase the SVG. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- iOS home-screen icon — PNG because older iOS Safari versions
+         silently ignore SVG apple-touch-icons. -->
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- iOS standalone hints (Android reads these from the manifest) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VTM" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Inter:wght@100..900&display=swap" rel="stylesheet"/>

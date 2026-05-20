@@ -24,6 +24,7 @@ import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
+import { FavoriteButton } from "@/components/favorite-button";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
@@ -1095,6 +1096,7 @@ export default function CharacterPage() {
                           >
                             {isEditing ? (strings.sheet_mode_edit || "Edit Mode") : (strings.sheet_mode_view || "View Mode")}
                           </span>
+                          <FavoriteButton type="character" targetId={activeChar.id} className="h-8 w-8 text-muted-foreground" />
                           <Button
                             type="button"
                             variant="outline"

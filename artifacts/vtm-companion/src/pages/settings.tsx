@@ -93,7 +93,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4 flex flex-col md:flex-row gap-4">
           <Button variant="destructive" onClick={clearFavorites} className="flex-1">
-            <Trash2 className="w-4 h-4 mr-2" /> Borrar Favoritos
+            <Trash2 className="w-4 h-4 mr-2" /> {strings.clearFavoritesBtn || 'Clear Favorites'}
           </Button>
           <Button variant="outline" onClick={exportData} className="flex-1 bg-background">
             <Download className="w-4 h-4 mr-2" /> Exportar Datos

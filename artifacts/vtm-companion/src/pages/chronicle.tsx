@@ -19,6 +19,7 @@ import {
   ChevronDown, ListChecks, HelpCircle, Gift, Sparkles,
 } from "lucide-react";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
+import { FavoriteButton } from "@/components/favorite-button";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
@@ -1649,15 +1650,18 @@ export default function ChroniclePage() {
                         </span>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={closeManage}
-                      className="h-7 w-7 -mt-1 -mr-2 text-muted-foreground hover:text-foreground"
-                      aria-label={strings.close || "Close"}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 -mt-1 -mr-2 shrink-0">
+                      <FavoriteButton type="chronicle" targetId={chr.id} className="h-7 w-7 text-muted-foreground" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={closeManage}
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        aria-label={strings.close || "Close"}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
 

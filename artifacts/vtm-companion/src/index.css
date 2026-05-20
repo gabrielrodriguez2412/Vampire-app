@@ -126,3 +126,30 @@
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: #0e0e0e; }
 ::-webkit-scrollbar-thumb { background: #8b0000; }
+
+/*
+ * Make native date / time / month / week inputs legible on the app's dark
+ * background. Without `color-scheme: dark`, Chromium uses its light-theme
+ * picker chrome — the small calendar indicator at the right of the field
+ * is dark grey and disappears against `bg-background`. Setting the
+ * color-scheme is enough on modern Chromium / Edge / Firefox; the
+ * `::-webkit-calendar-picker-indicator` filter is a fallback for older
+ * webkit builds that still render a light icon.
+ */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.85;
+  cursor: pointer;
+}

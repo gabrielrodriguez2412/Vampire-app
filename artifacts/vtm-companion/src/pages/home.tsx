@@ -434,7 +434,14 @@ export default function Home() {
 
           <div
             className="md:col-span-2 bg-zinc-900 border border-zinc-800 p-6 flex items-center justify-between hover:border-primary-container transition-colors group cursor-pointer"
-            onClick={() => setLocation('/compendium/reglas/humanity-loss')}
+            onClick={() => setLocation(
+              // After the Phase 2 rule split, humanity-loss is V5-only and
+              // humanity-classic covers V20/Revised/2nd/1st. Send the user to
+              // whichever rule actually applies to their selected edition.
+              activeEdition === 'V5'
+                ? '/compendium/reglas/humanity-loss'
+                : '/compendium/reglas/humanity-classic'
+            )}
           >
             <div className="flex items-center gap-4">
               <span className="material-symbols-outlined text-3xl text-primary-container">heart_broken</span>

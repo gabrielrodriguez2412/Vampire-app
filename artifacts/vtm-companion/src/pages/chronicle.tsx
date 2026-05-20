@@ -177,6 +177,17 @@ export default function ChroniclePage() {
       console.error('Failed to load characters', e);
       setCharacters([]);
     }
+    // If the manage modal is open while data changes underneath us (e.g. a
+    // full-backup import fires `onAfterImport`), the per-chronicle subdata
+    // would otherwise stay stale until the user closes and reopens the
+    // modal — causing imported character ids to show as "Unknown character"
+    // in session / location / relationship chips. Refetch them here so the
+    // open modal stays consistent with localStorage.
+    if (managingId) {
+      setSessions(getChronicleSessions(managingId));
+      setLocations(getChronicleLocations(managingId));
+      setRelationships(getChronicleRelationships(managingId));
+    }
   };
 
   useEffect(() => {

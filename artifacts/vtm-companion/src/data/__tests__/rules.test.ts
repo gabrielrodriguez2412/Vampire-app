@@ -29,16 +29,18 @@ describe('rules data', () => {
     }
   });
 
-  // Phase 1 quick-reference expansion: these ids must continue to exist
-  // because the Home dashboard deep-links into them
-  // (`/compendium/reglas/combat-overview`, `/compendium/reglas/humanity-loss`)
-  // and the audit doc references the rest. If a future refactor renames any
-  // of them, update the Home tiles and this list together.
+  // Quick-reference expansion: these ids must continue to exist because the
+  // Home dashboard deep-links into them and the audit doc references the
+  // rest. The Humanity tile is edition-aware (V5 → humanity-loss, classic →
+  // humanity-classic), so BOTH ids are part of the contract. If a future
+  // refactor renames any of them, update the Home tiles and this list
+  // together.
   it('exposes the quick-reference rule ids the Home page deep-links to', () => {
     const ids = new Set(rules.map(r => r.id));
     const required = [
       'combat-overview',
       'humanity-loss',
+      'humanity-classic',
       'blood-potency',
       'experience',
       'conditions',

@@ -7,6 +7,11 @@ import {
   APP_BACKUP_VERSION,
   type AppBackup,
 } from '../appBackup';
+import { getCharacters } from '../characterStorage';
+import { getChronicles } from '../chronicleStorage';
+import { getChronicleSessions } from '../chronicleSessionStorage';
+import { getChronicleLocations } from '../chronicleLocationStorage';
+import { getChronicleRelationships } from '../chronicleRelationshipStorage';
 
 // Tests run against the same localStorage mock the other storage tests use;
 // vitest already provides a jsdom environment, but we reset explicitly to
@@ -319,6 +324,157 @@ describe('importAppBackup', () => {
     expect(rels[0].targetCharacterId).toBe(bobId);
     expect(rels[0].sourceCharacterId).not.toBe('old-pc');
     expect(rels[0].targetCharacterId).not.toBe('old-npc');
+  });
+
+  // End-to-end import of a backup that contains EVERY dependent type at
+  // once, then resolves names exactly as the chronicle UI does (via the
+  // storage getters that the page calls, not by reading raw JSON). This
+  // locks in the scenario reported in the field: characters appearing as
+  // "Unknown character" in session chips, location chips, and relationship
+  // endpoints after a full-backup import.
+  it('resolves every character reference on the imported chronicle end-to-end', () => {
+    const incoming: AppBackup = {
+      _vtmAppBackup: true,
+      app: 'vtm-companion',
+      backupVersion: 2,
+      createdAt: 'b',
+      counts: { characters: 2, chronicles: 1, chronicleSessions: 1, chronicleLocations: 1, chronicleRelationships: 1 },
+      characters: [
+        { id: 'old-pc', name: 'Alice', clan: 'brujah', edition: 'V5', chronicleId: 'old-chr', createdAt: 't', updatedAt: 't' },
+        { id: 'old-npc', name: 'Bob NPC', clan: 'gangrel', edition: 'V5', chronicleId: 'old-chr', characterType: 'npc', createdAt: 't', updatedAt: 't' },
+      ],
+      chronicles: [{ id: 'old-chr', name: 'My Chronicle', status: 'active', createdAt: 't', updatedAt: 't' }],
+      chronicleSessions: [
+        { id: 'old-s', chronicleId: 'old-chr', title: 'Session 1', taggedCharacterIds: ['old-pc', 'old-npc'], createdAt: 't', updatedAt: 't' },
+      ],
+      chronicleLocations: [
+        { id: 'old-l', chronicleId: 'old-chr', name: 'The Haven', category: 'haven', linkedCharacterIds: ['old-pc'], createdAt: 't', updatedAt: 't' },
+      ],
+      chronicleRelationships: [
+        { id: 'old-r', chronicleId: 'old-chr', sourceCharacterId: 'old-pc', targetCharacterId: 'old-npc', relationshipType: 'ally', status: 'active', createdAt: 't', updatedAt: 't' },
+      ],
+    };
+
+    const result = importAppBackup(incoming);
+    if (typeof result === 'string') throw new Error(result);
+
+    // Read back through the same storage helpers the UI calls.
+    const chronicles = getChronicles();
+    expect(chronicles.length).toBe(1);
+    const newChrId = chronicles[0].id;
+
+    const characters = getCharacters();
+    const characterById = new Map(characters.map(c => [c.id, c]));
+
+    // 1. character.chronicleId points to the new chronicle id.
+    const alice = characters.find(c => c.name === 'Alice');
+    const bob = characters.find(c => c.name === 'Bob NPC');
+    expect(alice?.chronicleId).toBe(newChrId);
+    expect(bob?.chronicleId).toBe(newChrId);
+
+    // 2. Sessions: tagged ids resolve to imported character records.
+    const sessions = getChronicleSessions(newChrId);
+    expect(sessions.length).toBe(1);
+    const taggedNames = sessions[0].taggedCharacterIds.map(id => characterById.get(id)?.name);
+    expect(taggedNames).toEqual(expect.arrayContaining(['Alice', 'Bob NPC']));
+    expect(taggedNames).not.toContain(undefined);
+
+    // 3. Locations: linked ids resolve to imported character records.
+    const locations = getChronicleLocations(newChrId);
+    expect(locations.length).toBe(1);
+    const linkedNames = locations[0].linkedCharacterIds.map(id => characterById.get(id)?.name);
+    expect(linkedNames).toEqual(['Alice']);
+    expect(linkedNames).not.toContain(undefined);
+
+    // 4. Relationships: source/target resolve to imported character records.
+    const relationships = getChronicleRelationships(newChrId);
+    expect(relationships.length).toBe(1);
+    const src = characterById.get(relationships[0].sourceCharacterId);
+    const tgt = characterById.get(relationships[0].targetCharacterId);
+    expect(src?.name).toBe('Alice');
+    expect(tgt?.name).toBe('Bob NPC');
+  });
+
+  // Multi-chronicle scenario with a name collision against an existing local
+  // character, AND a session that tags a character from a DIFFERENT chronicle
+  // (cross-chronicle reference). All names must still resolve.
+  it('resolves cross-chronicle references and name collisions end-to-end', () => {
+    // Seed an existing local Alice so the imported Alice triggers a rename.
+    seedExisting([
+      { id: 'local-alice', name: 'Alice', clan: 'brujah', edition: 'V5', createdAt: 'a', updatedAt: 'a' },
+    ]);
+
+    const incoming: AppBackup = {
+      _vtmAppBackup: true,
+      app: 'vtm-companion',
+      backupVersion: 2,
+      createdAt: 'b',
+      counts: { characters: 3, chronicles: 2, chronicleSessions: 2, chronicleLocations: 2, chronicleRelationships: 1 },
+      characters: [
+        { id: 'old-pc', name: 'Alice', clan: 'brujah', edition: 'V5', chronicleId: 'old-chr-A', createdAt: 't', updatedAt: 't' },
+        { id: 'old-npc', name: 'Bob NPC', clan: 'gangrel', edition: 'V5', chronicleId: 'old-chr-A', characterType: 'npc', createdAt: 't', updatedAt: 't' },
+        { id: 'old-other', name: 'Wanderer', clan: 'toreador', edition: 'V5', chronicleId: 'old-chr-B', createdAt: 't', updatedAt: 't' },
+      ],
+      chronicles: [
+        { id: 'old-chr-A', name: 'Chronicle A', status: 'active', createdAt: 't', updatedAt: 't' },
+        { id: 'old-chr-B', name: 'Chronicle B', status: 'active', createdAt: 't', updatedAt: 't' },
+      ],
+      chronicleSessions: [
+        // Cross-chronicle: chronicle A session tags a wanderer who belongs to chronicle B.
+        { id: 'old-sA', chronicleId: 'old-chr-A', title: 'Crossover', taggedCharacterIds: ['old-pc', 'old-other'], createdAt: 't', updatedAt: 't' },
+        { id: 'old-sB', chronicleId: 'old-chr-B', title: 'Solo', taggedCharacterIds: ['old-other'], createdAt: 't', updatedAt: 't' },
+      ],
+      chronicleLocations: [
+        { id: 'old-lA', chronicleId: 'old-chr-A', name: 'Bar', category: 'haven', linkedCharacterIds: ['old-npc'], createdAt: 't', updatedAt: 't' },
+        { id: 'old-lB', chronicleId: 'old-chr-B', name: 'Road', category: 'other', linkedCharacterIds: ['old-other'], createdAt: 't', updatedAt: 't' },
+      ],
+      chronicleRelationships: [
+        { id: 'old-r', chronicleId: 'old-chr-A', sourceCharacterId: 'old-pc', targetCharacterId: 'old-npc', relationshipType: 'ally', status: 'active', createdAt: 't', updatedAt: 't' },
+      ],
+    };
+
+    const result = importAppBackup(incoming);
+    if (typeof result === 'string') throw new Error(result);
+    expect(result.renamedCharacters).toBe(1); // imported Alice collided with local Alice.
+
+    const chronicles = getChronicles();
+    expect(chronicles.length).toBe(2); // 0 existing chronicles + 2 imported
+    const newChrA = chronicles.find(c => c.name === 'Chronicle A')?.id;
+    const newChrB = chronicles.find(c => c.name === 'Chronicle B')?.id;
+    expect(newChrA).toBeDefined();
+    expect(newChrB).toBeDefined();
+
+    const characters = getCharacters();
+    expect(characters.length).toBe(4); // 1 existing + 3 imported
+    const byId = new Map(characters.map(c => [c.id, c]));
+    const importedAlice = characters.find(c => c.name === 'Alice Imported');
+    const bob = characters.find(c => c.name === 'Bob NPC');
+    const wanderer = characters.find(c => c.name === 'Wanderer');
+    expect(importedAlice?.chronicleId).toBe(newChrA);
+    expect(bob?.chronicleId).toBe(newChrA);
+    expect(wanderer?.chronicleId).toBe(newChrB);
+
+    // Cross-chronicle session: tags Alice (in A) and Wanderer (lives in B).
+    const sessionsA = getChronicleSessions(newChrA!);
+    expect(sessionsA.length).toBe(1);
+    const tagsA = sessionsA[0].taggedCharacterIds.map(id => byId.get(id)?.name);
+    expect(tagsA.sort()).toEqual(['Alice Imported', 'Wanderer']);
+
+    const sessionsB = getChronicleSessions(newChrB!);
+    expect(sessionsB[0].taggedCharacterIds.map(id => byId.get(id)?.name)).toEqual(['Wanderer']);
+
+    const locsA = getChronicleLocations(newChrA!);
+    expect(locsA[0].linkedCharacterIds.map(id => byId.get(id)?.name)).toEqual(['Bob NPC']);
+
+    const locsB = getChronicleLocations(newChrB!);
+    expect(locsB[0].linkedCharacterIds.map(id => byId.get(id)?.name)).toEqual(['Wanderer']);
+
+    const relsA = getChronicleRelationships(newChrA!);
+    expect(byId.get(relsA[0].sourceCharacterId)?.name).toBe('Alice Imported');
+    expect(byId.get(relsA[0].targetCharacterId)?.name).toBe('Bob NPC');
+
+    // Original local Alice is untouched.
+    expect(characters.find(c => c.id === 'local-alice')?.name).toBe('Alice');
   });
 
   it('preserves unknown character ids on dependent rows (current safe behavior)', () => {

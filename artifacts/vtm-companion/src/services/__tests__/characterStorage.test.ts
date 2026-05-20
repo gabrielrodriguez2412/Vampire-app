@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory, normalizeCharacterNotes } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -972,6 +972,197 @@ describe('characterStorage', () => {
       const restoredB = reloaded.find(c => c.name === 'B');
       expect(restoredA?.chronicleId).toBe('chr-1');
       expect((restoredB as any)?.chronicleId).toBeUndefined();
+    });
+  });
+
+  describe('normalizeCharacterNotes', () => {
+    it('returns an empty array for missing/null/garbage values when no legacy notes', () => {
+      expect(normalizeCharacterNotes(undefined)).toEqual([]);
+      expect(normalizeCharacterNotes(null)).toEqual([]);
+      expect(normalizeCharacterNotes(42)).toEqual([]);
+      expect(normalizeCharacterNotes('not-an-array')).toEqual([]);
+      expect(normalizeCharacterNotes({})).toEqual([]);
+    });
+
+    it('seeds a single "general" entry from a non-empty legacy notes string', () => {
+      const result = normalizeCharacterNotes(undefined, 'My old freeform notes.');
+      expect(result).toHaveLength(1);
+      expect(result[0].category).toBe('general');
+      expect(result[0].title).toBe('');
+      expect(result[0].body).toBe('My old freeform notes.');
+      expect(typeof result[0].id).toBe('string');
+      expect(result[0].id.length).toBeGreaterThan(0);
+      expect(typeof result[0].createdAt).toBe('string');
+      expect(typeof result[0].updatedAt).toBe('string');
+    });
+
+    it('does NOT seed from a legacy string when characterNotes is already a non-empty array', () => {
+      const existing = [{ id: 'n1', category: 'goals', title: 'Find Sire', body: 'Soon.', createdAt: '2025-01-01T00:00:00.000Z', updatedAt: '2025-01-01T00:00:00.000Z' }];
+      const result = normalizeCharacterNotes(existing, 'Should be ignored.');
+      expect(result).toHaveLength(1);
+      expect(result[0].title).toBe('Find Sire');
+    });
+
+    it('treats an explicit empty array as "user already migrated" and does not seed', () => {
+      const result = normalizeCharacterNotes([], 'Legacy text that should be left alone.');
+      expect(result).toEqual([]);
+    });
+
+    it('treats blank/whitespace legacy notes as nothing to seed', () => {
+      expect(normalizeCharacterNotes(undefined, '')).toEqual([]);
+      expect(normalizeCharacterNotes(undefined, '   ')).toEqual([]);
+    });
+
+    it('preserves a well-formed note array verbatim (id, category, timestamps)', () => {
+      const notes = [
+        { id: 'n1', category: 'backstory', title: 'Childe of', body: 'Brujah elder', createdAt: '2025-01-01T00:00:00.000Z', updatedAt: '2025-01-02T00:00:00.000Z' },
+        { id: 'n2', category: 'secrets',  title: '',           body: 'Sees ghosts', createdAt: '2025-01-03T00:00:00.000Z', updatedAt: '2025-01-03T00:00:00.000Z' },
+      ];
+      const result = normalizeCharacterNotes(notes);
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual(notes[0]);
+      expect(result[1].category).toBe('secrets');
+      expect(result[1].title).toBe('');
+      expect(result[1].body).toBe('Sees ghosts');
+    });
+
+    it('assigns a fresh id to notes missing/empty id', () => {
+      const result = normalizeCharacterNotes([
+        { category: 'general', title: 'A', body: '' },
+        { id: '',              category: 'general', title: 'B', body: '' },
+      ]);
+      expect(result).toHaveLength(2);
+      expect(typeof result[0].id).toBe('string');
+      expect(result[0].id.length).toBeGreaterThan(0);
+      expect(typeof result[1].id).toBe('string');
+      expect(result[1].id.length).toBeGreaterThan(0);
+      expect(result[0].id).not.toBe(result[1].id);
+    });
+
+    it('drops entries that have neither a title nor a body', () => {
+      const result = normalizeCharacterNotes([
+        { id: 'a', category: 'general', title: 'Keep', body: '' },
+        { id: 'b', category: 'general', title: '',     body: 'Keep too' },
+        { id: 'c', category: 'general', title: '',     body: '' },          // drop
+        { id: 'd', category: 'general', title: '   ',  body: '   ' },        // drop (whitespace only)
+        null,                                                                 // drop
+        'string',                                                             // drop
+        { id: 'e', category: 'general' /* no title or body */ },              // drop
+      ]);
+      expect(result.map(n => n.id)).toEqual(['a', 'b']);
+    });
+
+    it('normalizes unknown / missing categories to "other"', () => {
+      const result = normalizeCharacterNotes([
+        { id: '1', category: 'plasma-rifle', title: 'A', body: '' },
+        { id: '2',                          title: 'B', body: '' },
+        { id: '3', category: null,          title: 'C', body: '' },
+      ]);
+      expect(result[0].category).toBe('other');
+      expect(result[1].category).toBe('other');
+      expect(result[2].category).toBe('other');
+    });
+
+    it('accepts all valid categories', () => {
+      const cats = ['general', 'backstory', 'goals', 'secrets', 'contacts', 'session', 'other'];
+      const result = normalizeCharacterNotes(
+        cats.map((cat, i) => ({ id: `n${i}`, category: cat, title: cat, body: '' }))
+      );
+      expect(result.map(n => n.category)).toEqual(cats);
+    });
+
+    it('fills missing timestamps with current time', () => {
+      const before = Date.now();
+      const result = normalizeCharacterNotes([
+        { id: 'n1', category: 'general', title: 'A', body: '' },
+      ]);
+      const after = Date.now();
+      const created = Date.parse(result[0].createdAt);
+      expect(created).toBeGreaterThanOrEqual(before);
+      expect(created).toBeLessThanOrEqual(after);
+      // updatedAt falls back to createdAt when missing.
+      expect(result[0].updatedAt).toBe(result[0].createdAt);
+    });
+  });
+
+  describe('characterNotes integration with storage', () => {
+    it('createEmptyCharacter starts with an empty characterNotes array', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Alice');
+      expect((c as any).characterNotes).toEqual([]);
+    });
+
+    it('getCharacters seeds characterNotes from a legacy notes string on read', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'Legacy', clan: 'brujah', edition: 'V5', notes: 'Older free-form notes' },
+      ]));
+      const c = getCharacters()[0] as any;
+      expect(c.characterNotes).toHaveLength(1);
+      expect(c.characterNotes[0].body).toBe('Older free-form notes');
+      expect(c.characterNotes[0].category).toBe('general');
+      // The legacy `notes` string is NOT cleared.
+      expect(c.notes).toBe('Older free-form notes');
+    });
+
+    it('getCharacters preserves existing structured characterNotes verbatim', () => {
+      const notes = [
+        { id: 'n1', category: 'goals', title: 'Find sire', body: 'soon', createdAt: '2025-01-01T00:00:00.000Z', updatedAt: '2025-01-01T00:00:00.000Z' },
+      ];
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', name: 'A', clan: 'brujah', edition: 'V5', characterNotes: notes, notes: 'Should be ignored as a seed source' },
+      ]));
+      const c = getCharacters()[0] as any;
+      expect(c.characterNotes).toEqual(notes);
+    });
+  });
+
+  describe('characterNotes survives import/export round-trips', () => {
+    it('single-character export and re-import preserves characterNotes', () => {
+      const c = createEmptyCharacter('V5', 'brujah', 'Journaler');
+      const now = new Date().toISOString();
+      const cWithNotes = {
+        ...c,
+        characterNotes: [
+          { id: 'n1', category: 'backstory' as const, title: 'Childhood', body: 'Born in Vienna.', createdAt: now, updatedAt: now },
+          { id: 'n2', category: 'secrets'   as const, title: '',          body: 'Sees ghosts.',    createdAt: now, updatedAt: now },
+        ],
+      };
+      saveCharacter(cWithNotes as any);
+
+      const exported = buildCharacterExport(c.id);
+      expect(Array.isArray(exported?.character.characterNotes)).toBe(true);
+      expect(exported?.character.characterNotes).toHaveLength(2);
+
+      clearCharacterStorage();
+      const imported = importCharacter(exported);
+      expect(typeof imported === 'object' && imported !== null).toBe(true);
+      const restored = (imported as any).characterNotes;
+      expect(restored).toHaveLength(2);
+      expect(restored[0].body).toBe('Born in Vienna.');
+      expect(restored[1].category).toBe('secrets');
+    });
+
+    it('full backup preserves characterNotes for every character', () => {
+      const a = createEmptyCharacter('V5', 'brujah', 'A');
+      const b = createEmptyCharacter('V5', 'tremere', 'B');
+      const now = new Date().toISOString();
+      saveCharacter({ ...a, characterNotes: [
+        { id: 'n1', category: 'goals' as const, title: 'Find Sire', body: '', createdAt: now, updatedAt: now },
+      ] } as any);
+      saveCharacter(b); // no notes
+
+      const backup = buildCharacterBackup();
+      expect(backup.characters.find(x => x.name === 'A')?.characterNotes).toHaveLength(1);
+      expect(backup.characters.find(x => x.name === 'B')?.characterNotes).toEqual([]);
+
+      clearCharacterStorage();
+      const result = importCharacterBackup(backup);
+      expect(typeof result).toBe('object');
+      const reloaded = getCharacters();
+      const restoredA = reloaded.find(c => c.name === 'A') as any;
+      const restoredB = reloaded.find(c => c.name === 'B') as any;
+      expect(restoredA?.characterNotes).toHaveLength(1);
+      expect(restoredA?.characterNotes[0].title).toBe('Find Sire');
+      expect(restoredB?.characterNotes).toEqual([]);
     });
   });
 });

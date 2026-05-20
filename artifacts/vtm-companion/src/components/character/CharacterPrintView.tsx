@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Printer, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Character, EditionId, V5Character, ClassicCharacter, InventoryItem } from "@/types";
+import { Character, EditionId, V5Character, ClassicCharacter, InventoryItem, CharacterNote, CharacterNoteCategory } from "@/types";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { getClanDisplayNameById } from "@/utils/content";
@@ -338,7 +338,76 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
           <p className="whitespace-pre-wrap text-[10px] leading-snug">{character.notes}</p>
         </section>
       )}
+
+      {/* Journal — compact; cap at PRINT_JOURNAL_LIMIT entries to keep the
+          sheet from ballooning into many pages. If the player has more, a
+          short "+N more" hint is shown so the omission is obvious. Bodies
+          are truncated to PRINT_JOURNAL_BODY_CHARS chars per entry. */}
+      {Array.isArray(character.characterNotes) && character.characterNotes.length > 0 && (
+        <section>
+          <SectionHeading>{strings.sheet_section_journal || "Journal"}</SectionHeading>
+          <PrintJournal notes={character.characterNotes} strings={strings} />
+        </section>
+      )}
     </article>
+  );
+}
+
+const PRINT_JOURNAL_LIMIT = 6;
+const PRINT_JOURNAL_BODY_CHARS = 280;
+
+function getJournalCategoryPrintLabel(
+  category: CharacterNoteCategory,
+  strings: Record<string, string>
+): string {
+  switch (category) {
+    case 'general':   return strings.journal_category_general   || "General";
+    case 'backstory': return strings.journal_category_backstory || "Backstory";
+    case 'goals':     return strings.journal_category_goals     || "Goals";
+    case 'secrets':   return strings.journal_category_secrets   || "Secrets";
+    case 'contacts':  return strings.journal_category_contacts  || "Contacts";
+    case 'session':   return strings.journal_category_session   || "Session";
+    case 'other':     return strings.journal_category_other     || "Other";
+    default:          return category;
+  }
+}
+
+function PrintJournal({ notes, strings }: { notes: CharacterNote[]; strings: Record<string, string> }) {
+  // Newest-first to match the on-screen ordering.
+  const ordered = [...notes].sort((a, b) => {
+    const ta = Date.parse(a.updatedAt || a.createdAt || '') || 0;
+    const tb = Date.parse(b.updatedAt || b.createdAt || '') || 0;
+    return tb - ta;
+  });
+  const shown = ordered.slice(0, PRINT_JOURNAL_LIMIT);
+  const hiddenCount = ordered.length - shown.length;
+
+  return (
+    <div className="space-y-1.5">
+      {shown.map(n => {
+        const title = n.title.trim() || (strings.journal_untitled || "(untitled)");
+        const bodyFull = n.body || '';
+        const body = bodyFull.length > PRINT_JOURNAL_BODY_CHARS
+          ? bodyFull.slice(0, PRINT_JOURNAL_BODY_CHARS).trimEnd() + '…'
+          : bodyFull;
+        return (
+          <div key={n.id} className="text-[10px] leading-snug">
+            <div className="flex items-baseline gap-1.5">
+              <span className="uppercase tracking-widest text-[8px] border border-zinc-400 px-1 rounded">
+                {getJournalCategoryPrintLabel(n.category, strings)}
+              </span>
+              <span className="font-semibold">{title}</span>
+            </div>
+            {body && (
+              <p className="whitespace-pre-wrap text-zinc-700 ml-2">{body}</p>
+            )}
+          </div>
+        );
+      })}
+      {hiddenCount > 0 && (
+        <p className="text-[9px] italic text-zinc-600">+{hiddenCount} more…</p>
+      )}
+    </div>
   );
 }
 

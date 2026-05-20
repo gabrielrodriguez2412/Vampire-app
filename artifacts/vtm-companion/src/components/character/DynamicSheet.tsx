@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
-import { Character, EditionId, DisciplineValue, InventoryItem, InventoryCategory } from "@/types";
+import { Character, EditionId, DisciplineValue, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from "@/types";
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
-  Plus, X, ChevronDown, ExternalLink,
+  Plus, X, ChevronDown, ExternalLink, Pencil, Trash2,
   Sword, Shield, Wrench, Backpack, FileText, Car, Sparkles, Heart, Coins, Package2, Package,
 } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -657,6 +657,283 @@ function InventoryList({ value, label, fieldId, isReadOnly, handleUpdate, string
   );
 }
 
+/**
+ * Display/render order for journal categories. Kept explicit so categories
+ * appear in the same intuitive order on every character. `'other'` sinks
+ * to the end as a catch-all.
+ */
+const JOURNAL_CATEGORIES: CharacterNoteCategory[] = [
+  'general', 'backstory', 'goals', 'secrets', 'contacts', 'session', 'other',
+];
+
+function getJournalCategoryLabel(
+  category: CharacterNoteCategory,
+  strings: Record<string, string>
+): string {
+  switch (category) {
+    case 'general':   return strings.journal_category_general   || "General";
+    case 'backstory': return strings.journal_category_backstory || "Backstory";
+    case 'goals':     return strings.journal_category_goals     || "Goals";
+    case 'secrets':   return strings.journal_category_secrets   || "Secrets";
+    case 'contacts':  return strings.journal_category_contacts  || "Contacts";
+    case 'session':   return strings.journal_category_session   || "Session";
+    case 'other':     return strings.journal_category_other     || "Other";
+    default:          return category;
+  }
+}
+
+/** Best-effort localized short date label; falls back to ISO slice on failure. */
+function formatJournalDate(iso: string): string {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch {
+    return iso.slice(0, 10);
+  }
+}
+
+/**
+ * Character journal list — structured notes attached to a character.
+ *
+ * View Mode (`isReadOnly === true`):
+ *   - Shows entries as read-only cards (category pill, title, body, updated date).
+ *   - No add/edit/delete UI.
+ *
+ * Edit Mode:
+ *   - "Add note" button creates an inline editor (a draft entry kept in local
+ *     state and only persisted on Save).
+ *   - Each existing entry shows Edit + Delete actions; Edit replaces the card
+ *     with the same inline editor; Delete asks for inline confirmation.
+ *
+ * Pure presentation: persistence happens via the `handleUpdate` callback
+ * (same path as inventory). Never touches localStorage directly.
+ */
+function JournalList({ value, label, fieldId, isReadOnly, handleUpdate, strings }: any) {
+  const notes: CharacterNote[] = Array.isArray(value) ? value : [];
+  // Newest-first display so recent entries are top-of-mind.
+  const ordered = React.useMemo(() => {
+    return [...notes].sort((a, b) => {
+      const ta = Date.parse(a.updatedAt || a.createdAt || '') || 0;
+      const tb = Date.parse(b.updatedAt || b.createdAt || '') || 0;
+      return tb - ta;
+    });
+  }, [notes]);
+
+  // Editor state. `editingId === '__new__'` means a draft for a brand-new note.
+  // We keep edits in local state until the user clicks Save, so half-typed
+  // content doesn't trigger a storage write on every keystroke.
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{
+    category: CharacterNoteCategory;
+    title: string;
+    body: string;
+  }>({ category: 'general', title: '', body: '' });
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const startNew = () => {
+    setEditingId('__new__');
+    setDraft({ category: 'general', title: '', body: '' });
+    setPendingDeleteId(null);
+  };
+
+  const startEdit = (note: CharacterNote) => {
+    setEditingId(note.id);
+    setDraft({ category: note.category, title: note.title, body: note.body });
+    setPendingDeleteId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft({ category: 'general', title: '', body: '' });
+  };
+
+  const saveDraft = () => {
+    const title = draft.title.trim();
+    const body = draft.body.trim();
+    // Don't persist an empty note — silently cancel if the user saved nothing.
+    if (!title && !body) {
+      cancelEdit();
+      return;
+    }
+    const nowIso = new Date().toISOString();
+    if (editingId === '__new__') {
+      const newNote: CharacterNote = {
+        id: crypto.randomUUID(),
+        category: draft.category,
+        title,
+        body,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      handleUpdate(fieldId, [newNote, ...notes]);
+    } else if (editingId) {
+      handleUpdate(fieldId, notes.map(n =>
+        n.id === editingId
+          ? { ...n, category: draft.category, title, body, updatedAt: nowIso }
+          : n
+      ));
+    }
+    cancelEdit();
+  };
+
+  const confirmDelete = (id: string) => {
+    handleUpdate(fieldId, notes.filter(n => n.id !== id));
+    setPendingDeleteId(null);
+    // If the deleted note was being edited, drop the editor too.
+    if (editingId === id) cancelEdit();
+  };
+
+  const Editor = (
+    <div className="border border-primary/30 bg-zinc-950/60 rounded-md p-3 space-y-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="text-[11px] uppercase tracking-widest text-muted-foreground shrink-0">
+          {strings.journal_category_label || "Category"}
+        </label>
+        <select
+          value={draft.category}
+          onChange={e => setDraft(d => ({ ...d, category: e.target.value as CharacterNoteCategory }))}
+          className="h-7 text-xs bg-zinc-950 border border-zinc-800 rounded px-1.5 text-foreground hover:border-zinc-700 focus:outline-none focus:border-primary/40"
+        >
+          {JOURNAL_CATEGORIES.map(cat => (
+            <option key={cat} value={cat}>{getJournalCategoryLabel(cat, strings)}</option>
+          ))}
+        </select>
+      </div>
+      <Input
+        value={draft.title}
+        onChange={e => setDraft(d => ({ ...d, title: e.target.value }))}
+        placeholder={strings.journal_title_placeholder || "Title (optional)"}
+        aria-label={strings.journal_title_label || "Title"}
+        className="h-8 text-sm bg-zinc-950 border-zinc-800 focus-visible:border-primary/40"
+      />
+      <Textarea
+        value={draft.body}
+        onChange={e => setDraft(d => ({ ...d, body: e.target.value }))}
+        placeholder={strings.journal_body_placeholder || "Write your note here..."}
+        aria-label={strings.journal_body_label || "Body"}
+        className="bg-zinc-950 border-zinc-800 min-h-[100px] text-sm leading-snug focus-visible:border-primary/40"
+      />
+      <div className="flex justify-end gap-2">
+        <Button type="button" size="sm" variant="outline" onClick={cancelEdit} className="h-7 px-3 text-xs">
+          {strings.journal_cancel || "Cancel"}
+        </Button>
+        <Button type="button" size="sm" onClick={saveDraft} className="h-7 px-3 text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+          {strings.journal_save || "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="col-span-full flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 mb-1 border-b border-zinc-800/50 pb-2">
+        <label className="text-sm text-foreground font-serif uppercase tracking-wider flex items-center gap-2 min-w-0">
+          <span className="truncate">{label}</span>
+          {ordered.length > 0 && (
+            <span className="text-[10px] uppercase tracking-widest border border-border px-1.5 py-0.5 rounded bg-zinc-900 text-muted-foreground shrink-0">
+              {ordered.length}
+            </span>
+          )}
+        </label>
+        {!isReadOnly && editingId === null && (
+          <Button size="sm" variant="outline" onClick={startNew} className="h-7 px-2 text-xs gap-1 shrink-0">
+            <Plus className="w-3.5 h-3.5" /> {strings.journal_add_note || "Add note"}
+          </Button>
+        )}
+      </div>
+
+      {/* Inline draft editor for a new note appears above the list. */}
+      {!isReadOnly && editingId === '__new__' && Editor}
+
+      {ordered.length === 0 && editingId !== '__new__' ? (
+        <p className="text-xs italic text-muted-foreground py-1">
+          {strings.journal_empty || "No notes yet."}
+        </p>
+      ) : (
+        <ul className="space-y-2.5">
+          {ordered.map(note => {
+            if (!isReadOnly && editingId === note.id) {
+              return <li key={note.id}>{Editor}</li>;
+            }
+            const updatedLabel = formatJournalDate(note.updatedAt || note.createdAt);
+            return (
+              <li key={note.id} className="border border-zinc-800 rounded-md bg-zinc-950/40 hover:border-zinc-700 transition-colors p-3">
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
+                    <span className="text-[10px] uppercase tracking-widest border border-primary/30 bg-primary/5 text-primary/90 px-1.5 py-0.5 rounded shrink-0">
+                      {getJournalCategoryLabel(note.category, strings)}
+                    </span>
+                    <h5 className="font-serif text-sm text-foreground truncate min-w-0">
+                      {note.title.trim() || (
+                        <span className="italic text-muted-foreground">
+                          {strings.journal_untitled || "(untitled)"}
+                        </span>
+                      )}
+                    </h5>
+                  </div>
+                  {!isReadOnly && (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(note)}
+                        aria-label={strings.journal_edit || "Edit"}
+                        className="text-zinc-500 hover:text-primary transition-colors p-1"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteId(note.id)}
+                        aria-label={strings.journal_delete || "Delete"}
+                        className="text-zinc-500 hover:text-red-500 transition-colors p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {note.body && (
+                  <p className="text-xs text-muted-foreground/95 whitespace-pre-wrap leading-snug">
+                    {note.body}
+                  </p>
+                )}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  {updatedLabel && (
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-500">
+                      {strings.journal_updated_label || "Updated"} {updatedLabel}
+                    </span>
+                  )}
+                  {!isReadOnly && pendingDeleteId === note.id && (
+                    <span className="ml-auto inline-flex items-center gap-2">
+                      <span className="text-[11px] text-red-400">
+                        {strings.journal_confirm_delete || "Delete this note?"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDeleteId(null)}
+                        className="text-[11px] underline text-muted-foreground hover:text-foreground"
+                      >
+                        {strings.journal_cancel || "Cancel"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => confirmDelete(note.id)}
+                        className="text-[11px] underline text-red-400 hover:text-red-300"
+                      >
+                        {strings.journal_delete || "Delete"}
+                      </button>
+                    </span>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export function DynamicSheet({ character, schema, onChange, readonly = false }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
@@ -812,6 +1089,10 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
       case 'inventory':
         return (
           <InventoryList key={field.id} value={value} label={label} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} />
+        );
+      case 'journal':
+        return (
+          <JournalList key={field.id} value={value} label={label} fieldId={field.id} isReadOnly={readonly} handleUpdate={handleUpdate} strings={strings} />
         );
       default:
         return (

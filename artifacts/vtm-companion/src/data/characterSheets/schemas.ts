@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'textarea' | 'dots-5' | 'dots-10' | 'tracker' | 'checkbox' | 'number' | 'special-health' | 'special-willpower' | 'dynamic-dots-5' | 'special-disciplines' | 'inventory';
+export type FieldType = 'text' | 'textarea' | 'dots-5' | 'dots-10' | 'tracker' | 'checkbox' | 'number' | 'special-health' | 'special-willpower' | 'dynamic-dots-5' | 'special-disciplines' | 'inventory' | 'journal';
 
 export interface FieldDef {
   id: string; // The property key in the Character object, e.g., 'attributes.strength'

@@ -88,7 +88,18 @@ export interface RuleEntry {
   id: string;
   editions: EditionId[];
   title: Record<LangCode, string>;
+  /**
+   * Primary category. Kept for back-compat: older callers read this single
+   * field. When `categories` is present, treat it as authoritative and use
+   * this only as a fallback / `categories[0]`.
+   */
   category: string;
+  /**
+   * Optional multi-category list. When present, the rule belongs to every
+   * listed category (e.g. a frenzy entry that lives in both "Beast" and
+   * "Combat"). When omitted, treat as `[category]`.
+   */
+  categories?: string[];
   shortExplanation: Record<LangCode, string>;
   fullExplanation: Record<LangCode, string>;
   examples: Record<LangCode, string[]>;

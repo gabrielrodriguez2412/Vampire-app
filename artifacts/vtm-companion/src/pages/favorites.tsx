@@ -136,7 +136,7 @@ export default function Favorites() {
               >
                 {resolved.rules.map((rule, i) => (
                   <FavCard key={rule.id} delay={i * 0.04}>
-                    <Link href={`/compendium/reglas?id=${rule.id}`}>
+                    <Link href={`/compendium/reglas/${rule.id}`}>
                       <Card className="bg-card hover:bg-white/[0.02] border-border cursor-pointer h-full">
                         <CardHeader className="flex flex-row justify-between items-start pb-4">
                           <div className="min-w-0">

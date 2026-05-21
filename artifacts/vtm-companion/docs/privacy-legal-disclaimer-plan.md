@@ -184,7 +184,9 @@ the top so reviewers see it before installing.
 
 | Surface                                              | What it carries                                                              | Status today              |
 |------------------------------------------------------|------------------------------------------------------------------------------|---------------------------|
-| Settings → Data & Legal card                         | "Data is stored locally…" + fan-made disclaimer                              | **Added this checkpoint** |
+| Settings → Data & Legal card                         | "Data is stored locally…" + fan-made disclaimer                              | Added                     |
+| Settings → Local Data: backup-tips banner            | Recommended-export-before list (changes / clearing / device switch)          | **Added this checkpoint** |
+| Settings → Local Data: post-export toast             | Shows the suggested filename so users can find the file in Downloads          | **Added this checkpoint** |
 | Settings → About card                                | App name; the previous disclaimer line is kept here too for continuity        | Already present           |
 | Play Store listing description (when listed)         | Fan-made disclaimer near the top + link to privacy policy                    | Future                    |
 | Public privacy policy URL                            | Full text from §7                                                            | Future                    |

@@ -129,8 +129,10 @@ for future checkpoints, not work to do here.
   > "Your characters and chronicles are saved only on this device's
   > browser. Clearing site data or uninstalling the app will delete
   > them."
-- **Backup reminder.** A small in-app banner (or Home dashboard tile)
-  that surfaces when:
+- **Backup reminder.** First pass already shipped: a soft amber band in
+  Settings → Local Data with a "Recommended: export a backup before…"
+  list (major changes, clearing browser data, uninstalling / changing
+  device). A smarter future variant could surface only when:
   - The user has > N characters or chronicles, AND
   - It has been > N days since the last backup export.
   - Track "last export at" timestamp in localStorage (yes, ironic — but
@@ -138,9 +140,11 @@ for future checkpoints, not work to do here.
 - **Pre-destructive-action prompts.** Before any "Reset", "Delete all
   data", or "Clear favorites" action, suggest an export first ("Export
   a backup before you continue?").
-- **Backup filename guidance.** Default the export filename to something
-  like `vtm-companion-backup-YYYY-MM-DD.json` so users can find it later.
-  (Already partially done in `appBackup.ts`.)
+- **Backup filename guidance.** Default the export filename to
+  `vtm-companion-backup-YYYY-MM-DD.json` and surface that filename to
+  the user immediately after export. **Done:** `downloadAppBackup()`
+  returns the filename and the Settings post-export toast now shows it
+  on a second line ("Saved as: vtm-companion-backup-2025-…json").
 - **Import safety messaging.** The import button should state that
   importing is **additive** and never deletes existing data — this is
   already true in code; users need to be told.

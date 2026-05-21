@@ -1,3 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
-  <rect width="180" height="180" rx="36" fill="#8b0000"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="180" height="180" role="img" aria-label="VTM Companion">
+  <!-- Generic gothic companion mark.
+       Dark rounded tile, a dark book silhouette outlined in deep red, a
+       red spine band on the left, and a single red blood drop on the
+       cover. Composed from primitives — no clan symbols, no White Wolf
+       or Paradox marks, no copyrighted art. -->
+  <rect width="512" height="512" rx="100" fill="#0a0a0a"/>
+  <!-- Outer red book outline (acts as a thick border around the dark cover) -->
+  <rect x="92" y="48" width="328" height="416" rx="22" fill="#8b0000"/>
+  <!-- Inner dark cover, slightly lighter than the tile so the book reads
+       as a distinct object even before the red border is visible at very
+       small sizes -->
+  <rect x="110" y="66" width="292" height="380" rx="12" fill="#1f1f1f"/>
+  <!-- Red spine band, kept inside the inner cover's rounded corners -->
+  <rect x="110" y="78" width="36" height="356" fill="#6b0000"/>
+  <!-- Blood drop on the cover, sitting right of the spine -->
+  <path d="M 274 180 L 249 236.7 A 50 50 0 1 1 299 236.7 Z" fill="#b91c1c"/>
 </svg>

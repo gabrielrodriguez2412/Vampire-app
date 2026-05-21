@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings2, Globe, Library, Trash2, Download, Upload, Info, Sliders, Database, ShieldAlert, HardDrive } from "lucide-react";
+import { Settings2, Globe, Library, Trash2, Download, Upload, Info, Sliders, Database, ShieldAlert, HardDrive, BellRing } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { EDITION_LIST } from "@/data/editions";
@@ -122,6 +122,22 @@ export default function SettingsPage() {
 
       <Card className="bg-card border-border">
         <CardContent className="p-4 sm:p-6 space-y-4">
+          {/* Backup-safety tips: short reminder of when to export. Compact
+              amber-tinted band so it reads as a soft nudge, not a warning. */}
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/[0.06] p-3 sm:p-4">
+            <div className="flex items-start gap-2 mb-2">
+              <BellRing className="w-4 h-4 mt-0.5 text-amber-300 shrink-0" aria-hidden />
+              <p className="text-sm font-medium text-amber-200/90">
+                {strings.settings_backup_tips_title || 'Recommended: export a backup before…'}
+              </p>
+            </div>
+            <ul className="text-xs sm:text-sm text-foreground/75 list-disc pl-8 sm:pl-9 space-y-1">
+              <li>{strings.settings_backup_tip_changes || 'Making large changes to characters or chronicles.'}</li>
+              <li>{strings.settings_backup_tip_clearing || 'Clearing your browser data.'}</li>
+              <li>{strings.settings_backup_tip_device || 'Uninstalling the app or switching devices.'}</li>
+            </ul>
+          </div>
+
           <DataActionRow
             icon={<Download className="w-4 h-4" />}
             label={strings.full_backup_export || 'Export Full Backup'}

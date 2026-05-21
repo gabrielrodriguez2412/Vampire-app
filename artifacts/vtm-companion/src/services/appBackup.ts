@@ -88,22 +88,29 @@ export function buildAppBackup(): AppBackup {
   };
 }
 
-/** Trigger a browser download of the v2 app backup as a JSON file. */
-export function downloadAppBackup(): boolean {
+/**
+ * Trigger a browser download of the v2 app backup as a JSON file.
+ * Returns the filename that was suggested to the browser so callers
+ * (e.g. the post-export toast) can show the user what to look for in
+ * their Downloads folder.
+ */
+export function downloadAppBackup(): string {
   const backup = buildAppBackup();
   const json = JSON.stringify(backup, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 
+  const ts = new Date().toISOString().slice(0, 10);
+  const filename = `vtm-companion-backup-${ts}.json`;
+
   const a = document.createElement('a');
   a.href = url;
-  const ts = new Date().toISOString().slice(0, 10);
-  a.download = `vtm-companion-backup-${ts}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  return true;
+  return filename;
 }
 
 /** Returns true if `data` looks like a v2 app backup envelope. */

@@ -40,15 +40,19 @@ export function useAppBackupActions(options: Options = {}) {
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS["en"];
 
   const handleExportAll = () => {
-    downloadAppBackup();
+    const filename = downloadAppBackup();
     const c = getCharacters().length;
+    const counts =
+      c === 0
+        ? (strings.full_backup_includes ||
+          "Includes characters, inventories, chronicles, sessions, locations, and relationships.")
+        : `${c} ${c === 1 ? "character" : "characters"} + any chronicle data`;
+    // Append the actual filename so the user knows what to look for in
+    // their Downloads folder.
+    const savedAs = `\n${strings.full_backup_saved_as || "Saved as"}: ${filename}`;
     toast({
       title: strings.full_backup_downloaded || "Full backup downloaded",
-      description:
-        c === 0
-          ? (strings.full_backup_includes ||
-            "Includes characters, inventories, chronicles, sessions, locations, and relationships.")
-          : `${c} ${c === 1 ? "character" : "characters"} + any chronicle data`,
+      description: counts + savedAs,
     });
   };
 
@@ -140,8 +144,9 @@ export function useAppBackupActions(options: Options = {}) {
         toast({
           title: strings.full_backup_import_failed || "Backup import failed",
           description:
+            strings.full_backup_import_invalid_hint ||
             strings.char_import_invalid_json ||
-            "The file is not valid JSON.",
+            "The selected file isn't a valid VTM Companion backup. Pick a .json file you exported from this app.",
           variant: "destructive",
         });
       }

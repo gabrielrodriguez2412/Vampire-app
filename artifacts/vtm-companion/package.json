@@ -9,7 +9,8 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "icons": "node scripts/generate-pwa-icons.mjs"
+    "icons": "node scripts/generate-pwa-icons.mjs",
+    "screenshots": "node scripts/generate-pwa-screenshots.mjs"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

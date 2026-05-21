@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings2, Globe, Library, Trash2, Download, Upload, Info, Sliders, Database } from "lucide-react";
+import { Settings2, Globe, Library, Trash2, Download, Upload, Info, Sliders, Database, ShieldAlert, HardDrive } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { EDITION_LIST } from "@/data/editions";
@@ -143,6 +143,32 @@ export default function SettingsPage() {
             onClick={clearFavorites}
             variant="destructive"
           />
+        </CardContent>
+      </Card>
+
+      {/* ─────────── Data & Legal ─────────── */}
+      <SectionHeader
+        icon={<ShieldAlert className="w-5 h-5 text-primary" />}
+        title={strings.settings_legal_section || 'Data & Legal'}
+        description={strings.settings_legal_section_desc}
+      />
+
+      <Card className="bg-card border-border">
+        <CardContent className="p-4 sm:p-6 space-y-3 text-sm text-foreground/85">
+          <div className="flex items-start gap-3">
+            <HardDrive className="w-4 h-4 mt-0.5 text-primary shrink-0" aria-hidden />
+            <p>
+              {strings.settings_legal_data_notice
+                || 'Data is stored locally on this device. Export backups regularly to avoid losing characters, chronicles, notes, and settings.'}
+            </p>
+          </div>
+          <div className="flex items-start gap-3 italic text-muted-foreground">
+            <Info className="w-4 h-4 mt-0.5 text-primary/70 shrink-0" aria-hidden />
+            <p>
+              {strings.settings_legal_disclaimer_short
+                || 'VTM Companion is an unofficial fan-made tool and is not affiliated with, endorsed by, or sponsored by the rights holders.'}
+            </p>
+          </div>
         </CardContent>
       </Card>
 

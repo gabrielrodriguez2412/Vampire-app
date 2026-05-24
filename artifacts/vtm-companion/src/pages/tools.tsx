@@ -41,13 +41,45 @@ export default function Tools() {
             <CardTitle className="font-serif text-lg flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />
               {strings.combatSummary}
+              <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
+                {isV5
+                  ? (strings.combat_summary_v5_label || 'V5')
+                  : (strings.combat_summary_classic_label || 'Classic')}
+              </span>
             </CardTitle>
           </CardHeader>
+          {/* Combat summary text is edition-aware: V5 covers contested rolls,
+              superficial/aggravated split, and the Hunger die outcomes the
+              app already exposes in the dice roller. Classic covers pool vs.
+              difficulty, ones cancelling successes, and damage soak — with an
+              explicit "details vary by edition" note since this section is
+              shared across 1st / 2nd / Revised / V20 and we don't want to
+              imply per-edition precision the data doesn't carry yet. */}
           <CardContent className="space-y-3 text-sm text-foreground/80">
-            <p>{strings.combat_melee}</p>
-            <p>{strings.combat_ranged}</p>
-            <p>{strings.combat_superficial}</p>
-            <p>{strings.combat_aggravated}</p>
+            {isV5 ? (
+              <>
+                <p>{strings.combat_v5_melee || strings.combat_melee}</p>
+                <p>{strings.combat_v5_ranged || strings.combat_ranged}</p>
+                <p>{strings.combat_v5_superficial || strings.combat_superficial}</p>
+                <p>{strings.combat_v5_aggravated || strings.combat_aggravated}</p>
+                {strings.combat_v5_hunger_note && (
+                  <p className="text-xs text-muted-foreground italic">
+                    {strings.combat_v5_hunger_note}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <p>{strings.combat_classic_pool}</p>
+                <p>{strings.combat_classic_ones}</p>
+                <p>{strings.combat_classic_damage}</p>
+                {strings.combat_classic_note && (
+                  <p className="text-xs text-muted-foreground italic">
+                    {strings.combat_classic_note}
+                  </p>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

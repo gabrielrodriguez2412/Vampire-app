@@ -34,21 +34,21 @@ export function Layout({ children }: { children: ReactNode }) {
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Top App Bar */}
-      <header className="bg-neutral-950 flex justify-between items-center w-full px-6 py-4 sticky top-0 z-[60] border-b border-zinc-800">
-        <div className="flex items-center gap-4">
-          <span 
-            className="material-symbols-outlined text-primary-container cursor-pointer hover:opacity-80 transition-opacity" 
+      <header className="bg-neutral-950 flex justify-between items-center w-full px-6 short-landscape:px-3 py-4 short-landscape:py-1.5 sticky top-0 z-[60] border-b border-zinc-800">
+        <div className="flex items-center gap-4 short-landscape:gap-2">
+          <span
+            className="material-symbols-outlined text-primary-container cursor-pointer hover:opacity-80 transition-opacity short-landscape:text-[20px]"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             menu
           </span>
           <Link href="/">
-            <h1 className="font-serif text-xl font-bold text-primary-container tracking-tighter uppercase cursor-pointer">
+            <h1 className="font-serif text-xl short-landscape:text-base font-bold text-primary-container tracking-tighter uppercase cursor-pointer">
               VTM Companion
             </h1>
           </Link>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 short-landscape:gap-2">
           <div className="hidden sm:flex items-center gap-2">
             <select 
               value={activeEdition}
@@ -80,7 +80,7 @@ export function Layout({ children }: { children: ReactNode }) {
 
       {/* Mobile Slide-down Menu (for settings/utilities not in bottom nav) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 top-[65px] bg-neutral-950 z-50 overflow-y-auto border-b border-zinc-800 pb-24">
+        <div className="fixed inset-0 top-[65px] short-landscape:top-[40px] bg-neutral-950 z-50 overflow-y-auto border-b border-zinc-800 pb-24 short-landscape:pb-14">
           <div className="p-6 space-y-6">
             <div className="sm:hidden flex gap-4 border-b border-zinc-800 pb-6">
               <div className="flex-1">
@@ -127,22 +127,25 @@ export function Layout({ children }: { children: ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 w-full pt-6 pb-24 overflow-y-auto relative z-10">
+      <main className="flex-1 w-full pt-6 short-landscape:pt-2 pb-24 short-landscape:pb-14 overflow-y-auto relative z-10">
         {children}
       </main>
 
-      {/* Bottom Nav Bar */}
-      <nav className="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 bg-neutral-950 bg-opacity-95 backdrop-blur border-t border-zinc-800">
+      {/* Bottom Nav Bar.
+          On phone landscape (short-landscape) we shrink the bar height and
+          drop the text labels: icons stay tappable but the bar stops
+          dominating the viewport. */}
+      <nav className="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 short-landscape:h-11 bg-neutral-950 bg-opacity-95 backdrop-blur border-t border-zinc-800">
         {bottomNavItems.map((item) => {
           const active = isCurrentActive(item.href);
           return (
             <Link key={item.href} href={item.href}>
               <div className={cn(
-                "flex flex-col items-center justify-center w-16 cursor-pointer transition-all duration-300",
+                "flex flex-col items-center justify-center w-16 short-landscape:w-12 cursor-pointer transition-all duration-300",
                 active ? "text-primary-container drop-shadow-[0_0_8px_rgba(139,0,0,0.5)]" : "text-zinc-600 hover:text-zinc-400"
               )}>
-                <span className="material-symbols-outlined mb-1">{item.icon}</span>
-                <span className="font-serif text-[10px] uppercase tracking-widest">{item.label}</span>
+                <span className="material-symbols-outlined mb-1 short-landscape:mb-0 short-landscape:text-[20px]">{item.icon}</span>
+                <span className="font-serif text-[10px] uppercase tracking-widest short-landscape:hidden">{item.label}</span>
               </div>
             </Link>
           );

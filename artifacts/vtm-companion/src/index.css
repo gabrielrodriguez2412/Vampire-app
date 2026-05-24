@@ -6,6 +6,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Compact layout for phone landscape / short-height landscape viewports.
+ * Targets the real-device QA finding that the header and bottom nav eat
+ * too much vertical room on phones turned sideways, and that centered
+ * modals get cropped to unusable strips. The breakpoint is intentionally
+ * height-based (not width-based) so it does not trigger on tablets or
+ * desktop windows resized narrow, and orientation-gated so it never
+ * affects portrait — even on very short portrait viewports it should
+ * not fire.
+ *
+ * Combine with regular Tailwind variants as needed; e.g.
+ *   `py-4 short-landscape:py-2` collapses padding only in this mode.
+ */
+@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 500px));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ModalPortal } from "@/components/ui/modal-portal";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
@@ -1170,43 +1171,45 @@ export default function ChroniclePage() {
         </div>
       )}
 
-      {/* Create modal */}
+      {/* Create modal — see ModalPortal for why these are portal'd. */}
       <AnimatePresence>
         {createOpen && (
-          <motion.div
-            key="create-chronicle"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-            onClick={() => setCreateOpen(false)}
-          >
+          <ModalPortal key="create-chronicle">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
-              onClick={e => e.stopPropagation()}
+              key="create-chronicle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 short-landscape:p-2"
+              onClick={() => setCreateOpen(false)}
             >
-              <h3 className="text-lg font-serif text-foreground mb-4">
-                {strings.chr_new_chronicle || "New Chronicle"}
-              </h3>
-              <ChronicleFormFields
-                value={createForm}
-                onChange={setCreateForm}
-                strings={strings}
-              />
-              <div className="flex gap-3 justify-end mt-6">
-                <Button variant="outline" size="sm" onClick={() => setCreateOpen(false)} className="text-muted-foreground">
-                  {strings.cancel || "Cancel"}
-                </Button>
-                <Button size="sm" onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <Plus className="w-4 h-4 mr-1" />
-                  {strings.chr_create_chronicle || "Create Chronicle"}
-                </Button>
-              </div>
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 short-landscape:p-3 max-w-md w-full shadow-xl short-landscape:max-h-[calc(100dvh-1rem)] short-landscape:overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg short-landscape:text-base font-serif text-foreground mb-4 short-landscape:mb-2">
+                  {strings.chr_new_chronicle || "New Chronicle"}
+                </h3>
+                <ChronicleFormFields
+                  value={createForm}
+                  onChange={setCreateForm}
+                  strings={strings}
+                />
+                <div className="flex gap-3 justify-end mt-6 short-landscape:mt-3">
+                  <Button variant="outline" size="sm" onClick={() => setCreateOpen(false)} className="text-muted-foreground">
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button size="sm" onClick={handleCreate} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Plus className="w-4 h-4 mr-1" />
+                    {strings.chr_create_chronicle || "Create Chronicle"}
+                  </Button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
+          </ModalPortal>
         )}
       </AnimatePresence>
 
@@ -1214,22 +1217,23 @@ export default function ChroniclePage() {
           Linked characters and session summaries live in the Manage modal. */}
       <AnimatePresence>
         {editingId && (
+          <ModalPortal key="edit-chronicle">
           <motion.div
             key="edit-chronicle"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28"
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28 short-landscape:px-1 short-landscape:pt-2 short-landscape:pb-2"
             onClick={closeEdit}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+              className="bg-zinc-900 border border-zinc-700 rounded-lg short-landscape:rounded-md max-w-md w-full short-landscape:max-w-none shadow-xl max-h-[calc(100dvh-13rem)] short-landscape:max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
-              <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+              <div className="shrink-0 px-6 short-landscape:px-4 pt-6 short-landscape:pt-3 pb-3 short-landscape:pb-2 border-b border-zinc-800">
                 <h3 className="text-lg font-serif text-foreground">
                   {strings.chr_edit_chronicle || "Edit Chronicle"}
                 </h3>
@@ -1241,7 +1245,7 @@ export default function ChroniclePage() {
                   strings={strings}
                 />
               </div>
-              <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+              <div className="shrink-0 flex gap-3 justify-end px-6 short-landscape:px-4 py-4 short-landscape:py-2 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
                 <Button variant="outline" size="sm" onClick={closeEdit} className="text-muted-foreground">
                   {strings.cancel || "Cancel"}
                 </Button>
@@ -1251,6 +1255,7 @@ export default function ChroniclePage() {
               </div>
             </motion.div>
           </motion.div>
+          </ModalPortal>
         )}
       </AnimatePresence>
 
@@ -1620,23 +1625,24 @@ export default function ChroniclePage() {
           );
 
           return (
+            <ModalPortal key="manage-chronicle">
             <motion.div
               key="manage-chronicle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 pt-20 pb-28 short-landscape:px-1 short-landscape:pt-2 short-landscape:pb-2"
               onClick={closeManage}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg w-full max-w-lg md:max-w-2xl lg:max-w-3xl shadow-xl max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-10rem)] md:max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg short-landscape:rounded-md w-full max-w-lg md:max-w-2xl lg:max-w-3xl short-landscape:max-w-none shadow-xl max-h-[calc(100dvh-6rem)] sm:max-h-[calc(100dvh-10rem)] md:max-h-[calc(100dvh-13rem)] short-landscape:max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
                 {/* Header: chronicle title + status, no tabs yet */}
-                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                <div className="shrink-0 px-6 short-landscape:px-3 pt-6 short-landscape:pt-2 pb-3 short-landscape:pb-1 border-b border-zinc-800">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-lg font-serif text-foreground truncate">{chr.name}</h3>
@@ -1678,8 +1684,10 @@ export default function ChroniclePage() {
 
                 {/* Tab strip: wraps onto a second row when needed instead of
                     requiring a horizontal scroll. Each tab is a generous,
-                    full-width-share tap target. */}
-                <div className="shrink-0 flex flex-wrap px-2 border-b border-zinc-800">
+                    full-width-share tap target. In short-landscape the
+                    per-tab padding is trimmed so all five tabs fit on a
+                    single row at typical phone-landscape widths. */}
+                <div className="shrink-0 flex flex-wrap px-2 short-landscape:px-1 border-b border-zinc-800">
                   {tabs.map(t => {
                     const active = manageTab === t.id;
                     return (
@@ -1688,7 +1696,7 @@ export default function ChroniclePage() {
                         type="button"
                         onClick={() => setManageTab(t.id)}
                         aria-pressed={active}
-                        className={`flex-1 min-w-[5rem] px-2 py-2.5 text-[11px] uppercase tracking-wider font-medium text-center transition-colors border-b-2 -mb-px ${
+                        className={`flex-1 min-w-[5rem] short-landscape:min-w-[4rem] px-2 short-landscape:px-1 py-2.5 short-landscape:py-1.5 text-[11px] short-landscape:text-[10px] uppercase tracking-wider font-medium text-center transition-colors border-b-2 -mb-px ${
                           active
                             ? "border-primary text-foreground"
                             : "border-transparent text-muted-foreground hover:text-foreground"
@@ -1701,7 +1709,7 @@ export default function ChroniclePage() {
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 py-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 short-landscape:px-3 py-4 short-landscape:py-2">
                   {manageTab === 'overview' && (() => {
                     const latestLocation = locations.length > 0
                       ? locations.reduce((a, b) => a.updatedAt > b.updatedAt ? a : b)
@@ -2017,13 +2025,14 @@ export default function ChroniclePage() {
                   )}
                 </div>
 
-                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                <div className="shrink-0 flex gap-3 justify-end px-6 short-landscape:px-4 py-4 short-landscape:py-2 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
                   <Button variant="outline" size="sm" onClick={closeManage} className="text-muted-foreground">
                     {strings.close || "Close"}
                   </Button>
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -2297,22 +2306,23 @@ export default function ChroniclePage() {
           };
 
           return (
+            <ModalPortal key="session-editor">
             <motion.div
               key="session-editor"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28 short-landscape:px-1 short-landscape:pt-2 short-landscape:pb-2"
               onClick={() => setSessionEditor(null)}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg short-landscape:rounded-md max-w-md w-full short-landscape:max-w-none shadow-xl max-h-[calc(100dvh-13rem)] short-landscape:max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                <div className="shrink-0 px-6 short-landscape:px-4 pt-6 short-landscape:pt-3 pb-3 short-landscape:pb-2 border-b border-zinc-800">
                   <h3 className="text-lg font-serif text-foreground">
                     {isEditing
                       ? (strings.chr_session_edit || "Edit session")
@@ -2320,7 +2330,7 @@ export default function ChroniclePage() {
                   </h3>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 short-landscape:px-4 py-4 short-landscape:py-2 space-y-4 short-landscape:space-y-2">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">
                       {strings.chr_session_title || "Title"}
@@ -2383,7 +2393,7 @@ export default function ChroniclePage() {
                       onChange={e =>
                         setSessionEditor(prev => prev ? { ...prev, summary: e.target.value } : prev)
                       }
-                      className="bg-background border-border min-h-[120px]"
+                      className="bg-background border-border min-h-[120px] short-landscape:min-h-[64px]"
                       placeholder={strings.chr_session_summary_placeholder || "What happened in this session?"}
                     />
                   </div>
@@ -2453,7 +2463,7 @@ export default function ChroniclePage() {
                               setSessionEditor(prev => prev ? { ...prev, keyEventsText: e.target.value } : prev)
                             }
                             placeholder={strings.chr_session_key_events_placeholder || "One per line"}
-                            className="bg-background border-border min-h-[72px] text-sm leading-snug"
+                            className="bg-background border-border min-h-[72px] short-landscape:min-h-[44px] text-sm leading-snug"
                           />
                         </div>
 
@@ -2468,7 +2478,7 @@ export default function ChroniclePage() {
                               setSessionEditor(prev => prev ? { ...prev, unresolvedQuestionsText: e.target.value } : prev)
                             }
                             placeholder={strings.chr_session_unresolved_questions_placeholder || "One per line"}
-                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                            className="bg-background border-border min-h-[60px] short-landscape:min-h-[40px] text-sm leading-snug"
                           />
                         </div>
 
@@ -2483,7 +2493,7 @@ export default function ChroniclePage() {
                               setSessionEditor(prev => prev ? { ...prev, rewards: e.target.value } : prev)
                             }
                             placeholder={strings.chr_session_rewards_placeholder || "XP, boons, loot…"}
-                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                            className="bg-background border-border min-h-[60px] short-landscape:min-h-[40px] text-sm leading-snug"
                           />
                         </div>
 
@@ -2498,7 +2508,7 @@ export default function ChroniclePage() {
                               setSessionEditor(prev => prev ? { ...prev, nextHooks: e.target.value } : prev)
                             }
                             placeholder={strings.chr_session_next_hooks_placeholder || "Where the story goes next…"}
-                            className="bg-background border-border min-h-[60px] text-sm leading-snug"
+                            className="bg-background border-border min-h-[60px] short-landscape:min-h-[40px] text-sm leading-snug"
                           />
                         </div>
                       </div>
@@ -2506,7 +2516,7 @@ export default function ChroniclePage() {
                   </div>
                 </div>
 
-                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                <div className="shrink-0 flex gap-3 justify-end px-6 short-landscape:px-4 py-4 short-landscape:py-2 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
                   <Button
                     variant="outline"
                     size="sm"
@@ -2525,6 +2535,7 @@ export default function ChroniclePage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -2620,22 +2631,23 @@ export default function ChroniclePage() {
           };
 
           return (
+            <ModalPortal key="location-editor">
             <motion.div
               key="location-editor"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28 short-landscape:px-1 short-landscape:pt-2 short-landscape:pb-2"
               onClick={() => setLocationEditor(null)}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg short-landscape:rounded-md max-w-md w-full short-landscape:max-w-none shadow-xl max-h-[calc(100dvh-13rem)] short-landscape:max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                <div className="shrink-0 px-6 short-landscape:px-4 pt-6 short-landscape:pt-3 pb-3 short-landscape:pb-2 border-b border-zinc-800">
                   <h3 className="text-lg font-serif text-foreground">
                     {isEditing
                       ? (strings.chr_location_edit || "Edit location")
@@ -2643,7 +2655,7 @@ export default function ChroniclePage() {
                   </h3>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 short-landscape:px-4 py-4 short-landscape:py-2 space-y-4 short-landscape:space-y-2">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium">
                       {strings.chr_location_name || "Name"}
@@ -2703,7 +2715,7 @@ export default function ChroniclePage() {
                       onChange={e =>
                         setLocationEditor(prev => prev ? { ...prev, description: e.target.value } : prev)
                       }
-                      className="bg-background border-border min-h-[80px]"
+                      className="bg-background border-border min-h-[80px] short-landscape:min-h-[48px]"
                     />
                   </div>
 
@@ -2716,7 +2728,7 @@ export default function ChroniclePage() {
                       onChange={e =>
                         setLocationEditor(prev => prev ? { ...prev, notes: e.target.value } : prev)
                       }
-                      className="bg-background border-border min-h-[60px]"
+                      className="bg-background border-border min-h-[60px] short-landscape:min-h-[40px]"
                       placeholder={strings.chr_location_notes_placeholder || "Secrets, rules, hooks..."}
                     />
                   </div>
@@ -2757,7 +2769,7 @@ export default function ChroniclePage() {
                   </div>
                 </div>
 
-                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                <div className="shrink-0 flex gap-3 justify-end px-6 short-landscape:px-4 py-4 short-landscape:py-2 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
                   <Button
                     variant="outline"
                     size="sm"
@@ -2776,6 +2788,7 @@ export default function ChroniclePage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -2887,22 +2900,23 @@ export default function ChroniclePage() {
           );
 
           return (
+            <ModalPortal key="relationship-editor">
             <motion.div
               key="relationship-editor"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm px-4 pt-20 pb-28 short-landscape:px-1 short-landscape:pt-2 short-landscape:pb-2"
               onClick={() => setRelationshipEditor(null)}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full shadow-xl max-h-[calc(100dvh-13rem)] flex flex-col overflow-hidden"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg short-landscape:rounded-md max-w-md w-full short-landscape:max-w-none shadow-xl max-h-[calc(100dvh-13rem)] short-landscape:max-h-[calc(100dvh-1rem)] flex flex-col overflow-hidden"
                 onClick={e => e.stopPropagation()}
               >
-                <div className="shrink-0 px-6 pt-6 pb-3 border-b border-zinc-800">
+                <div className="shrink-0 px-6 short-landscape:px-4 pt-6 short-landscape:pt-3 pb-3 short-landscape:pb-2 border-b border-zinc-800">
                   <h3 className="text-lg font-serif text-foreground">
                     {isEditing
                       ? (strings.chr_rel_edit || "Edit relationship")
@@ -2910,7 +2924,7 @@ export default function ChroniclePage() {
                   </h3>
                 </div>
 
-                <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-6 short-landscape:px-4 py-4 short-landscape:py-2 space-y-4 short-landscape:space-y-2">
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium" htmlFor="rel-source">
                       {strings.chr_rel_source || "Source character"}
@@ -2987,13 +3001,13 @@ export default function ChroniclePage() {
                       onChange={e =>
                         setRelationshipEditor(prev => prev ? { ...prev, description: e.target.value } : prev)
                       }
-                      className="bg-background border-border min-h-[100px]"
+                      className="bg-background border-border min-h-[100px] short-landscape:min-h-[56px]"
                       placeholder={strings.chr_rel_description_placeholder || "How and why this matters..."}
                     />
                   </div>
                 </div>
 
-                <div className="shrink-0 flex gap-3 justify-end px-6 py-4 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
+                <div className="shrink-0 flex gap-3 justify-end px-6 short-landscape:px-4 py-4 short-landscape:py-2 border-t border-zinc-800 bg-zinc-900 rounded-b-lg">
                   <Button
                     variant="outline"
                     size="sm"
@@ -3012,6 +3026,7 @@ export default function ChroniclePage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -3143,7 +3158,7 @@ function ChronicleFormFields({ value, onChange, strings }: ChronicleFormFieldsPr
         <Textarea
           value={value.description}
           onChange={e => onChange({ ...value, description: e.target.value })}
-          className="bg-background border-border min-h-[80px]"
+          className="bg-background border-border min-h-[80px] short-landscape:min-h-[48px]"
         />
       </div>
 

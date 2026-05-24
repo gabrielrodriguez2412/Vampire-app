@@ -25,6 +25,7 @@ import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { FavoriteButton } from "@/components/favorite-button";
+import { ModalPortal } from "@/components/ui/modal-portal";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
@@ -399,16 +400,16 @@ export default function CharacterPage() {
 
   return (
     <CharacterErrorBoundary key={boundaryKey} onReset={resetCharacterData}>
-      <div className={`max-w-5xl mx-auto w-full ${activeView === 'sheet' ? 'px-4 md:px-10 pt-4 md:pt-6 pb-6' : 'p-6 md:p-10'}`}>
+      <div className={`max-w-5xl mx-auto w-full ${activeView === 'sheet' ? 'px-4 md:px-10 short-landscape:px-3 pt-4 md:pt-6 short-landscape:pt-2 pb-6 short-landscape:pb-2' : 'p-6 md:p-10 short-landscape:p-3'}`}>
         {/* Generic page header — redundant once a sheet is open (the sheet has
             its own large name + metadata header), so hide in sheet view. */}
         {activeView !== 'sheet' && (
-          <div className="mb-8">
-            <h1 className="text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-2">
-              <User className="w-8 h-8" />
+          <div className="mb-8 short-landscape:mb-3">
+            <h1 className="text-3xl short-landscape:text-xl font-serif font-bold text-primary mb-2 short-landscape:mb-1 flex items-center gap-2">
+              <User className="w-8 h-8 short-landscape:w-5 short-landscape:h-5" />
               {strings.character}
             </h1>
-            <p className="text-muted-foreground mb-6">{strings.characterSheet}</p>
+            <p className="text-muted-foreground mb-6 short-landscape:mb-2 short-landscape:text-sm">{strings.characterSheet}</p>
           </div>
         )}
 
@@ -436,19 +437,20 @@ export default function CharacterPage() {
             handleClose();
           };
           return (
+            <ModalPortal key="assign-chronicle">
             <motion.div
               key="assign-chronicle"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 short-landscape:p-2"
               onClick={handleClose}
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-md w-full shadow-xl"
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 short-landscape:p-3 max-w-md w-full shadow-xl short-landscape:max-h-[calc(100dvh-1rem)] short-landscape:overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
                 <h3 className="text-lg font-serif text-foreground mb-2">
@@ -492,6 +494,7 @@ export default function CharacterPage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -1079,10 +1082,10 @@ export default function CharacterPage() {
                   const isRenamingThis = renamingId === activeChar.id;
 
                   return (
-                    <div className="border-b border-border/60 pb-3 mb-4">
+                    <div className="border-b border-border/60 pb-3 short-landscape:pb-1 mb-4 short-landscape:mb-2">
                       {/* Top row — Back on the left, primary controls + More menu on the right.
                           Same flex row so the action cluster sits visually attached to the identity below. */}
-                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2 mb-2 short-landscape:mb-1">
                         <Button variant="ghost" size="sm" onClick={() => { setActiveView('list'); setCharacters(getCharacters()); }} className="gap-1.5 -ml-2 h-8 px-2 text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground">
                           <ChevronLeft className="w-3.5 h-3.5" /> {strings.sheet_back}
                         </Button>
@@ -1216,14 +1219,14 @@ export default function CharacterPage() {
                           </Button>
                         </div>
                       ) : (
-                        <h2 className="text-2xl md:text-3xl font-serif font-bold text-primary leading-tight break-words">
+                        <h2 className="text-2xl md:text-3xl short-landscape:text-lg font-serif font-bold text-primary leading-tight break-words">
                           {activeChar.name?.trim() || strings.unnamed_character || "Unnamed Character"}
                         </h2>
                       )}
 
                       {/* Metadata pill row — clan, edition, PC/NPC, chronicle.
                           All inline, pill-styled, mobile-friendly via flex-wrap. */}
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      <div className="mt-2 short-landscape:mt-1 flex flex-wrap items-center gap-2 short-landscape:gap-1.5 text-sm text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
                           <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>

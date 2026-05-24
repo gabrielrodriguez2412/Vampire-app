@@ -147,13 +147,13 @@ export default function Clans() {
       )}
 
       <Dialog open={!!selectedClan} onOpenChange={handleClose}>
-        <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-900 p-0 overflow-hidden text-on-surface rounded-none">
+        <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-900 p-0 overflow-hidden text-on-surface rounded-none short-landscape:max-h-[calc(100dvh-1rem)] short-landscape:top-[0.5rem] short-landscape:translate-y-0">
           {selectedClan && (
             <>
-              <div className="h-1 w-full" style={{ backgroundColor: selectedClan.colorTheme }} />
-              <ScrollArea className="max-h-[85vh]">
+              <div className="h-1 w-full short-landscape:hidden" style={{ backgroundColor: selectedClan.colorTheme }} />
+              <ScrollArea className="max-h-[85vh] short-landscape:max-h-[calc(100dvh-1.5rem)]">
                 <div className="p-0">
-                  <div className="relative h-52 sm:h-64 border-b border-zinc-900">
+                  <div className="relative h-52 sm:h-64 short-landscape:h-24 border-b border-zinc-900">
                     <img
                       src={selectedClan.bannerImage || "/opengraph.jpg"}
                       alt={getClanDisplayName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}

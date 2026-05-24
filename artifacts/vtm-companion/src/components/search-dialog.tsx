@@ -105,7 +105,7 @@ export function SearchDialog({ open, onOpenChange }: { open: boolean; onOpenChan
               placeholder={strings.searchGlobalPlaceholder || strings.search || 'Search...'}
             />
           </div>
-          <Command.List className="max-h-[360px] overflow-y-auto overflow-x-hidden">
+          <Command.List className="max-h-[360px] short-landscape:max-h-[40vh] overflow-y-auto overflow-x-hidden">
             <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
               {query.length > 1
                 ? (strings.noResults || 'No results.')

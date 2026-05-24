@@ -1119,9 +1119,14 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
   };
 
   return (
-    <div className="space-y-10 pb-12">
+    /* Vertical rhythm is deliberately generous on desktop / portrait phones
+       (space-y-10 between sections, p-6/p-8 inside each one). On phone
+       landscape that turns into ~80% of the viewport being whitespace, so
+       short-landscape clamps the sheet's vertical density without touching
+       the font sizes or the per-field rows. */
+    <div className="space-y-10 short-landscape:space-y-3 pb-12 short-landscape:pb-4">
       {sections.length > 1 && (
-        <div className="flex justify-end -mb-4">
+        <div className="flex justify-end -mb-4 short-landscape:-mb-2">
           <Button
             type="button"
             variant="ghost"
@@ -1143,15 +1148,15 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
         const sectionLabel = strings[section.labelKey] || section.labelKey;
         const bodyId = `sheet-section-body-${sectionId}`;
         return (
-          <section key={sectionId} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8">
+          <section key={sectionId} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3">
             <button
               type="button"
               onClick={() => toggleSection(sectionId)}
               aria-expanded={!isCollapsed}
               aria-controls={bodyId}
-              className="w-full flex items-center justify-between gap-3 uppercase tracking-widest border-b border-zinc-800 pb-3 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+              className="w-full flex items-center justify-between gap-3 uppercase tracking-widest border-b border-zinc-800 pb-3 short-landscape:pb-2 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
             >
-              <h2 className="font-serif text-xl text-primary">
+              <h2 className="font-serif text-xl short-landscape:text-base text-primary">
                 {sectionLabel}
               </h2>
               <ChevronDown
@@ -1161,7 +1166,7 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
             </button>
             <div
               id={bodyId}
-              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5 ${isCollapsed ? "hidden" : "mt-6"}`}
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${isCollapsed ? "hidden" : "mt-6 short-landscape:mt-3"}`}
             >
               {(Array.isArray(section.fields) ? section.fields : []).map(field => renderField(field))}
             </div>

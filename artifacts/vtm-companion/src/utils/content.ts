@@ -1,4 +1,5 @@
 import { LangCode, EditionId, ClanEntry } from '../types';
+import type { EditionScope } from '../types';
 import { clans } from '../data/clans';
 
 // Returns text in lang. If not available, falls back to 'en'. If still not available, returns null.
@@ -17,6 +18,23 @@ export function getTextArray(record: Record<LangCode, string[]> | undefined, lan
   return (val && val.length > 0) ? val : null;
 }
 
+/**
+ * Like `getText`, but for string-array fields (e.g. the bullet list inside a
+ * Roleplay tip). Falls back to English when the requested language has no
+ * content, and to an empty array when even English is missing — so callers
+ * can map() the result without null checks.
+ */
+export function getLocalizedArray(
+  record: Record<LangCode, string[]> | undefined,
+  lang: LangCode,
+): string[] {
+  if (!record) return [];
+  const val = record[lang];
+  if (val && val.length > 0) return val;
+  const fallback = record['en'];
+  return (fallback && fallback.length > 0) ? fallback : [];
+}
+
 // Get text with English fallback (use ONLY in search/indexing contexts — never in UI rendering)
 export function getTextWithFallback(record: Record<LangCode, string> | undefined, lang: LangCode): string {
   if (!record) return '';
@@ -25,6 +43,26 @@ export function getTextWithFallback(record: Record<LangCode, string> | undefined
 
 export function filterByEdition<T extends { editions: EditionId[] }>(items: T[], edition: EditionId): T[] {
   return items.filter(item => item.editions.includes(edition));
+}
+
+/**
+ * Does an entry tagged with an `EditionScope` belong on the page for the
+ * currently selected `EditionId`?
+ *
+ * Universal entries (`scope` is `null` / `undefined`) match every edition.
+ * `v5`-scoped entries match only the V5 edition. `classic`-scoped entries
+ * match every classic edition (V20, Revised, 2nd, 1st). This is the
+ * intentional coarse grouping the rest of the UI already uses — the
+ * combat-summary card on Tools, for instance, distinguishes V5 from a
+ * single "classic editions" cluster. If the app later wants to split
+ * those further (e.g. Revised-only content), the scope union can grow;
+ * for now, two scope buckets cover every real-device-QA finding.
+ */
+export function isEditionInScope(scope: EditionScope | undefined, edition: EditionId): boolean {
+  if (scope === null || scope === undefined) return true;
+  if (scope === 'v5') return edition === 'V5';
+  if (scope === 'classic') return edition !== 'V5';
+  return true;
 }
 
 export function isAvailableInLang(record: Record<LangCode, string> | undefined, lang: LangCode): boolean {

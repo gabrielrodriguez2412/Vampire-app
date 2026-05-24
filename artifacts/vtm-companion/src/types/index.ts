@@ -107,11 +107,23 @@ export interface RuleEntry {
   tags: string[];
 }
 
+/**
+ * Edition-scope tag for glossary entries (and roleplay tips). Most entries
+ * apply to every edition (`null`). Some concepts (Hunger as a die mechanic,
+ * Predator Type, Touchstones, Blood Potency, Resonance) are V5-specific.
+ * A few (Blood Pool spending, classic Paths of Enlightenment) belong to the
+ * older editions. The UI surfaces this as a small badge so players know
+ * when an entry is *not* universal.
+ */
+export type EditionScope = 'v5' | 'classic' | null;
+
 export interface GlossaryEntry {
   id: string;
   term: Record<LangCode, string>;
   definition: Record<LangCode, string>;
   related: string[];
+  /** Optional edition-scope tag. Omit or set to null when the term is universal. */
+  edition?: EditionScope;
 }
 
 /**

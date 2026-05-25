@@ -402,11 +402,17 @@ This partially addresses these P2 backlog items:
   default thumbnails are tracked under §5 of the asset
   integration plan; user-uploaded chronicle/character images are
   explicitly out of scope for now (asset plan §10).
-- **Global app background replacement.** The body still uses the
-  noise pseudo-element + flat near-black background; replacement
-  is still tagged P3 above and out of Batch D scope. Final
-  background sizing / format / overlay requirements are now
-  captured in `docs/asset-integration-plan.md` §3, pending art.
+- **Global app background replacement.** Pipeline shipped in Batch
+  E2 — body renders a fixed-position background image under a
+  near-black gradient overlay, with the original noise pseudo
+  preserved on top via `body::after`. **Six candidate backgrounds**
+  now ship side-by-side under
+  `public/images/backgrounds/` (city-1-gpt, city-2-gem, red-city,
+  grey-town, cracked-wall, damask — all 1672×941 WebP, each under
+  110 KB). Currently active: `city-1-gpt.webp`. Switch by editing
+  the `--app-bg-image` line in `src/index.css` (developer-only;
+  no Settings UI, no localStorage). Final selection pending visual
+  comparison on desktop, mobile portrait, and phone landscape.
 - **Character sheet visual treatment** (Character P1 above) —
   card polish does not reach the sheet view.
 - **Chronicle Manage modal polish** (P1 above) — the Manage

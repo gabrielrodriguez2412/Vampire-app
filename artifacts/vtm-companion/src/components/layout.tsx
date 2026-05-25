@@ -30,11 +30,43 @@ export function Layout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-background text-foreground selection:bg-primary-container/30">
+    /*
+     * Root app wrapper.
+     *
+     * Background-color note (Batch E2): this wrapper intentionally has
+     * **no** `bg-background`. The global app background image is painted
+     * by `body::before` in `src/index.css` and a wrapper-level
+     * background-color here would sit on top of it (in-flow body
+     * content paints above `body::before`'s `z-index: -1`), so the
+     * image would never be visible in-app. The header, mobile menu,
+     * card surfaces, and bottom nav each set their own opaque
+     * backgrounds, and body itself still carries `bg-background` as a
+     * universal fallback if the image fails to load, so removing it
+     * here does not regress readability.
+     */
+    <div className="flex flex-col min-h-[100dvh] text-foreground selection:bg-primary-container/30">
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
 
-      {/* Top App Bar */}
-      <header className="bg-neutral-950 flex justify-between items-center w-full px-6 short-landscape:px-3 py-4 short-landscape:py-1.5 sticky top-0 z-[60] border-b border-zinc-800">
+      {/*
+        Top App Bar.
+
+        Batch E2 polish: dropped the desktop vertical padding from
+        `py-4` to `py-3` (24px → ~18px) and switched the chrome to
+        semi-transparent so the new global background subtly bleeds
+        through the bar without sacrificing legibility of the
+        title / language / edition selectors. `short-landscape:py-1.5`
+        retained — phone landscape already had a tight bar. Sticky
+        and z-index are unchanged so dialogs and the mobile menu
+        still layer correctly above the bar.
+
+        Final transparency pass: `bg-neutral-950/78` — two percentage
+        points more transparent than the initial `/80` polish, sits
+        at the conservative end of the agreed `0.75 → 0.85` safe
+        range. Combined with `backdrop-blur-md` this lets a hint of
+        the city/red-city silhouettes show through the bar without
+        compromising icon or text contrast.
+      */}
+      <header className="bg-neutral-950/78 backdrop-blur-md flex justify-between items-center w-full px-6 short-landscape:px-3 py-3 short-landscape:py-1.5 sticky top-0 z-[60] border-b border-zinc-800">
         <div className="flex items-center gap-4 short-landscape:gap-2">
           <span
             className="material-symbols-outlined text-primary-container cursor-pointer hover:opacity-80 transition-opacity short-landscape:text-[20px]"
@@ -78,9 +110,19 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile Slide-down Menu (for settings/utilities not in bottom nav) */}
+      {/*
+        Mobile slide-down menu (for settings/utilities not in
+        bottom nav). Top offset retuned from `top-[65px]` to
+        `top-[57px]` after the header's `py-4 → py-3` slim-down
+        (the old offset left a 4–8px transparent strip below the
+        new shorter header). Bottom padding dropped from `pb-24`
+        to `pb-20` to match the slimmer bottom nav. Background
+        stays solid (`bg-neutral-950`) because this is a
+        content-overlay surface that needs full opacity to keep
+        nav text legible regardless of what's behind it.
+      */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 top-[65px] short-landscape:top-[40px] bg-neutral-950 z-50 overflow-y-auto border-b border-zinc-800 pb-24 short-landscape:pb-14">
+        <div className="fixed inset-0 top-[57px] short-landscape:top-[40px] bg-neutral-950 z-50 overflow-y-auto border-b border-zinc-800 pb-20 short-landscape:pb-14">
           <div className="p-6 space-y-6">
             <div className="sm:hidden flex gap-4 border-b border-zinc-800 pb-6">
               <div className="flex-1">
@@ -126,16 +168,35 @@ export function Layout({ children }: { children: ReactNode }) {
         </div>
       )}
 
-      {/* Main Content */}
-      <main className="flex-1 w-full pt-6 short-landscape:pt-2 pb-24 short-landscape:pb-14 overflow-y-auto relative z-10">
+      {/*
+        Main content. Bottom padding clears the bottom-nav height:
+        - desktop / portrait: `pb-20` (80px) clears the new
+          `h-16` (64px) bar with 16px safe margin.
+        - phone landscape: `pb-14` (56px) clears `h-11` (44px)
+          with 12px safe margin (unchanged).
+      */}
+      <main className="flex-1 w-full pt-6 short-landscape:pt-2 pb-20 short-landscape:pb-14 overflow-y-auto relative z-10">
         {children}
       </main>
 
-      {/* Bottom Nav Bar.
-          On phone landscape (short-landscape) we shrink the bar height and
-          drop the text labels: icons stay tappable but the bar stops
-          dominating the viewport. */}
-      <nav className="fixed bottom-0 w-full z-50 flex justify-around items-center h-20 short-landscape:h-11 bg-neutral-950 bg-opacity-95 backdrop-blur border-t border-zinc-800">
+      {/*
+        Bottom Nav Bar.
+
+        Batch E2 polish: dropped desktop/portrait height from
+        `h-20` (80px) to `h-16` (64px), still well above the
+        44px tap-target floor for the centred icon+label stack.
+        Phone landscape height `h-11` (44px) preserved — at the
+        Apple/Android minimum, which is intentional on a short
+        viewport. Background sits at `bg-neutral-950/78 +
+        backdrop-blur-md` so the global background image bleeds
+        through subtly while text/icons remain legible. Previous
+        `bg-opacity-95` Tailwind utility deprecated in favour of
+        the slash-opacity syntax to compose cleanly with the new
+        backdrop-blur. Final transparency pass matches the header
+        at `/78` so the two chrome bars feel like one consistent
+        surface across top and bottom.
+      */}
+      <nav className="fixed bottom-0 w-full z-50 flex justify-around items-center h-16 short-landscape:h-11 bg-neutral-950/78 backdrop-blur-md border-t border-zinc-800">
         {bottomNavItems.map((item) => {
           const active = isCurrentActive(item.href);
           return (

@@ -393,13 +393,20 @@ This partially addresses these P2 backlog items:
   banner art on the character list. When a curated original or
   royalty-free art set lands, a later pass can opt in via a
   bg-image layer that matches the existing radial gradient slot.
+  Asset integration plan now documented in
+  `docs/asset-integration-plan.md` (Batch E).
 - **Custom chronicle images / backgrounds.** Same story for
   chronicles. The card uses a generic `ScrollText` watermark; per-
   chronicle motifs (a city silhouette, a venue photo, etc.) are
-  deferred until art assets exist.
+  deferred until art assets exist. Possible developer-supplied
+  default thumbnails are tracked under §5 of the asset
+  integration plan; user-uploaded chronicle/character images are
+  explicitly out of scope for now (asset plan §10).
 - **Global app background replacement.** The body still uses the
   noise pseudo-element + flat near-black background; replacement
-  is still tagged P3 above and out of Batch D scope.
+  is still tagged P3 above and out of Batch D scope. Final
+  background sizing / format / overlay requirements are now
+  captured in `docs/asset-integration-plan.md` §3, pending art.
 - **Character sheet visual treatment** (Character P1 above) —
   card polish does not reach the sheet view.
 - **Chronicle Manage modal polish** (P1 above) — the Manage

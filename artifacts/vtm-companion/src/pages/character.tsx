@@ -706,9 +706,30 @@ export default function CharacterPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedCharacters.map(char => (
-                  <Card key={char.id} className="bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-colors group" onClick={() => handleOpenSheet(char)}>
-                    <CardHeader className="pb-3">
+                {displayedCharacters.map(char => {
+                  // Visual polish (Batch D): give each character card a
+                  // subtle identity drawn from its clan's color theme.
+                  // The clan data already ships a `colorTheme` hex for
+                  // every clan; we reuse it as a 3px left accent strip
+                  // and a faint radial glow in the top-right corner.
+                  // All CSS-only — no new assets and no image loads.
+                  const clanData = clans.find(c => c.id === char.clan);
+                  const clanColor = clanData?.colorTheme || '#8B0000';
+                  const isV5 = char.edition === 'V5';
+                  return (
+                  <Card
+                    key={char.id}
+                    onClick={() => handleOpenSheet(char)}
+                    className="relative overflow-hidden bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-all group focus-within:ring-1 focus-within:ring-primary/40"
+                    style={{
+                      // Left accent + top-right radial glow, both keyed
+                      // off the clan color. Kept very low-opacity so
+                      // dense lists do not feel busy.
+                      boxShadow: `inset 3px 0 0 ${clanColor}`,
+                      backgroundImage: `radial-gradient(circle at top right, ${clanColor}1a, transparent 55%)`,
+                    }}
+                  >
+                    <CardHeader className="pb-3 pl-5">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1">
                           {renamingId === char.id ? (
@@ -732,12 +753,39 @@ export default function CharacterPage() {
                               </Button>
                             </div>
                           ) : (
-                            <CardTitle className="font-serif text-xl mb-1 truncate">{char.name}</CardTitle>
+                            <CardTitle className="font-serif text-xl mb-1.5 truncate tracking-tight group-hover:text-on-surface transition-colors">
+                              {char.name}
+                            </CardTitle>
                           )}
-                          <div className="flex items-center flex-wrap gap-2 text-sm text-muted-foreground">
-                            <span>{getClanIcon(char.clan)} {getClanName(char.clan, char.edition as EditionId)}</span>
-                            <span>•</span>
-                            <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">{char.edition}</span>
+                          {/* Identity row: bigger clan icon + clan name,
+                              with the icon visually anchored by the
+                              clan color so the card reads as "a Brujah"
+                              before the eye even reaches the badges. */}
+                          <div className="flex items-center gap-2 text-sm text-foreground/80 mb-2">
+                            <span
+                              aria-hidden
+                              className="text-base leading-none shrink-0"
+                              style={{ color: clanColor, textShadow: `0 0 6px ${clanColor}55` }}
+                            >
+                              {getClanIcon(char.clan)}
+                            </span>
+                            <span className="truncate">{getClanName(char.clan, char.edition as EditionId)}</span>
+                          </div>
+                          {/* Badge row: edition, PC/NPC, optional
+                              chronicle link. Edition tint follows the
+                              same V5 / classic split the rest of the
+                              app uses on the Tools combat summary. */}
+                          <div className="flex items-center flex-wrap gap-1.5 text-sm text-muted-foreground">
+                            <span
+                              className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
+                                isV5
+                                  ? "border-primary/30 bg-primary/10 text-primary"
+                                  : "border-amber-700/40 bg-amber-950/20 text-amber-300/90"
+                              }`}
+                              title={char.edition}
+                            >
+                              {char.edition}
+                            </span>
                             <span
                               className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
                                 char.characterType === 'npc'
@@ -767,7 +815,7 @@ export default function CharacterPage() {
                             })()}
                           </div>
                           {char.updatedAt && (
-                            <div className="text-[10px] text-muted-foreground/60 mt-1.5">
+                            <div className="text-[10px] text-muted-foreground/60 mt-2 font-sans tracking-wide">
                               {new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                             </div>
                           )}
@@ -857,7 +905,8 @@ export default function CharacterPage() {
                       </div>
                     </CardHeader>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </motion.div>

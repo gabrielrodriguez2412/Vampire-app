@@ -89,6 +89,30 @@ export function getClanDisplayName(clan: ClanEntry, edition: EditionId, lang: La
   return getText(clan.name, lang) || clan.id;
 }
 
+/**
+ * Return the multilingual record for a clan's sect at the given edition.
+ * Prefers a `sectByEdition[edition]` override when present; otherwise
+ * falls back to the canonical `clan.sect`.
+ */
+export function getClanSectRecord(clan: ClanEntry, edition: EditionId): Record<LangCode, string> {
+  const override = clan.sectByEdition && clan.sectByEdition[edition];
+  return override || clan.sect;
+}
+
+/**
+ * Return the visible sect label for a clan in the given edition + language,
+ * falling back to English via `getText`. Returns null when no sect data
+ * exists at all (currently never the case in the bundled clan data).
+ *
+ * This is the single source of truth for the sect chip on clan cards
+ * and the sect line on the clan detail header. Keeping it centralized
+ * means a future, more granular per-edition split (Revised-only, 1st-
+ * only) needs only one helper change rather than a sweep of the page.
+ */
+export function getClanSect(clan: ClanEntry, edition: EditionId, lang: LangCode): string | null {
+  return getText(getClanSectRecord(clan, edition), lang);
+}
+
 export function getClanDisplayNameById(clanId: string, edition: EditionId, lang: LangCode): string {
   const clan = clans.find(c => c.id === clanId);
   if (!clan) return clanId;

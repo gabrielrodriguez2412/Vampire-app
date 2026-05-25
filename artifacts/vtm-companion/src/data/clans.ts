@@ -18,12 +18,37 @@ const trans = (enStr: string, esStr: string, ptStr: string, frStr: string, deStr
   it: itStr
 });
 
+/**
+ * Compact helper for short sect/affiliation labels. EN + ES are filled;
+ * pt / fr / de / it fall back to EN via `getText` — same pattern used
+ * for glossary terms. Sect labels are short enough that the parts that
+ * actually translate ("Anarch" → "Anarquista", "Independent" →
+ * "Independiente", "Unaligned" → "Sin facción") are written out here;
+ * names that don't translate ("Camarilla", "Sabbat") are repeated
+ * verbatim so the ES column is never empty (otherwise the i18n parity
+ * tests we added in Batch B would not catch a future leak here).
+ */
+const sectLabel = (enStr: string, esStr: string): Record<LangCode, string> => ({
+  en: enStr,
+  es: esStr,
+  pt: "",
+  fr: "",
+  de: "",
+  it: ""
+});
+
 export const clans: ClanEntry[] = [
   {
     id: "brujah",
     name: en("Brujah"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla / Anarch"),
+    sect: sectLabel("Camarilla / Anarch", "Camarilla / Anarquista"),
+    sectByEdition: {
+      // V5 narrative tilts Brujah toward the Anarch Movement, but the
+      // clan still has a meaningful Camarilla minority. The classic-
+      // era label (Camarilla-first) stays on the `sect` field.
+      V5: sectLabel("Anarch / Camarilla", "Anarquista / Camarilla"),
+    },
     summary: en("Rebels, idealists, and fighters who champion causes both noble and chaotic. Historically they were philosopher-kings, but in modern nights they are known for their explosive temper."),
     weakness: en("Violent Temper: Their beast is easily provoked. They have a higher difficulty resisting frenzy in any situation that provokes anger."),
     disciplines: ["celerity", "potence", "presence"],
@@ -38,7 +63,10 @@ export const clans: ClanEntry[] = [
     id: "gangrel",
     name: en("Gangrel"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent / Anarch"),
+    // Gangrel were Camarilla in 1st/2nd; left the sect during Revised. The
+    // current label leans modern; a deeper per-edition split (1ST/2ND =
+    // Camarilla) is documented in the content backlog as follow-up.
+    sect: sectLabel("Independent / Anarch", "Independiente / Anarquista"),
     summary: en("Feral wanderers and shapeshifters who are closer to the Beast than any other clan."),
     weakness: en("Animal Features: Every time a Gangrel frenzies, they gain an animalistic feature, which permanently reduces their Social attributes."),
     disciplines: ["animalism", "fortitude", "protean"],
@@ -53,7 +81,7 @@ export const clans: ClanEntry[] = [
     id: "malkavian",
     name: en("Malkavian"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla"),
+    sect: sectLabel("Camarilla", "Camarilla"),
     summary: en("Oracles, seers, and lunatics blessed (and cursed) with uncontrollable insights."),
     weakness: en("Affliction: Every Malkavian suffers from an incurable derangement or psychological condition that permanently alters their perception of reality."),
     disciplines: ["auspex", "dominate", "obfuscate"],
@@ -68,7 +96,7 @@ export const clans: ClanEntry[] = [
     id: "nosferatu",
     name: en("Nosferatu"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla"),
+    sect: sectLabel("Camarilla", "Camarilla"),
     summary: en("Hideously deformed information brokers who rule the underground and the shadows."),
     weakness: en("Hideous Appearance: The Embrace twists their bodies into monstrous forms. They automatically fail social rolls involving appearance or first impressions, and their existence is a walking masquerade breach."),
     disciplines: ["animalism", "obfuscate", "potence"],
@@ -83,7 +111,7 @@ export const clans: ClanEntry[] = [
     id: "toreador",
     name: en("Toreador"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla"),
+    sect: sectLabel("Camarilla", "Camarilla"),
     summary: en("Aesthetes, artists, and social manipulators addicted to beauty and sensation."),
     weakness: en("Aesthetic Fixation: When confronted with true beauty, they can become completely enraptured and incapacitated for hours, oblivious to their surroundings."),
     disciplines: ["auspex", "celerity", "presence"],
@@ -98,7 +126,7 @@ export const clans: ClanEntry[] = [
     id: "tremere",
     name: en("Tremere"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla"),
+    sect: sectLabel("Camarilla", "Camarilla"),
     summary: en("Secretive warlocks and scholars who stole immortality through dark blood magic."),
     weakness: en("Blood Defect: In earlier editions, they were easily bound to clan elders. In V5, their blood is too weak to blood bond other Kindred."),
     disciplines: ["auspex", "blood_sorcery", "dominate", "thaumaturgy"],
@@ -113,7 +141,7 @@ export const clans: ClanEntry[] = [
     id: "ventrue",
     name: en("Ventrue"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Camarilla"),
+    sect: sectLabel("Camarilla", "Camarilla"),
     summary: en("The self-proclaimed kings and aristocratic rulers of the vampiric hierarchy."),
     weakness: en("Rarefied Tastes: A Ventrue can only feed from a highly specific type of mortal (e.g., priests, virgins, bankers). They will vomit any other blood."),
     disciplines: ["dominate", "fortitude", "presence"],
@@ -128,7 +156,12 @@ export const clans: ClanEntry[] = [
     id: "lasombra",
     name: en("Lasombra"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Sabbat / Camarilla"),
+    sect: sectLabel("Sabbat / Camarilla", "Sabbat / Camarilla"),
+    sectByEdition: {
+      // In V5 the bulk of the clan defected from the Sabbat into the
+      // Camarilla; the older mixed label stays as the classic default.
+      V5: sectLabel("Camarilla", "Camarilla"),
+    },
     summary: en("Ruthless social Darwinists who manipulate shadows and dominate the church and state."),
     weakness: en("Defective Reflection: They cast no reflection in mirrors or modern recording devices, and modern technology actively glitches in their presence."),
     disciplines: ["dominate", "oblivion", "potence", "obtenebration"],
@@ -143,7 +176,13 @@ export const clans: ClanEntry[] = [
     id: "tzimisce",
     name: en("Tzimisce"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Sabbat / Independent"),
+    sect: sectLabel("Sabbat / Independent", "Sabbat / Independiente"),
+    sectByEdition: {
+      // V5: after the dissolution of the Sabbat in the official line, the
+      // clan reads as an independent power that overlaps with the
+      // Anarch Movement in many domains.
+      V5: sectLabel("Anarch / Independent", "Anarquista / Independiente"),
+    },
     summary: en("Inhuman fleshcrafters and territorial tyrants who have forsaken their humanity."),
     weakness: en("Territorial Dependance: A Tzimisce must rest near earth from their birthplace or their domain. Failing to do so halves their dice pools."),
     disciplines: ["animalism", "auspex", "protean", "vicissitude"],
@@ -161,7 +200,13 @@ export const clans: ClanEntry[] = [
       "V5": en("Banu Haqim")
     },
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent / Camarilla"),
+    sect: sectLabel("Independent / Camarilla", "Independiente / Camarilla"),
+    sectByEdition: {
+      // As Banu Haqim in V5, the warrior caste formally joined the
+      // Camarilla; the older independent label stays as the classic
+      // default.
+      V5: sectLabel("Camarilla", "Camarilla"),
+    },
     summary: en("Assassins, judges, and scholars of the blood from the Middle East."),
     weakness: en("Blood Curse/Addiction: In earlier editions, they were cursed to take damage from Kindred blood. In V5, they have a terrible addiction to vampiric vitae."),
     disciplines: ["blood_sorcery", "celerity", "obfuscate", "quietus"],
@@ -179,7 +224,12 @@ export const clans: ClanEntry[] = [
       "V5": trans("The Ministry", "El Ministerio", "O Ministério", "Le Ministère", "Das Ministerium", "Il Ministero")
     },
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent / Anarch"),
+    sect: sectLabel("Independent / Anarch", "Independiente / Anarquista"),
+    sectByEdition: {
+      // The Ministry, in V5, formally aligns with the Anarch Movement
+      // after rejection by the Camarilla.
+      V5: sectLabel("Anarch", "Anarquista"),
+    },
     summary: en("Tempters, liberators, and religious zealots who seek to corrupt through vice."),
     weakness: en("Light Sensitivity: They suffer far greater damage from sunlight than other vampires, and bright lights cause physical pain and subtract from dice pools."),
     disciplines: ["obfuscate", "presence", "protean", "serpentis"],
@@ -197,7 +247,7 @@ export const clans: ClanEntry[] = [
       "V5": en("Hecata")
     },
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent"),
+    sect: sectLabel("Independent", "Independiente"),
     summary: en("A twisted, incestuous Venetian family of necromancers and merchants."),
     weakness: en("Painful Kiss: Their bite is excruciatingly painful, causing damage rather than the ecstatic pleasure associated with the vampiric Kiss."),
     disciplines: ["auspex", "fortitude", "oblivion", "necromancy"],
@@ -212,7 +262,7 @@ export const clans: ClanEntry[] = [
     id: "ravnos",
     name: en("Ravnos"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent"),
+    sect: sectLabel("Independent", "Independiente"),
     summary: en("Doomed wanderers, rogues, and masters of illusion from the East."),
     weakness: en("Doomed to Wander / Vice: If they sleep in the same place more than once, they risk burning. They also suffer from a specific criminal vice they must indulge."),
     disciplines: ["animalism", "obfuscate", "presence", "chimerstry", "fortitude"],
@@ -227,7 +277,7 @@ export const clans: ClanEntry[] = [
     id: "salubri",
     name: en("Salubri"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Independent"),
+    sect: sectLabel("Independent", "Independiente"),
     summary: en("A nearly extinct, three-eyed bloodline of hunted healers and soul-gazers."),
     weakness: en("Prey Exclusion: They can only feed from mortals who offer their blood willingly. Forcing the Kiss causes severe spiritual and physical backlash."),
     disciplines: ["auspex", "fortitude", "obfuscate"],
@@ -242,7 +292,14 @@ export const clans: ClanEntry[] = [
     id: "caitiff",
     name: en("Caitiff"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
-    sect: en("Anarch"),
+    sect: sectLabel("Anarch", "Anarquista"),
+    sectByEdition: {
+      // Caitiff have no fixed allegiance — they end up wherever a sect
+      // is willing to overlook the lack of clan. The V5 default reads
+      // as Unaligned; the classic-era default leans Anarch because the
+      // Movement historically absorbed most Caitiff.
+      V5: sectLabel("Unaligned", "Sin facción"),
+    },
     summary: en("Clanless vampires abandoned by their sires, lacking the specific traits of any lineage."),
     weakness: en("Clanless: They have no clan weakness, but they also have no clan disciplines. They learn all disciplines at a higher experience cost and face severe social prejudice."),
     disciplines: [],
@@ -260,7 +317,13 @@ export const clans: ClanEntry[] = [
       "V5": trans("Thin-Blood", "Sangre Débil", "Sangue-Fraco", "Sang-Clair", "Dünnblütige", "Sangue Debole")
     },
     editionAvailability: ["REVISED", "V20", "V5"],
-    sect: en("Anarch / Independent"),
+    sect: sectLabel("Anarch / Independent", "Anarquista / Independiente"),
+    sectByEdition: {
+      // Thin-Bloods rarely sit cleanly inside any sect. In V5 the most
+      // honest answer at the card level is Unaligned; the classic
+      // default keeps the previous lean.
+      V5: sectLabel("Unaligned", "Sin facción"),
+    },
     summary: en("Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath."),
     weakness: en("Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food."),
     disciplines: ["thin_blood_alchemy"],

@@ -20,7 +20,23 @@ export interface ClanEntry {
   name: Record<LangCode, string>;
   alternateNames?: Partial<Record<EditionId, Record<LangCode, string>>>;
   editionAvailability: EditionId[];
+  /**
+   * Default ("classic-era") sect/affiliation label. Used when no
+   * `sectByEdition` override is set for the active edition. Kept as a
+   * single multilingual record so it can be filled gradually.
+   */
   sect: Record<LangCode, string>;
+  /**
+   * Optional per-edition sect overrides. Use this when a clan's
+   * affiliation shifts meaningfully between editions — for example,
+   * Lasombra reading as Sabbat in classic editions but joining the
+   * Camarilla in V5, or Banu Haqim diverging from the Assamites'
+   * Independent stance once they joined the Camarilla.
+   *
+   * `getClanSect()` in `utils/content.ts` resolves the right label:
+   * override first, fall back to `sect`.
+   */
+  sectByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   summary: Record<LangCode, string>;
   weakness: Record<LangCode, string>;
   disciplines: string[];

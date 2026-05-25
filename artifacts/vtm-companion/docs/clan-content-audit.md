@@ -110,4 +110,123 @@ guideline is: 1–2 short original sentences describing the clan's
 - No routes changed; clan deep links (`/compendium/clanes/:id`) and
   clan→discipline deep links continue to work via the existing
   `pages/clans.tsx` and `pages/disciplines.tsx` flows.
-- No new i18n labels were needed.
+- No new i18n labels were needed for the original audit pass. Batch C
+  later added the new browse-control strings under the `clans_*`
+  i18n key family (see `i18n/ui.ts`).
+
+---
+
+## Batch C — Mobile browsing + sect labels (later pass)
+
+### What landed
+
+- `ClanEntry` gained an optional `sectByEdition` field
+  (`Partial<Record<EditionId, Record<LangCode, string>>>`). The
+  universal `sect` field stays as the classic-era default; the new
+  field carries V5 overrides where a clan's affiliation shifted
+  meaningfully between editions. Resolved by `getClanSect()` in
+  `utils/content.ts`.
+- Explicit V5 overrides are applied to:
+  - **Brujah** — Anarch-first label.
+  - **Lasombra** — Camarilla (post-defection).
+  - **Tzimisce** — Anarch / Independent (post-Sabbat).
+  - **Banu Haqim** (`assamite`) — Camarilla.
+  - **The Ministry** (`followers_of_set`) — Anarch.
+  - **Caitiff** — Unaligned.
+  - **Thin-Blood** — Unaligned.
+- All universal `sect` strings now carry a real Spanish value
+  ("Anarch" → "Anarquista", "Independent" → "Independiente",
+  "Unaligned" → "Sin facción"). Spanish mode no longer falls back to
+  English for the sect chip.
+- The Clans page renders the resolved label on both the card and the
+  detail header.
+
+### Still needs review (deferred from Batch C)
+
+1. **Per-classic-edition nuance on a few clans.** The current
+   `sect` field treats 1ST / 2ND / REVISED / V20 as one bucket. A
+   few clans were not in the same place across that whole span:
+   - **Gangrel** were Camarilla in 1ST and 2ND, then formally left
+     the sect mid-REVISED. The shipping label leans modern
+     ("Independent / Anarch"), which is correct for REVISED / V20
+     but slightly modern-leaning for 1ST / 2ND. Acceptable for a
+     quick-reference card; a future pass could add
+     `sectByEdition["1ST"]` and `sectByEdition["2ND"]` entries.
+   - **Lasombra** were unambiguously Sabbat until late V20; the
+     current "Sabbat / Camarilla" composite is forward-leaning for
+     1ST / 2ND. A future pass could add a Sabbat-only label for the
+     older editions.
+   - **Banu Haqim / Assamite** sat differently across the classic
+     run too; the composite label is acceptable but not granular.
+   - **Tremere** also shifted post-Modern-Nights events; a future
+     pass could surface "Camarilla / Independent" for V5
+     specifically.
+2. **Bloodlines vs. full clans.** The data file currently treats
+   every entry uniformly as `ClanEntry`. The Companion has no UI
+   distinction yet between full clans (Brujah, Ventrue, …),
+   officially-recognized bloodlines, Caitiff, and Thin-Bloods.
+   Adding a `type: 'clan' | 'bloodline' | 'caitiff' | 'thin-blood'`
+   field would unlock a clean clan-type filter chip. Deferred so the
+   shipping browse UI stays small.
+3. **PT / FR / DE / IT sect translations.** The sect labels fall
+   back to English in those locales. Mechanical translation pass
+   when a translator gets to them.
+4. **Clan summary / lore localization beyond EN.** Many clans only
+   have English `summary` / `lore`. The page already surfaces the
+   "[content not available in this language]" badge for the missing
+   ones; the gap is content, not UI.
+
+### Tests pinning the contract
+
+- `src/utils/__tests__/clanFilter.test.ts` exercises
+  `applyClanFilters` (edition + search + sect filter + sort) and
+  `getActiveSectTokens`, including:
+  - V5 Banu Haqim resolution from a "banu" search,
+  - cross-locale sect search (ES session, EN query),
+  - alpha vs. default sort order,
+  - the explicit V5 sect overrides for Lasombra, Banu Haqim, the
+    Ministry, Caitiff, and Thin-Bloods.
+
+### Missing localized clan content — pre-release blocker
+
+Several clans only ship English `summary` / `lore` (and in some cases
+English `weakness` / `sect`). The detail page currently surfaces an
+amber "contenido no disponible en este idioma" notice for the missing
+ones, which is acceptable as an interim state but **must not remain in
+the final release build**. Priorities:
+
+1. **English** — must be 100% complete on every clan, every
+   edition-availability row, for every visible field
+   (`name`, `summary`, `weakness`, `lore`, `sect`,
+   `sectByEdition` where present).
+2. **Spanish** — the project's second first-class locale. Same
+   completeness bar as English.
+3. **pt / fr / de / it** — fall back to English at render time via
+   `getText`. Not blocking for the first release but should not
+   block players who happen to read those languages either; pick
+   them up in a follow-up pass.
+
+The "[content not available in this language]" badge and the
+`isAvailableInLang` check in `pages/clans.tsx` are intentional
+guardrails for the transitional state; do not remove them, just fill
+the data underneath until the badge stops appearing for ES and EN.
+
+### Batch C follow-up — Clan detail hero responsive fix
+
+Phone-landscape (e.g. 844×389) showed the back button and the
+sect/clan-name block colliding inside the previous `short-landscape:h-24`
+hero. Brujah and Ventrue under Spanish (longer "Volver a clanes"
+button + multi-word sect) were the most visible offenders. The fix is
+layout-only — `pages/clans.tsx` now:
+
+- gives the hero `short-landscape:h-32` so the chip and title block
+  each have their own vertical band,
+- shrinks the back chip in landscape (`h-7`, `px-2`, `text-[10px]`,
+  smaller chevron) and clamps it to `max-w-[40%]` with truncation so
+  the Spanish label can shorten gracefully,
+- reduces the title row in landscape (`text-xl` h2, smaller icon and
+  gap, `flex-nowrap` so the favourite button never drops to a second
+  row), and
+- shrinks the favourite chip (`h-7 w-7`) in landscape.
+
+No data change; no other surface changed.

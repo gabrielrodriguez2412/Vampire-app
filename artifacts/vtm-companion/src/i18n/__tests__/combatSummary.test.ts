@@ -36,6 +36,11 @@ const CLASSIC_KEYS = [
   'combat_classic_ones',
   'combat_classic_damage',
   'combat_classic_note',
+  // Batch F added a "pending detailed review" hint that the Tools
+  // page renders only when 1st / 2nd Edition is the active classic
+  // edition. Every locale must define it so the UI does not silently
+  // fall back to no warning for those abstracted editions.
+  'combat_classic_legacy_review_note',
 ] as const;
 
 const LABEL_KEYS = [
@@ -73,6 +78,19 @@ describe('Tools combat summary i18n parity', () => {
       expect(strings.combat_classic_ones).not.toBe(strings.combat_v5_melee);
       expect(strings.combat_classic_damage).not.toBe(strings.combat_v5_superficial);
       expect(strings.combat_classic_damage).not.toBe(strings.combat_v5_aggravated);
+    });
+
+    it(`[${lang}] legacy-review hint is distinct from the general classic note`, () => {
+      // The legacy-review hint is meant to flag the 1st/2nd-only
+      // abstraction. It must not be a copy of `combat_classic_note`
+      // (the shared "details vary by edition" footnote rendered for
+      // every classic edition) — otherwise the user would see the
+      // same italic line twice when 1st/2nd is active and the
+      // pending-review signal would be invisible.
+      expect(strings.combat_classic_legacy_review_note).not.toBe(strings.combat_classic_note);
+      // And it must not collapse to a V5 string either — defensive
+      // against copy/paste mistakes during future translation work.
+      expect(strings.combat_classic_legacy_review_note).not.toBe(strings.combat_v5_hunger_note);
     });
   }
 });

@@ -341,3 +341,67 @@ Each pass should:
 - Avoid changes to data, storage, routes, or shared services.
 - Update this document — moving completed items to a "Completed"
   appendix at the bottom so the backlog stays honest.
+
+---
+
+## 10. Completed passes
+
+### Batch D — Character and Chronicle card visual polish (CSS-only)
+
+**Landed:**
+
+- **Character card** (`pages/character.tsx`, list view). Each card
+  now carries a 3 px **clan-color accent strip** on the left edge,
+  a faint **radial glow tinted by `colorTheme`** in the top-right
+  corner, a **larger color-tinted clan icon** with a subtle text
+  shadow, and a refined **edition badge** that switches between the
+  primary red (V5) and amber (classic) palette to match the existing
+  Tools combat-summary split. The hover state on the title is now a
+  smooth color transition instead of an opacity flicker, and the
+  whole card gets `focus-within:ring` so keyboard users see a
+  visible focus ring without losing the click behavior.
+- **Chronicle card** (`pages/chronicle.tsx`, list view). Each card
+  now has a 3 px **status accent strip** on the left (primary red
+  for active, zinc for archived), a **faint atmospheric radial
+  gradient** on active cards, and a low-opacity **ScrollText
+  watermark** in the bottom-right corner so sparse chronicles read
+  as inhabited rather than empty. The stats row is grouped into a
+  single **subtle pill** (border + bg) instead of five floating
+  badges, so the counts read as a summary, and the footer "Open"
+  affordance is now an uppercase chip with an arrow that translates
+  on hover.
+- Both cards keep their existing actions, dropdown menus, deep
+  links, and a11y semantics. The visual treatment is layered on
+  top of the existing markup with `relative` positioning and CSS;
+  no data shape changes, no new assets, no new images.
+
+This partially addresses these P2 backlog items:
+
+- *"Character cards mix avatar/clan icon, clan name, edition pill,
+  type badge — the visual hierarchy of these is unclear and varies
+  card to card."* — hierarchy clarified by promoting the clan icon
+  and badge row.
+- *"Chronicle cards are polished but the empty-state (no
+  chronicles yet) is bare."* — Card emptiness (sparse counts /
+  no description) is mitigated by the watermark + accent. The
+  zero-chronicles empty state is unchanged.
+
+**Explicitly still pending (not in Batch D's scope):**
+
+- **Final clan images.** Cards do not load `bannerImage` as a
+  watermark yet — the polish is pure CSS so we don't preload
+  banner art on the character list. When a curated original or
+  royalty-free art set lands, a later pass can opt in via a
+  bg-image layer that matches the existing radial gradient slot.
+- **Custom chronicle images / backgrounds.** Same story for
+  chronicles. The card uses a generic `ScrollText` watermark; per-
+  chronicle motifs (a city silhouette, a venue photo, etc.) are
+  deferred until art assets exist.
+- **Global app background replacement.** The body still uses the
+  noise pseudo-element + flat near-black background; replacement
+  is still tagged P3 above and out of Batch D scope.
+- **Character sheet visual treatment** (Character P1 above) —
+  card polish does not reach the sheet view.
+- **Chronicle Manage modal polish** (P1 above) — the Manage
+  modal's internal tabs and stats grid are not touched by this
+  pass; only the list-card surface is.

@@ -988,21 +988,46 @@ export default function ChroniclePage() {
             const pcCount = linked?.pcs.length ?? 0;
             const npcCount = linked?.npcs.length ?? 0;
             const stats = statsByChronicle.get(chr.id) ?? { sessions: 0, locations: 0, relationships: 0 };
+            // Visual polish (Batch D): give the card a thin status
+            // accent strip on the left (primary red when active, zinc
+            // when archived), a faint diagonal gradient that hints at
+            // a torn-parchment look, and a decorative ScrollText
+            // watermark in the right edge. All CSS-only.
+            const accentColor = isArchived ? '#3f3f46' /* zinc-700 */ : '#8b0000' /* primary */;
+            const isV5 = chr.edition === 'V5';
             return (
               <Card
                 key={chr.id}
                 onClick={() => openManage(chr, 'overview')}
-                className={`group cursor-pointer transition-all ${
+                className={`relative overflow-hidden group cursor-pointer transition-all focus-within:ring-1 focus-within:ring-primary/40 ${
                   isArchived
-                    ? "bg-zinc-900/30 border-zinc-800/60 opacity-60 hover:opacity-80 hover:border-zinc-700"
+                    ? "bg-zinc-900/30 border-zinc-800/60 opacity-70 hover:opacity-90 hover:border-zinc-700"
                     : "bg-card border-border hover:border-primary/40 hover:bg-white/[0.02]"
                 }`}
+                style={{
+                  boxShadow: `inset 3px 0 0 ${accentColor}`,
+                  backgroundImage: isArchived
+                    ? undefined
+                    : `radial-gradient(circle at top right, rgba(139,0,0,0.10), transparent 55%)`,
+                }}
               >
-                <CardHeader className="pb-2 pt-4 px-4">
+                {/* Decorative scroll watermark — kept very low opacity
+                    so cards with sparse data still feel inhabited
+                    without competing with the title. */}
+                <ScrollText
+                  aria-hidden
+                  className={`pointer-events-none absolute -right-4 -bottom-4 w-24 h-24 ${
+                    isArchived
+                      ? "text-zinc-700/15"
+                      : "text-primary/10 group-hover:text-primary/15 transition-colors"
+                  }`}
+                />
+
+                <CardHeader className="pb-2 pt-4 pl-5 pr-4 relative">
                   <div className="flex items-start gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2 mb-1">
-                        <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0">
+                      <div className="flex items-start gap-2 mb-1.5">
+                        <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0 tracking-tight group-hover:text-on-surface transition-colors">
                           {chr.name}
                         </CardTitle>
                         <span className={`shrink-0 mt-0.5 uppercase text-[9px] tracking-wider border px-1.5 py-0.5 rounded ${
@@ -1026,7 +1051,13 @@ export default function ChroniclePage() {
                             <span className="text-muted-foreground/30 text-xs select-none">·</span>
                           )}
                           {chr.edition && (
-                            <span className="uppercase text-[9px] tracking-wider border border-zinc-700 px-1.5 py-0.5 rounded bg-zinc-900 text-zinc-400">
+                            <span
+                              className={`uppercase text-[9px] tracking-wider border px-1.5 py-0.5 rounded ${
+                                isV5
+                                  ? "border-primary/30 bg-primary/10 text-primary"
+                                  : "border-amber-700/40 bg-amber-950/20 text-amber-300/80"
+                              }`}
+                            >
                               {chr.edition}
                             </span>
                           )}
@@ -1113,55 +1144,62 @@ export default function ChroniclePage() {
                   </div>
                 </CardHeader>
 
-                <CardContent className="pt-0 pb-4 px-4">
+                <CardContent className="pt-0 pb-4 pl-5 pr-4 relative">
                   {chr.description && (
-                    <p className="text-xs text-foreground/65 line-clamp-2 mb-3">
+                    <p className="text-xs text-foreground/65 line-clamp-2 mb-3 italic">
                       {chr.description}
                     </p>
                   )}
 
-                  {/* Stats row */}
-                  <div className="flex items-center gap-3 flex-wrap mb-3">
+                  {/* Stats row — grouped into a single pill so the
+                      counts read as a compact summary rather than five
+                      loose chips. Hover lifts the contrast so the user
+                      sees the card is interactive. */}
+                  <div className="inline-flex items-center gap-2.5 flex-wrap mb-3 bg-black/20 border border-zinc-800/60 rounded-md px-2.5 py-1.5 group-hover:border-zinc-700/70 transition-colors">
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground/75 tabular-nums"
                       title={strings.chr_linked_pcs || "Player Characters"}
                     >
                       <User className="w-3 h-3 text-primary/70" /> {pcCount}
                     </span>
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground/60 tabular-nums"
                       title={strings.chr_linked_npcs || "NPCs"}
                     >
                       <Users className="w-3 h-3 text-muted-foreground/60" /> {npcCount}
                     </span>
                     <span className="text-muted-foreground/25 text-xs select-none" aria-hidden>·</span>
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground/60 tabular-nums"
                       title={strings.chr_sessions || "Sessions"}
                     >
                       <BookOpen className="w-3 h-3" /> {stats.sessions}
                     </span>
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground/60 tabular-nums"
                       title={strings.chr_locations || "Locations"}
                     >
                       <MapPin className="w-3 h-3" /> {stats.locations}
                     </span>
                     <span
-                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground/60 tabular-nums"
                       title={strings.chr_relationships || "Relationships"}
                     >
                       <Heart className="w-3 h-3" /> {stats.relationships}
                     </span>
                   </div>
 
-                  {/* Footer */}
+                  {/* Footer with a subtle hairline above. The "Open"
+                      affordance brightens and animates a trailing
+                      arrow on hover so the card reads as actionable
+                      even when no stats are present. */}
                   <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
-                    <span className="text-[10px] text-muted-foreground/50">
+                    <span className="text-[10px] text-muted-foreground/50 font-sans tracking-wide">
                       {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
                     </span>
-                    <span className="text-[10px] text-muted-foreground/40 group-hover:text-primary/60 transition-colors">
-                      {strings.chr_open_manage || "Open"} →
+                    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 group-hover:text-primary/80 transition-colors">
+                      {strings.chr_open_manage || "Open"}
+                      <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
                     </span>
                   </div>
                 </CardContent>

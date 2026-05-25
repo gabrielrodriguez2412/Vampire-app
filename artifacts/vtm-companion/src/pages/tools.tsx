@@ -6,6 +6,10 @@ import { Droplet, Dices, AlertTriangle, ShieldAlert, Swords, Sparkles, RotateCcw
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import {
+  getToolsEditionShortName,
+  shouldShowClassicLegacyReviewHint,
+} from "@/utils/toolsEdition";
+import {
   rollDice,
   evaluateV5Roll,
   rollClassicDice,
@@ -15,10 +19,38 @@ import {
   DieValue,
 } from "@/utils/diceRoller";
 
+/**
+ * Tools page edition policy (Batch F):
+ *
+ *  - The dice roller and combat summary each render an `editionLabel`
+ *    chip pulled from `EDITION_LIST` via `getToolsEditionShortName`.
+ *    Previously these chips were hardcoded to "V5" / "Classic", which
+ *    made the Combat Summary look identical between V20, Revised, 2nd,
+ *    and 1st Edition. The chip now always reflects whatever the user
+ *    picked in the header edition selector.
+ *  - V5 has its own dedicated combat copy block (contested rolls,
+ *    Superficial / Aggravated split, Hunger die outcomes).
+ *  - V20 and Revised render the shared classic copy block (pool vs.
+ *    difficulty, ones cancelling successes, Stamina/Fortitude soak).
+ *  - 1st and 2nd Edition render the same shared classic copy *plus*
+ *    an extra user-visible "pending detailed review" hint, because
+ *    the shared copy abstracts away their genuinely different rules
+ *    (Bashing damage track, botch escalation). See
+ *    `shouldShowClassicLegacyReviewHint` for the rationale.
+ *
+ *  TODO(batch-f-tools): expand `combat_classic_*` into per-edition
+ *  variants for 1st / 2nd if/when verified short rule summaries land.
+ *  When that ships, remove `shouldShowClassicLegacyReviewHint` and
+ *  the matching `combat_classic_legacy_review_note` i18n strings, and
+ *  update `src/i18n/__tests__/combatSummary.test.ts` accordingly.
+ */
+
 export default function Tools() {
   const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   const isV5 = activeEdition === 'V5';
+  const editionLabel = getToolsEditionShortName(activeEdition);
+  const showLegacyReviewHint = !isV5 && shouldShowClassicLegacyReviewHint(activeEdition);
 
   return (
     <div className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto w-full space-y-6 sm:space-y-8">
@@ -32,7 +64,9 @@ export default function Tools() {
 
       {/* Dice Roller — edition-aware. Hunger lives inside the V5 roller. */}
       <div className="max-w-xl mx-auto w-full">
-        {isV5 ? <V5DiceRoller strings={strings} /> : <ClassicDiceRoller strings={strings} />}
+        {isV5
+          ? <V5DiceRoller strings={strings} editionLabel={editionLabel} />
+          : <ClassicDiceRoller strings={strings} editionLabel={editionLabel} />}
       </div>
 
       <div className="max-w-xl mx-auto w-full mt-6">
@@ -41,20 +75,25 @@ export default function Tools() {
             <CardTitle className="font-serif text-lg flex items-center gap-2">
               <ShieldAlert className="w-4 h-4" />
               {strings.combatSummary}
+              {/* Chip used to be a fixed "V5"/"Classic" label, which made
+                  the Combat Summary feel identical across every classic
+                  edition. We now show the *active* edition's short name
+                  (V5, V20, REVISED, 2ND, 1ST) so the chip always
+                  reflects the user's edition selector in the header. */}
               <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
-                {isV5
-                  ? (strings.combat_summary_v5_label || 'V5')
-                  : (strings.combat_summary_classic_label || 'Classic')}
+                {editionLabel}
               </span>
             </CardTitle>
           </CardHeader>
           {/* Combat summary text is edition-aware: V5 covers contested rolls,
               superficial/aggravated split, and the Hunger die outcomes the
-              app already exposes in the dice roller. Classic covers pool vs.
-              difficulty, ones cancelling successes, and damage soak — with an
-              explicit "details vary by edition" note since this section is
-              shared across 1st / 2nd / Revised / V20 and we don't want to
-              imply per-edition precision the data doesn't carry yet. */}
+              app already exposes in the dice roller. The shared classic
+              copy covers pool vs. difficulty, ones cancelling successes,
+              and damage soak — broadly correct for V20 / Revised. When 1st
+              or 2nd is selected we render an extra italic line warning
+              that the summary abstracts edition-specific differences
+              (Bashing damage track, botch escalation) — see the
+              `classicEditionNeedsLegacyReviewHint` helper above. */}
           <CardContent className="space-y-3 text-sm text-foreground/80">
             {isV5 ? (
               <>
@@ -76,6 +115,14 @@ export default function Tools() {
                 {strings.combat_classic_note && (
                   <p className="text-xs text-muted-foreground italic">
                     {strings.combat_classic_note}
+                  </p>
+                )}
+                {showLegacyReviewHint && strings.combat_classic_legacy_review_note && (
+                  <p
+                    className="text-xs text-amber-300/80 italic"
+                    data-testid="combat-legacy-review-hint"
+                  >
+                    {strings.combat_classic_legacy_review_note}
                   </p>
                 )}
               </>
@@ -153,9 +200,14 @@ function HungerStateStrip({ hunger, maxHunger, onChange, strings }: HungerStateS
 
 interface V5DiceRollerProps {
   strings: Record<string, string>;
+  /** Short edition name shown in the corner chip — always "V5" here,
+      but threaded as a prop for symmetry with `ClassicDiceRoller`
+      and so the chip stays in sync with `EDITION_LIST` automatically
+      if the V5 short name ever changes. */
+  editionLabel: string;
 }
 
-function V5DiceRoller({ strings }: V5DiceRollerProps) {
+function V5DiceRoller({ strings, editionLabel }: V5DiceRollerProps) {
   const [dicePool, setDicePool] = useState(5);
   const [hungerDice, setHungerDice] = useState(1);
   const [reason, setReason] = useState("");
@@ -182,7 +234,9 @@ function V5DiceRoller({ strings }: V5DiceRollerProps) {
         <CardTitle className="font-serif flex items-center gap-2">
           <Dices className="w-5 h-5" />
           {strings.quickRoll}
-          <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">V5</span>
+          <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
+            {editionLabel}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -289,9 +343,13 @@ function V5DiceRoller({ strings }: V5DiceRollerProps) {
 
 interface ClassicDiceRollerProps {
   strings: Record<string, string>;
+  /** Short edition name shown in the corner chip ("V20", "REVISED",
+      "2ND", "1ST"). Previously hardcoded to "Classic" which made the
+      same roller render identically for every classic edition. */
+  editionLabel: string;
 }
 
-function ClassicDiceRoller({ strings }: ClassicDiceRollerProps) {
+function ClassicDiceRoller({ strings, editionLabel }: ClassicDiceRollerProps) {
   const [dicePool, setDicePool] = useState(5);
   const [difficulty, setDifficulty] = useState(6);
   const [reason, setReason] = useState("");
@@ -317,7 +375,7 @@ function ClassicDiceRoller({ strings }: ClassicDiceRollerProps) {
           <Dices className="w-5 h-5" />
           {strings.quickRoll}
           <span className="ml-auto text-[10px] uppercase tracking-wider text-muted-foreground/70">
-            Classic
+            {editionLabel}
           </span>
         </CardTitle>
       </CardHeader>

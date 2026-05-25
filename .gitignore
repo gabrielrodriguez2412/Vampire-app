@@ -47,3 +47,9 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Developer background-image candidate sources. The processed WebP
+# outputs live under `artifacts/vtm-companion/public/images/backgrounds/`
+# and ship with the app; the original high-resolution PNG sources are
+# kept locally for re-encoding and not committed.
+background-candidates/

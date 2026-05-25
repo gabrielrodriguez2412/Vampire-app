@@ -1,7 +1,22 @@
 # Asset Integration Plan
 
-Snapshot date: 2026-05-24
-Status: planning / preparation. No final assets added yet.
+Snapshot date: 2026-05-24 (last updated 2026-05-25 for Batch E2).
+Status: planning + partial integration.
+
+**Progress**
+
+- ✅ Global app background image — integrated in Batch E2 with **six
+  candidate backgrounds** shipped side-by-side under
+  `public/images/backgrounds/`. All at 1672×941 WebP, individual
+  files under 110 KB. Currently active:
+  `city-1-gpt.webp`. Switch by editing the `--app-bg-image`
+  variable in `src/index.css` (single line; comment block above the
+  variable enumerates every candidate and its character). Final
+  selection still pending visual review across Home / Chronicle /
+  Character / Clans / Settings on desktop, mobile portrait, and
+  phone landscape.
+- ⏳ Final clan images — pending.
+- ⏳ Default character / chronicle thumbnails — pending and optional.
 
 This document describes how the app should integrate **developer-controlled
 static visual assets** in a safe, performance-aware way. It covers:

@@ -103,7 +103,91 @@
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: 'Newsreader', serif;
   --app-font-mono: Menlo, monospace;
-  --radius: 0px; 
+  --radius: 0px;
+
+  /*
+   * Global app background image — developer-controlled candidate switch.
+   *
+   * Six candidates ship under `public/images/backgrounds/`, all at the
+   * same 1672×941 native resolution so they crop identically under the
+   * `cover` sizing on `body::before`. The single `--app-bg-image` line
+   * below picks which one is currently active; this is the **only**
+   * knob a developer needs to touch to switch.
+   *
+   * Available candidates (see `docs/asset-integration-plan.md` §5
+   * for the canonical layout):
+   *
+   *   city-1-gpt.webp    — dark gothic city, purple sky, red windows,
+   *                        gargoyles. Painterly, strong silhouettes.
+   *                        1672×941 WebP, ~82.6 KB.
+   *   city-2-gem.webp    — same composition / mood, slightly cooler
+   *                        and darker tonality. 1672×941, ~61.9 KB.
+   *   red-city.webp      — dramatic gothic street with crimson sky
+   *                        and lightning. Very saturated; check
+   *                        readability of red headings on top.
+   *                        1672×941, ~80.4 KB.
+   *   grey-town.webp     — foggy blue-grey gothic town, distant
+   *                        spires, low-contrast palette. Calmest of
+   *                        the city variants. 1672×941, ~46.9 KB.
+   *   cracked-wall.webp  — dark cracked-stone texture with reddish
+   *                        rusted patches. Abstract, non-narrative.
+   *                        1672×941, ~103.2 KB.
+   *   damask.webp        — subtle dark damask wallpaper pattern,
+   *                        almost solid black with a faint motif.
+   *                        Most neutral / least distracting.
+   *                        1672×941, ~69.6 KB.
+   *
+   * To switch the active background during developer testing, change
+   * **only** the URL below to point at one of the candidate files.
+   * No other code or CSS edits are required.
+   *
+   * Per-candidate sizing/position overrides: every candidate works
+   * with the default `cover / center / no-repeat` treatment on
+   * `body::before` (see further below). If a future asset needs a
+   * different crop, prefer adding a sibling CSS custom property
+   * (e.g. `--app-bg-position: 50% 30%`) rather than special-casing
+   * the consumer rule.
+   *
+   * This is a **developer-only** knob. There is no Settings UI for
+   * it, the value is not persisted in `localStorage`, and end users
+   * cannot change it from inside the app. Once the final asset is
+   * chosen we leave this variable pointing at that single canonical
+   * filename.
+   *
+   * Fallback: if the file fails to load or this variable is removed,
+   * the `linear-gradient` overlay on `body::before` and the body's
+   * `bg-background` color still render the page as a dark surface.
+   */
+  /*
+   * NOTE (Batch E2 responsive pass): the single `--app-bg-image`
+   * variable above is now derived from one of three per-viewport
+   * variables below. Edit the per-viewport URLs to switch which
+   * candidate is active for desktop vs phone portrait vs phone
+   * landscape — the @media blocks at the bottom of this file wire
+   * them up automatically.
+   */
+  --app-bg-image-desktop: url("/images/backgrounds/city-1-gpt.webp");
+  --app-bg-image-mobile-portrait: url("/images/backgrounds/red-city.webp");
+  --app-bg-image-mobile-landscape: url("/images/backgrounds/city-1-gpt.webp");
+
+  /*
+   * Resolved viewport state. The defaults below match the desktop
+   * branch; the `@media` blocks at the bottom of this file override
+   * them for the two mobile viewports. Tuning notes:
+   *   --app-bg-position    : `cover` crops aggressively on mobile
+   *                          portrait — shifting the focal point up
+   *                          keeps spires/skyline visible above the
+   *                          gradient instead of cropping into the
+   *                          empty foreground.
+   *   --app-bg-overlay-top / -bottom : split into two stops so we
+   *                          can darken the bottom half (heavier
+   *                          content density above the bottom nav)
+   *                          while keeping the top airy.
+   */
+  --app-bg-image: var(--app-bg-image-desktop);
+  --app-bg-position: 50% 50%;
+  --app-bg-overlay-top: rgba(5, 5, 5, 0.45);
+  --app-bg-overlay-bottom: rgba(5, 5, 5, 0.6);
 }
 
 .dark {
@@ -116,9 +200,74 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /*
+     * `isolation: isolate` makes the body a new stacking context so the
+     * `body::before` image layer below can sit at `z-index: -1` above the
+     * `bg-background` color but behind all body content. Without
+     * isolation a negative z-index pseudo-element would be obscured by
+     * the body's own background-color paint.
+     */
+    position: relative;
+    isolation: isolate;
   }
-  
+
+  /*
+   * Global app background image — fixed to the viewport so it does not
+   * scroll with content and never causes horizontal scroll. A two-stop
+   * dark gradient is layered on top of the image to keep text, cards,
+   * and red accents readable regardless of the image's local brightness.
+   *
+   * Fallback chain (each step degrades gracefully):
+   *   1. If the WebP loads, the image renders under the gradient.
+   *   2. If the WebP 404s or the browser cannot decode it, only the
+   *      gradient paints — still produces a dark, readable surface.
+   *   3. If both fail (e.g. CSS variable removed), the body's
+   *      `bg-background` (#131313) shows through and the app reverts
+   *      to the original flat-dark look.
+   *
+   * Sized to viewport via `position: fixed; inset: 0` instead of
+   * `background-attachment: fixed`, which avoids the iOS Safari /
+   * Chrome Android jank where `fixed` backgrounds re-decode on every
+   * scroll frame or fall back to `scroll` and stretch a tall body bg.
+   */
   body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-color: transparent;
+    /*
+     * Overlay + image consumer. All four values are driven by CSS
+     * custom properties so the per-viewport `@media` blocks lower in
+     * this file can retune any of them without touching this rule:
+     *
+     *   --app-bg-image      → chosen WebP for the active viewport
+     *   --app-bg-position   → `cover` focal point per viewport
+     *   --app-bg-overlay-top    \  two-stop dark gradient on top of
+     *   --app-bg-overlay-bottom /  the image, also per-viewport
+     *
+     * Defaults match the desktop branch (see `:root`). Tune up the
+     * overlay stops if real-device review shows readability
+     * regressions on lighter card surfaces.
+     */
+    background-image:
+      linear-gradient(var(--app-bg-overlay-top), var(--app-bg-overlay-bottom)),
+      var(--app-bg-image, none);
+    background-size: cover;
+    background-position: var(--app-bg-position, center);
+    background-repeat: no-repeat;
+  }
+
+  /*
+   * Subtle SVG film-grain noise overlay. Preserved from the original
+   * `body::before` rule that lived here before the background image was
+   * introduced — kept identical (same fractal, same 0.05 opacity, same
+   * fixed positioning, same pointer-events: none) so the previous gothic
+   * micro-texture still rides on top of the new image. Lives on
+   * `body::after` now that `body::before` carries the image layer.
+   */
+  body::after {
     content: "";
     position: fixed;
     inset: 0;
@@ -167,4 +316,64 @@ input[type="week"]::-webkit-calendar-picker-indicator {
   filter: invert(1) brightness(1.2);
   opacity: 0.85;
   cursor: pointer;
+}
+
+/*
+ * Per-viewport background routing (Batch E2 responsive pass).
+ *
+ * The `:root` block at the top of this file defines three
+ * `--app-bg-image-*` developer-selectable variables (one per
+ * viewport class) plus the resolved `--app-bg-image`,
+ * `--app-bg-position`, and overlay stops. The default values in
+ * `:root` match the desktop branch; the two media-query blocks
+ * below re-point the resolved variables to the matching mobile
+ * candidate and retune position / overlay for that viewport.
+ *
+ * Breakpoints intentionally mirror the existing app conventions:
+ *   - `(orientation: portrait) and (max-width: 640px)`
+ *       matches Tailwind's `sm` breakpoint; covers phone portrait
+ *       up to ~iPhone 14 Plus / Pixel 8 Pro width without
+ *       triggering on portrait tablets.
+ *   - `(orientation: landscape) and (max-height: 500px)`
+ *       matches the `short-landscape` custom variant declared at
+ *       the top of this file; covers any phone turned sideways.
+ *
+ * To switch a per-viewport candidate, edit only the
+ * `--app-bg-image-*` URL on the matching `:root` line up top.
+ * To retune overlay / position for a viewport, edit the values
+ * inside the relevant `@media` block below.
+ */
+@media (orientation: portrait) and (max-width: 640px) {
+  :root {
+    --app-bg-image: var(--app-bg-image-mobile-portrait);
+    /*
+     * Phone portrait crops the 16:9-ish source aggressively on
+     * width. Shifting the focal point up by 15% keeps spires and
+     * sky visible above the bottom-nav gradient instead of
+     * cropping into the empty street foreground.
+     */
+    --app-bg-position: 50% 35%;
+    /*
+     * Slightly heavier overlay for portrait. The default
+     * red-city candidate is more saturated than the desktop
+     * city-1-gpt, so the extra alpha keeps red headings legible
+     * on top of crimson sky regions.
+     */
+    --app-bg-overlay-top: rgba(5, 5, 5, 0.55);
+    --app-bg-overlay-bottom: rgba(5, 5, 5, 0.7);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  :root {
+    --app-bg-image: var(--app-bg-image-mobile-landscape);
+    /*
+     * Phone landscape: viewport is short and wide, similar
+     * aspect ratio to the source. A small upward shift keeps
+     * the sky band slightly above center so the header doesn't
+     * overlap the cathedral silhouettes.
+     */
+    --app-bg-position: 50% 45%;
+    /* Same overlay as desktop — city-1-gpt is well-balanced. */
+  }
 }

@@ -16,6 +16,11 @@ import {
   getDisciplineDisplayName,
   isDisciplineNameUsingFallback,
 } from "@/utils/disciplineDisplay";
+import {
+  getDisciplinePowerName,
+  isDisciplinePowerNameUsingFallback,
+  getDisciplineTypeLabel,
+} from "@/utils/disciplinePowerDisplay";
 
 export default function Disciplines() {
   const [filter, setFilter] = useState("");
@@ -135,8 +140,16 @@ export default function Disciplines() {
                       <div className="w-full">
                         <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <CardTitle className="text-2xl font-serif text-foreground">{displayName}</CardTitle>
+                          {/* Type badge now resolves through the
+                              dedicated helper. The data file stores
+                              most discipline types via `fallbackStr`
+                              which silently returned the English
+                              string in non-EN locales; the helper
+                              overrides with curated Spanish for the
+                              priority disciplines and falls back to
+                              `getText(disc.type, …)` for the rest. */}
                           <Badge variant="outline" className="text-xs font-mono text-muted-foreground border-muted-foreground/30">
-                            {getText(disc.type, activeLanguage)}
+                            {getDisciplineTypeLabel(disc.id, getText(disc.type, activeLanguage), activeLanguage)}
                           </Badge>
                           {nameUsingFallback && (
                             <span
@@ -185,32 +198,69 @@ export default function Disciplines() {
                           </AccordionTrigger>
                           <AccordionContent className="px-6 pb-6">
                             <div className="space-y-4 mt-2">
-                              {disc.powers.map(p => (
-                                <div key={p.name} className="bg-background/50 rounded-lg p-4 border border-border/50">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h4 className="font-bold text-primary flex items-center gap-2">
-                                      {p.name}
-                                      <span className="flex gap-1 ml-2">
-                                        {Array.from({length: 5}).map((_, i) => (
-                                          <span key={i} className={`w-2 h-2 rounded-full ${i < p.level ? 'bg-primary' : 'bg-primary/20'}`} />
-                                        ))}
-                                      </span>
-                                    </h4>
-                                  </div>
-                                  {getText(p.description, activeLanguage) ? (
-                                    <p className="text-sm text-foreground/90 mb-2">{getText(p.description, activeLanguage)}</p>
-                                  ) : (
-                                    <span className="text-xs text-amber-600/80 italic block mb-2">[ {strings.noTranslation} ]</span>
-                                  )}
+                              {disc.powers.map(p => {
+                                // Resolve display title via Batch I helper.
+                                // The key was previously `p.name` (the
+                                // English data string); we switch to
+                                // `${disc.id}-${p.level}` because (a) it
+                                // is stable across locale changes and
+                                // (b) every discipline that has powers
+                                // covers L1–5 exactly once per the
+                                // disciplines-data test, so the key is
+                                // also unique within an accordion item.
+                                const powerName = getDisciplinePowerName(
+                                  disc.id,
+                                  p.level,
+                                  p.name,
+                                  activeLanguage,
+                                );
+                                const powerNameUsingFallback = isDisciplinePowerNameUsingFallback(
+                                  disc.id,
+                                  p.level,
+                                  activeLanguage,
+                                );
+                                const powerDescStatus = getLocalizedText(p.description, activeLanguage);
+                                const powerTacticStatus = getLocalizedText(p.tacticalUse, activeLanguage);
+                                return (
+                                  <div key={`${disc.id}-${p.level}`} className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                    <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                      <h4 className="font-bold text-primary flex items-center gap-2 flex-wrap">
+                                        {powerName}
+                                        {powerNameUsingFallback && (
+                                          <span
+                                            className="bg-zinc-900/80 text-zinc-400 border border-zinc-800 text-[9px] px-1.5 py-0.5 uppercase tracking-widest font-mono"
+                                            title={strings.content_english_fallback_notice || 'Showing English content'}
+                                          >
+                                            {strings.content_english_fallback_chip || 'EN'}
+                                          </span>
+                                        )}
+                                        <span className="flex gap-1 ml-2">
+                                          {Array.from({length: 5}).map((_, i) => (
+                                            <span key={i} className={`w-2 h-2 rounded-full ${i < p.level ? 'bg-primary' : 'bg-primary/20'}`} />
+                                          ))}
+                                        </span>
+                                      </h4>
+                                    </div>
+                                    {powerDescStatus.text === null ? (
+                                      <span className="text-xs text-amber-600/80 italic block mb-2">[ {strings.noTranslation} ]</span>
+                                    ) : (
+                                      <p className="text-sm text-foreground/90 mb-2">{powerDescStatus.text}</p>
+                                    )}
+                                    {powerDescStatus.usingFallback && powerDescStatus.text !== null && (
+                                      <p className="text-[10px] text-zinc-500 italic">
+                                        {strings.content_english_fallback_notice || 'Showing English content'}
+                                      </p>
+                                    )}
 
-                                  {getText(p.tacticalUse, activeLanguage) && (
-                                    <p className="text-xs text-muted-foreground italic bg-black/20 p-2 rounded border border-white/5 mt-3">
-                                      <span className="font-semibold text-foreground/70 not-italic mr-1">{strings.tacticalUse}</span>
-                                      {getText(p.tacticalUse, activeLanguage)}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
+                                    {powerTacticStatus.text !== null && (
+                                      <p className="text-xs text-muted-foreground italic bg-black/20 p-2 rounded border border-white/5 mt-3">
+                                        <span className="font-semibold text-foreground/70 not-italic mr-1">{strings.tacticalUse}</span>
+                                        {powerTacticStatus.text}
+                                      </p>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </AccordionContent>
                         </AccordionItem>

@@ -29,6 +29,21 @@ const fallbackArr = (val: string[]) => ({ es: val, en: val, pt: val, fr: val, de
  */
 const enOnly = (val: string) => ({ es: '', en: val, pt: '', fr: '', de: '', it: '' });
 
+/**
+ * EN + ES populated, pt/fr/de/it left empty (route through fallback).
+ * Same pattern used for clan body translations in Batch G2. Use this
+ * for power `description` and `tacticalUse` fields when translating
+ * the priority disciplines.
+ */
+const enEs = (enStr: string, esStr: string) => ({
+  en: enStr,
+  es: esStr,
+  pt: '',
+  fr: '',
+  de: '',
+  it: '',
+});
+
 export const disciplines: DisciplineEntry[] = [
   {
     id: "animalism",
@@ -79,11 +94,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Sorcery"),
     description: enOnly("The use of vitae for magical effects."),
     powers: [
-      { name: "Corrosive Vitae", level: 1, description: fallbackStr("Acid blood."), tacticalUse: fallbackStr("Melt locks.") },
-      { name: "Vitae Disruption (Level 2)", level: 2, description: fallbackStr("Disturb another vampire's vitae so it grows harder to use."), tacticalUse: fallbackStr("Drain an enemy's reserves before a fight.") },
-      { name: "Blood Potency Surge (Level 3)", level: 3, description: fallbackStr("Briefly raise the power of your own vitae."), tacticalUse: fallbackStr("Punch above your blood potency for a single scene.") },
-      { name: "Distant Vitae Theft (Level 4)", level: 4, description: fallbackStr("Pull blood out of a target's body at a distance."), tacticalUse: fallbackStr("Feed without ever touching the prey.") },
-      { name: "Killing Touch (Level 5)", level: 5, description: fallbackStr("Turn vitae itself into a weapon by touch or short range."), tacticalUse: fallbackStr("Cripple or kill in a single contact.") }
+      { name: "Corrosive Vitae", level: 1, description: enEs("Acid blood.", "Sangre ácida."), tacticalUse: enEs("Melt locks.", "Derretir cerraduras.") },
+      { name: "Vitae Disruption (Level 2)", level: 2, description: enEs("Disturb another vampire's vitae so it grows harder to use.", "Perturba la vitae de otro vampiro para que le cueste usarla."), tacticalUse: enEs("Drain an enemy's reserves before a fight.", "Drenar las reservas del enemigo antes de un combate.") },
+      { name: "Blood Potency Surge (Level 3)", level: 3, description: enEs("Briefly raise the power of your own vitae.", "Eleva brevemente la potencia de tu propia vitae."), tacticalUse: enEs("Punch above your blood potency for a single scene.", "Golpear por encima de tu potencia de sangre durante una escena.") },
+      { name: "Distant Vitae Theft (Level 4)", level: 4, description: enEs("Pull blood out of a target's body at a distance.", "Extrae sangre del cuerpo de un objetivo a distancia."), tacticalUse: enEs("Feed without ever touching the prey.", "Alimentarte sin tocar a la presa.") },
+      { name: "Killing Touch (Level 5)", level: 5, description: enEs("Turn vitae itself into a weapon by touch or short range.", "Convierte la propia vitae en arma por contacto o corta distancia."), tacticalUse: enEs("Cripple or kill in a single contact.", "Mutilar o matar con un solo toque.") }
     ],
     narrativeUses: fallbackArr(["Warding a haven."]),
     clansWhoUse: ["tremere", "assamite"],
@@ -265,11 +280,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Physical"),
     description: enOnly("Supernatural speed."),
     powers: [
-      { name: "Rapid Reflexes", level: 1, description: fallbackStr("React faster than humanly possible."), tacticalUse: fallbackStr("Dodge bullets.") },
-      { name: "Fleetness", level: 2, description: fallbackStr("Move with incredible speed."), tacticalUse: fallbackStr("Close the distance instantly.") },
-      { name: "Speed Burst (Level 3)", level: 3, description: fallbackStr("Briefly move in a blur for a short repositioning."), tacticalUse: fallbackStr("Cross a room or escape a hold in a heartbeat.") },
-      { name: "Quickened Action (Level 4)", level: 4, description: fallbackStr("Act multiple times in the span of one normal moment."), tacticalUse: fallbackStr("Strike again before the foe finishes turning.") },
-      { name: "Untrackable Motion (Level 5)", level: 5, description: fallbackStr("Move so quickly that observers cannot follow you."), tacticalUse: fallbackStr("Cross a crowded space without being seen or hit.") }
+      { name: "Rapid Reflexes", level: 1, description: enEs("React faster than humanly possible.", "Reacciona más rápido de lo humanamente posible."), tacticalUse: enEs("Dodge bullets.", "Esquivar balas.") },
+      { name: "Fleetness", level: 2, description: enEs("Move with incredible speed.", "Muévete con velocidad increíble."), tacticalUse: enEs("Close the distance instantly.", "Cerrar la distancia al instante.") },
+      { name: "Speed Burst (Level 3)", level: 3, description: enEs("Briefly move in a blur for a short repositioning.", "Te desplazas brevemente en un borrón para reposicionarte."), tacticalUse: enEs("Cross a room or escape a hold in a heartbeat.", "Cruzar una sala o zafarte de un agarre en un latido.") },
+      { name: "Quickened Action (Level 4)", level: 4, description: enEs("Act multiple times in the span of one normal moment.", "Actúa varias veces en el lapso de un instante."), tacticalUse: enEs("Strike again before the foe finishes turning.", "Golpear de nuevo antes de que el enemigo termine de girarse.") },
+      { name: "Untrackable Motion (Level 5)", level: 5, description: enEs("Move so quickly that observers cannot follow you.", "Te mueves tan rápido que los observadores no pueden seguirte."), tacticalUse: enEs("Cross a crowded space without being seen or hit.", "Cruzar un espacio concurrido sin ser visto ni alcanzado.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["brujah", "toreador", "assamite"]
@@ -281,11 +296,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Mental"),
     description: enOnly("Crush another's mind."),
     powers: [
-      { name: "Cloud Memory", level: 1, description: fallbackStr("Erase short term memory."), tacticalUse: fallbackStr("Cover up a feeding.") },
-      { name: "Mesmerize", level: 2, description: fallbackStr("Implant complex commands."), tacticalUse: fallbackStr("Force a guard to let you in.") },
-      { name: "Memory Reshape (Level 3)", level: 3, description: fallbackStr("Rewrite a target's recent memories in lasting detail."), tacticalUse: fallbackStr("Cover any trace of a feeding or crime.") },
-      { name: "Compelled Reasoning (Level 4)", level: 4, description: fallbackStr("Make a subject invent their own justification for obeying."), tacticalUse: fallbackStr("Plant orders that survive later scrutiny.") },
-      { name: "Absolute Command (Level 5)", level: 5, description: fallbackStr("Issue a single command no target can resist."), tacticalUse: fallbackStr("Force a target to act against their own nature.") }
+      { name: "Cloud Memory", level: 1, description: enEs("Erase short term memory.", "Borra la memoria reciente."), tacticalUse: enEs("Cover up a feeding.", "Encubrir una alimentación.") },
+      { name: "Mesmerize", level: 2, description: enEs("Implant complex commands.", "Implanta órdenes complejas."), tacticalUse: enEs("Force a guard to let you in.", "Forzar a un guardia a dejarte pasar.") },
+      { name: "Memory Reshape (Level 3)", level: 3, description: enEs("Rewrite a target's recent memories in lasting detail.", "Reescribe los recuerdos recientes de un objetivo con detalle duradero."), tacticalUse: enEs("Cover any trace of a feeding or crime.", "Cubrir cualquier rastro de una alimentación o un crimen.") },
+      { name: "Compelled Reasoning (Level 4)", level: 4, description: enEs("Make a subject invent their own justification for obeying.", "Haz que la víctima invente su propia justificación para obedecer."), tacticalUse: enEs("Plant orders that survive later scrutiny.", "Plantar órdenes que sobreviven al escrutinio posterior.") },
+      { name: "Absolute Command (Level 5)", level: 5, description: enEs("Issue a single command no target can resist.", "Emite una orden única que ningún objetivo puede resistir."), tacticalUse: enEs("Force a target to act against their own nature.", "Forzar a un objetivo a actuar contra su propia naturaleza.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["ventrue", "tremere", "lasombra", "malkavian"]
@@ -297,11 +312,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Stealth"),
     description: enOnly("Vanish from minds."),
     powers: [
-      { name: "Cloak of Shadows", level: 1, description: fallbackStr("Hide in the shadows."), tacticalUse: fallbackStr("Eavesdrop.") },
-      { name: "Unseen Passage", level: 2, description: fallbackStr("Move while invisible."), tacticalUse: fallbackStr("Infiltrate heavily guarded areas.") },
-      { name: "Hidden from Lenses (Level 3)", level: 3, description: fallbackStr("Conceal yourself even from cameras and recording devices."), tacticalUse: fallbackStr("Move through modern surveillance unseen.") },
-      { name: "Sudden Vanish (Level 4)", level: 4, description: fallbackStr("Disappear from sight even while observers are looking at you."), tacticalUse: fallbackStr("Break pursuit by ceasing to be visible.") },
-      { name: "False Face (Level 5)", level: 5, description: fallbackStr("Take on the appearance of someone else for a time."), tacticalUse: fallbackStr("Slip into restricted places wearing another identity.") }
+      { name: "Cloak of Shadows", level: 1, description: enEs("Hide in the shadows.", "Ocúltate en las sombras."), tacticalUse: enEs("Eavesdrop.", "Escuchar a escondidas.") },
+      { name: "Unseen Passage", level: 2, description: enEs("Move while invisible.", "Muévete mientras eres invisible."), tacticalUse: enEs("Infiltrate heavily guarded areas.", "Infiltrarte en zonas muy vigiladas.") },
+      { name: "Hidden from Lenses (Level 3)", level: 3, description: enEs("Conceal yourself even from cameras and recording devices.", "Ocúltate incluso a cámaras y dispositivos de grabación."), tacticalUse: enEs("Move through modern surveillance unseen.", "Moverte por la vigilancia moderna sin ser visto.") },
+      { name: "Sudden Vanish (Level 4)", level: 4, description: enEs("Disappear from sight even while observers are looking at you.", "Desaparece de la vista incluso mientras te están mirando."), tacticalUse: enEs("Break pursuit by ceasing to be visible.", "Romper una persecución al dejar de ser visible.") },
+      { name: "False Face (Level 5)", level: 5, description: enEs("Take on the appearance of someone else for a time.", "Adopta el aspecto de otra persona durante un tiempo."), tacticalUse: enEs("Slip into restricted places wearing another identity.", "Colarte en lugares restringidos con otra identidad.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["nosferatu", "malkavian", "assamite", "followers_of_set", "ravnos", "salubri"]
@@ -313,11 +328,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Social"),
     description: enOnly("Attract and terrify."),
     powers: [
-      { name: "Awe", level: 1, description: fallbackStr("Fascination."), tacticalUse: fallbackStr("Distract crowds.") },
-      { name: "Daunt", level: 2, description: fallbackStr("Instill fear."), tacticalUse: fallbackStr("Rout enemies.") },
-      { name: "Devoted Heart (Level 3)", level: 3, description: fallbackStr("Bind a target's emotions to you so they want to please you."), tacticalUse: fallbackStr("Turn an opponent into a brief admirer.") },
-      { name: "Distant Summons (Level 4)", level: 4, description: fallbackStr("Call a previously affected subject to come to your side."), tacticalUse: fallbackStr("Pull a known ally or victim to you from across the city.") },
-      { name: "Crown of Awe (Level 5)", level: 5, description: fallbackStr("Project an aura so commanding that none nearby will oppose you."), tacticalUse: fallbackStr("Quiet a hostile room without violence.") }
+      { name: "Awe", level: 1, description: enEs("Fascination.", "Fascinación."), tacticalUse: enEs("Distract crowds.", "Distraer multitudes.") },
+      { name: "Daunt", level: 2, description: enEs("Instill fear.", "Infunde miedo."), tacticalUse: enEs("Rout enemies.", "Hacer huir a los enemigos.") },
+      { name: "Devoted Heart (Level 3)", level: 3, description: enEs("Bind a target's emotions to you so they want to please you.", "Vincula las emociones de un objetivo a ti para que desee complacerte."), tacticalUse: enEs("Turn an opponent into a brief admirer.", "Convertir a un oponente en un admirador efímero.") },
+      { name: "Distant Summons (Level 4)", level: 4, description: enEs("Call a previously affected subject to come to your side.", "Llama a un sujeto previamente afectado para que acuda a tu lado."), tacticalUse: enEs("Pull a known ally or victim to you from across the city.", "Atraer a un aliado o víctima conocido desde el otro lado de la ciudad.") },
+      { name: "Crown of Awe (Level 5)", level: 5, description: enEs("Project an aura so commanding that none nearby will oppose you.", "Proyecta un aura tan imponente que nadie cercano se atreve a oponerse a ti."), tacticalUse: enEs("Quiet a hostile room without violence.", "Calmar una sala hostil sin violencia.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["toreador", "brujah", "ventrue", "followers_of_set", "ravnos"]
@@ -329,11 +344,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Transformation"),
     description: enOnly("Alter physical form."),
     powers: [
-      { name: "Eyes of the Beast", level: 1, description: fallbackStr("See perfectly in darkness."), tacticalUse: fallbackStr("Night combat.") },
-      { name: "Feral Weapons", level: 2, description: fallbackStr("Grow claws."), tacticalUse: fallbackStr("Deal aggravated damage.") },
-      { name: "Beast Form (Level 3)", level: 3, description: fallbackStr("Transform into an animal shape such as a wolf or bat."), tacticalUse: fallbackStr("Travel or scout without raising alarm.") },
-      { name: "Earth Embrace (Level 4)", level: 4, description: fallbackStr("Sink into bare soil to rest hidden from the sun."), tacticalUse: fallbackStr("Improvise a safe daylight haven in an emergency.") },
-      { name: "Mist Body (Level 5)", level: 5, description: fallbackStr("Dissolve your form into a drifting mist."), tacticalUse: fallbackStr("Slip through cracks, vents, and barred passages.") }
+      { name: "Eyes of the Beast", level: 1, description: enEs("See perfectly in darkness.", "Ve perfectamente en la oscuridad."), tacticalUse: enEs("Night combat.", "Combate nocturno.") },
+      { name: "Feral Weapons", level: 2, description: enEs("Grow claws.", "Te crecen garras."), tacticalUse: enEs("Deal aggravated damage.", "Infligir daño agravado.") },
+      { name: "Beast Form (Level 3)", level: 3, description: enEs("Transform into an animal shape such as a wolf or bat.", "Transfórmate en una forma animal como lobo o murciélago."), tacticalUse: enEs("Travel or scout without raising alarm.", "Viajar o explorar sin levantar alarma.") },
+      { name: "Earth Embrace (Level 4)", level: 4, description: enEs("Sink into bare soil to rest hidden from the sun.", "Húndete en la tierra desnuda para descansar oculto del sol."), tacticalUse: enEs("Improvise a safe daylight haven in an emergency.", "Improvisar un refugio diurno seguro en una emergencia.") },
+      { name: "Mist Body (Level 5)", level: 5, description: enEs("Dissolve your form into a drifting mist.", "Disuelve tu forma en una niebla flotante."), tacticalUse: enEs("Slip through cracks, vents, and barred passages.", "Colarte por grietas, rejillas y pasajes cerrados.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["gangrel", "followers_of_set", "tzimisce"]
@@ -345,11 +360,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Physical"),
     description: enOnly("Unearthly toughness."),
     powers: [
-      { name: "Resilience", level: 1, description: fallbackStr("Add rating to Health."), tacticalUse: fallbackStr("Survive longer.") },
-      { name: "Toughness", level: 2, description: fallbackStr("Subtract damage."), tacticalUse: fallbackStr("Ignore minor hits.") },
-      { name: "Steady Mind (Level 3)", level: 3, description: fallbackStr("Resist mental and social manipulation more easily."), tacticalUse: fallbackStr("Shrug off interrogation, dread, and supernatural sway.") },
-      { name: "Defy the Bane (Level 4)", level: 4, description: fallbackStr("Endure damage that should be lethal to your kind."), tacticalUse: fallbackStr("Survive fire, sun exposure, or staking long enough to escape.") },
-      { name: "Marble Flesh (Level 5)", level: 5, description: fallbackStr("Treat ordinary weapons as if they were nothing."), tacticalUse: fallbackStr("Walk straight through gunfire toward the target.") }
+      { name: "Resilience", level: 1, description: enEs("Add rating to Health.", "Suma tu puntuación a Salud."), tacticalUse: enEs("Survive longer.", "Sobrevive más tiempo.") },
+      { name: "Toughness", level: 2, description: enEs("Subtract damage.", "Reduce el daño recibido."), tacticalUse: enEs("Ignore minor hits.", "Ignorar golpes menores.") },
+      { name: "Steady Mind (Level 3)", level: 3, description: enEs("Resist mental and social manipulation more easily.", "Resiste con mayor facilidad la manipulación mental y social."), tacticalUse: enEs("Shrug off interrogation, dread, and supernatural sway.", "Aguantar interrogatorios, pavor y manipulación sobrenatural.") },
+      { name: "Defy the Bane (Level 4)", level: 4, description: enEs("Endure damage that should be lethal to your kind.", "Soporta daño que debería ser letal para los de tu especie."), tacticalUse: enEs("Survive fire, sun exposure, or staking long enough to escape.", "Sobrevivir al fuego, al sol o a un estacazo el tiempo suficiente para escapar.") },
+      { name: "Marble Flesh (Level 5)", level: 5, description: enEs("Treat ordinary weapons as if they were nothing.", "Trata las armas ordinarias como si no fueran nada."), tacticalUse: enEs("Walk straight through gunfire toward the target.", "Caminar directo a través de una ráfaga hacia el objetivo.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["ventrue", "gangrel", "giovanni", "salubri", "ravnos"]
@@ -361,11 +376,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Physical"),
     description: enOnly("Supernatural strength."),
     powers: [
-      { name: "Lethal Body", level: 1, description: fallbackStr("Add damage to unarmed."), tacticalUse: fallbackStr("Brawl advantage.") },
-      { name: "Prowess", level: 2, description: fallbackStr("Feats of strength."), tacticalUse: fallbackStr("Break doors.") },
-      { name: "Crushing Feed (Level 3)", level: 3, description: fallbackStr("Drain a victim in one overwhelming attack of supernatural strength."), tacticalUse: fallbackStr("End a feeding silently in a single move.") },
-      { name: "Smash Through (Level 4)", level: 4, description: fallbackStr("Shatter walls, doors, and barriers with raw force."), tacticalUse: fallbackStr("Make your own entrance instead of negotiating one.") },
-      { name: "Quake Strike (Level 5)", level: 5, description: fallbackStr("Strike the ground hard enough to topple everything nearby."), tacticalUse: fallbackStr("Knock down opponents and shatter terrain.") }
+      { name: "Lethal Body", level: 1, description: enEs("Add damage to unarmed.", "Añade daño a los ataques desarmados."), tacticalUse: enEs("Brawl advantage.", "Ventaja en pelea.") },
+      { name: "Prowess", level: 2, description: enEs("Feats of strength.", "Hazañas de fuerza."), tacticalUse: enEs("Break doors.", "Romper puertas.") },
+      { name: "Crushing Feed (Level 3)", level: 3, description: enEs("Drain a victim in one overwhelming attack of supernatural strength.", "Drena a una víctima en un único ataque de fuerza sobrenatural."), tacticalUse: enEs("End a feeding silently in a single move.", "Terminar una alimentación en silencio en un solo movimiento.") },
+      { name: "Smash Through (Level 4)", level: 4, description: enEs("Shatter walls, doors, and barriers with raw force.", "Destroza muros, puertas y barreras con fuerza bruta."), tacticalUse: enEs("Make your own entrance instead of negotiating one.", "Abrir tu propia entrada en vez de negociarla.") },
+      { name: "Quake Strike (Level 5)", level: 5, description: enEs("Strike the ground hard enough to topple everything nearby.", "Golpea el suelo con fuerza suficiente para derribar todo a tu alrededor."), tacticalUse: enEs("Knock down opponents and shatter terrain.", "Derribar a los oponentes y romper el terreno.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["brujah", "nosferatu", "lasombra"]
@@ -377,11 +392,11 @@ export const disciplines: DisciplineEntry[] = [
     type: fallbackStr("Shadow/Death"),
     description: enOnly("Shadows and necromancy merged in V5."),
     powers: [
-      { name: "Shadow Step (Level 1)", level: 1, description: fallbackStr("Step from one shadow to a nearby spot."), tacticalUse: fallbackStr("Slip out of sight and reappear behind cover.") },
-      { name: "Reach into Shadow (Level 2)", level: 2, description: fallbackStr("Extend a shadowy limb or grasp from your own shadow."), tacticalUse: fallbackStr("Pull, strike, or trip a foe from cover.") },
-      { name: "Touch of Decay (Level 3)", level: 3, description: fallbackStr("Cause a target's body or vitae to wither at your touch."), tacticalUse: fallbackStr("Wound from contact alone, no weapon needed.") },
-      { name: "Stygian Veil (Level 4)", level: 4, description: fallbackStr("Shroud an area in darkness mortals cannot see through."), tacticalUse: fallbackStr("Drop a fight into total obscurity.") },
-      { name: "Tenebrous Body (Level 5)", level: 5, description: fallbackStr("Take on a body of living shadow."), tacticalUse: fallbackStr("Move where light cannot and matter cannot stop you.") }
+      { name: "Shadow Step (Level 1)", level: 1, description: enEs("Step from one shadow to a nearby spot.", "Pasa de una sombra a otra cercana."), tacticalUse: enEs("Slip out of sight and reappear behind cover.", "Salir de la vista y reaparecer tras un cubierto.") },
+      { name: "Reach into Shadow (Level 2)", level: 2, description: enEs("Extend a shadowy limb or grasp from your own shadow.", "Extiende una extremidad o agarre de sombra desde tu propia sombra."), tacticalUse: enEs("Pull, strike, or trip a foe from cover.", "Tirar, golpear o derribar a un enemigo desde el cubierto.") },
+      { name: "Touch of Decay (Level 3)", level: 3, description: enEs("Cause a target's body or vitae to wither at your touch.", "Haz que el cuerpo o la vitae del objetivo se marchiten con tu toque."), tacticalUse: enEs("Wound from contact alone, no weapon needed.", "Herir solo con el contacto, sin arma.") },
+      { name: "Stygian Veil (Level 4)", level: 4, description: enEs("Shroud an area in darkness mortals cannot see through.", "Envuelve un área en oscuridad que los mortales no pueden atravesar."), tacticalUse: enEs("Drop a fight into total obscurity.", "Sumergir un combate en oscuridad total.") },
+      { name: "Tenebrous Body (Level 5)", level: 5, description: enEs("Take on a body of living shadow.", "Adopta un cuerpo de sombra viviente."), tacticalUse: enEs("Move where light cannot and matter cannot stop you.", "Moverte donde la luz no llega y la materia no detiene.") }
     ],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["lasombra", "giovanni"],

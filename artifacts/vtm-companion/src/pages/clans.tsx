@@ -17,6 +17,7 @@ import {
   getClanDisplayName,
   getClanSect,
 } from "@/utils/content";
+import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 import {
   applyClanFilters,
   getActiveSectTokens,
@@ -289,8 +290,14 @@ export default function Clans() {
                         const discData = disciplines.find(disc => disc.id === d);
                         return discData ? discData.editions.includes(activeEdition) : false;
                       }).map(d => (
+                        // Discipline chip now uses the language-aware
+                        // display-name helper instead of rendering the
+                        // raw lowercase id (`celerity` → `Celeridad` in
+                        // ES, `Celerity` in EN). See
+                        // `src/utils/disciplineDisplay.ts` for the
+                        // mapping table.
                         <span key={d} className="px-2 py-1 bg-zinc-900 border border-zinc-800 text-[10px] font-sans text-zinc-300 uppercase tracking-widest">
-                          {d}
+                          {getDisciplineDisplayName(d, activeLanguage)}
                         </span>
                       ))}
                     </div>
@@ -480,12 +487,14 @@ export default function Clans() {
                             const discData = disciplines.find(disc => disc.id === d);
                             return discData ? discData.editions.includes(activeEdition) : false;
                           }).map(d => (
+                            // Same display-name treatment as the card
+                            // grid above — `{d}` was the raw id.
                             <div
                               key={d}
                               className="bg-zinc-900 border border-zinc-800 px-4 py-3 font-sans text-sm text-zinc-300 hover:text-on-surface cursor-pointer transition-colors flex justify-between items-center group"
                               onClick={() => handleDisciplineClick(d)}
                             >
-                              <span className="uppercase tracking-widest">{d}</span>
+                              <span className="uppercase tracking-widest">{getDisciplineDisplayName(d, activeLanguage)}</span>
                               <span className="material-symbols-outlined text-xs text-zinc-600 group-hover:text-white">arrow_forward</span>
                             </div>
                           ))}

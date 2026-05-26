@@ -102,20 +102,35 @@ export const disciplines: DisciplineEntry[] = [
     ],
     narrativeUses: fallbackArr(["Warding a haven."]),
     clansWhoUse: ["tremere", "assamite"],
+    // Special-systems pending-state copy (Batch K).
+    //
+    // Previously every system below carried fake placeholder items
+    // like `"Ritual (Level 1) — Needs review"` so the accordion would
+    // not look empty. Those entries were ugly and confused users who
+    // could not tell the placeholder from real content. The new
+    // pattern keeps the accordion section (so the structure on the
+    // disciplines page is consistent across editions) but ships an
+    // empty `items: []` list and lets the localized `description`
+    // explain that a canon-review pass is still pending.
+    //
+    // TODO(batch-k-disciplines): when an app-safe short summary list
+    // for any of these systems is ready, append items to the matching
+    // section. The page already renders items above the description,
+    // and the `needsReview` badge can be dropped once the section is
+    // fully populated.
     specialSystems: [
       {
         id: "blood-sorcery-rituals",
         kind: "rituals",
-        title: fallbackStr("Rituals"),
-        description: fallbackStr("Blood Sorcery rituals are learned and cast separately from dot powers. No canonical ritual list is included here yet."),
+        title: enEs("Rituals", "Rituales"),
+        description: enEs(
+          "Rituals are learned and cast separately from dot powers. An app-safe summary list is pending review and will be added in a future content batch.",
+          "Los rituales se aprenden y se lanzan de forma separada de los poderes principales. La lista de resúmenes seguros está pendiente de revisión y se añadirá en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "blood-sorcery-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "blood-sorcery-ritual-2", name: "Ritual (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "blood-sorcery-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
-        ]
-      }
-    ]
+        items: [],
+      },
+    ],
   },
   {
     id: "thaumaturgy",
@@ -130,30 +145,26 @@ export const disciplines: DisciplineEntry[] = [
       {
         id: "thaumaturgy-paths",
         kind: "paths",
-        title: fallbackStr("Paths"),
-        description: fallbackStr("Classic Thaumaturgy is organized into paths — each path is a separate progression of effects from level 1 to 5. Canonical path names are not listed here yet."),
+        title: enEs("Paths", "Sendas"),
+        description: enEs(
+          "Classic Thaumaturgy splits into separate paths of effects. The path list is pending review and will be expanded with app-safe summaries in a future content batch.",
+          "La Taumaturgia clásica se divide en sendas separadas de efectos. La lista de sendas está pendiente de revisión y se ampliará con resúmenes seguros en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "thaumaturgy-path-1", name: "Path (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-path-2", name: "Path (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-path-3", name: "Path (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-path-4", name: "Path (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-path-5", name: "Path (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true }
-        ]
+        items: [],
       },
       {
         id: "thaumaturgy-rituals",
         kind: "rituals",
-        title: fallbackStr("Rituals"),
-        description: fallbackStr("Thaumaturgy rituals are separate from paths and follow their own learning rules. No canonical ritual list is included here yet."),
+        title: enEs("Rituals", "Rituales"),
+        description: enEs(
+          "Thaumaturgy rituals follow their own learning rules apart from paths. The ritual list is pending review and will be added in a future content batch.",
+          "Los rituales de Taumaturgia siguen sus propias reglas de aprendizaje aparte de las sendas. La lista de rituales está pendiente de revisión y se añadirá en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "thaumaturgy-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "thaumaturgy-ritual-5", name: "Ritual (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
-        ]
-      }
-    ]
+        items: [],
+      },
+    ],
   },
   {
     id: "obtenebration",
@@ -184,30 +195,26 @@ export const disciplines: DisciplineEntry[] = [
       {
         id: "necromancy-paths",
         kind: "paths",
-        title: fallbackStr("Paths"),
-        description: fallbackStr("Classic Necromancy is organized into paths — each is a separate progression of death-themed effects from level 1 to 5. Canonical path names are not listed here yet."),
+        title: enEs("Paths", "Sendas"),
+        description: enEs(
+          "Classic Necromancy organizes into death-themed paths. The path list is pending review and will be expanded with app-safe summaries in a future content batch.",
+          "La Nigromancia clásica se organiza en sendas con temática de muerte. La lista de sendas está pendiente de revisión y se ampliará con resúmenes seguros en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "necromancy-path-1", name: "Path (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "necromancy-path-2", name: "Path (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "necromancy-path-3", name: "Path (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "necromancy-path-4", name: "Path (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true },
-          { id: "necromancy-path-5", name: "Path (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical path name and a short original summary."), needsReview: true }
-        ]
+        items: [],
       },
       {
         id: "necromancy-rituals",
         kind: "rituals",
-        title: fallbackStr("Rituals"),
-        description: fallbackStr("Necromancy rituals are separate from paths and follow their own learning rules. No canonical ritual list is included here yet."),
+        title: enEs("Rituals", "Rituales"),
+        description: enEs(
+          "Necromancy rituals are separate from paths and follow their own learning rules. The ritual list is pending review and will be added in a future content batch.",
+          "Los rituales de Nigromancia son independientes de las sendas y siguen sus propias reglas de aprendizaje. La lista de rituales está pendiente de revisión y se añadirá en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "necromancy-ritual-1", name: "Ritual (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "necromancy-ritual-3", name: "Ritual (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true },
-          { id: "necromancy-ritual-5", name: "Ritual (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ritual name and a short original summary."), needsReview: true }
-        ]
-      }
-    ]
+        items: [],
+      },
+    ],
   },
   {
     id: "quietus",
@@ -404,16 +411,15 @@ export const disciplines: DisciplineEntry[] = [
       {
         id: "oblivion-ceremonies",
         kind: "ceremonies",
-        title: fallbackStr("Ceremonies"),
-        description: fallbackStr("Oblivion ceremonies are death-touched rites learned and performed separately from dot powers. No canonical ceremony list is included here yet."),
+        title: enEs("Ceremonies", "Ceremonias"),
+        description: enEs(
+          "Oblivion ceremonies are death-touched rites learned and performed separately from dot powers. The ceremony list is pending review and will be added in a future content batch.",
+          "Las ceremonias de Olvido son ritos tocados por la muerte que se aprenden y ejecutan aparte de los poderes principales. La lista de ceremonias está pendiente de revisión y se añadirá en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "oblivion-ceremony-1", name: "Ceremony (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true },
-          { id: "oblivion-ceremony-3", name: "Ceremony (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true },
-          { id: "oblivion-ceremony-5", name: "Ceremony (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical ceremony name and a short original summary."), needsReview: true }
-        ]
-      }
-    ]
+        items: [],
+      },
+    ],
   },
   {
     id: "valeren",
@@ -444,17 +450,14 @@ export const disciplines: DisciplineEntry[] = [
       {
         id: "thin-blood-alchemy-formulae",
         kind: "formulae",
-        title: fallbackStr("Formulae"),
-        description: fallbackStr("Thin-Blood Alchemy is built from formulae brewed by the alchemist, not flat dot powers. Each formula has a level and is learned individually. Canonical formula names are not listed here yet."),
+        title: enEs("Formulae", "Fórmulas"),
+        description: enEs(
+          "Thin-Blood Alchemy is built from formulae brewed by the alchemist rather than flat dot powers. Each formula has a level and is learned individually. The formula list is pending review and will be added in a future content batch.",
+          "La Alquimia de Sangre Débil se construye a partir de fórmulas que el propio alquimista prepara, en lugar de poderes principales. Cada fórmula tiene un nivel y se aprende de forma individual. La lista de fórmulas está pendiente de revisión y se añadirá en una próxima actualización de contenido.",
+        ),
         needsReview: true,
-        items: [
-          { id: "thin-blood-alchemy-formula-1", name: "Formula (Level 1) — Needs review", level: 1, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
-          { id: "thin-blood-alchemy-formula-2", name: "Formula (Level 2) — Needs review", level: 2, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
-          { id: "thin-blood-alchemy-formula-3", name: "Formula (Level 3) — Needs review", level: 3, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
-          { id: "thin-blood-alchemy-formula-4", name: "Formula (Level 4) — Needs review", level: 4, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true },
-          { id: "thin-blood-alchemy-formula-5", name: "Formula (Level 5) — Needs review", level: 5, summary: fallbackStr("Needs review: confirm a canonical formula name and a short original summary."), needsReview: true }
-        ]
-      }
-    ]
-  }
+        items: [],
+      },
+    ],
+  },
 ];

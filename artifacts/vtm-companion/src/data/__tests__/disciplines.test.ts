@@ -130,6 +130,74 @@ describe('discipline specialSystems shape', () => {
       }
     }
   });
+
+  /**
+   * Pending-state contract (Batch K).
+   *
+   * Sections marked `needsReview: true` used to ship fake placeholder
+   * items like "Ritual (Level 1) — Needs review" so the accordion
+   * would not look empty. Those have been removed in favour of an
+   * empty `items: []` list plus a localized `description` that
+   * explains the section is pending review. These cases pin that
+   * contract:
+   *   - placeholder sections carry an empty items array (no fake
+   *     entries leak back into the UI),
+   *   - their title and description are populated in EN AND ES
+   *     (so the disciplines page does not render English under a
+   *     Spanish UI),
+   *   - the description text differs between EN and ES (catches
+   *     copy-paste regressions of the "we lied about translating"
+   *     variety).
+   */
+  it('every needsReview section ships an empty items array', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (s.needsReview) {
+          expect(
+            s.items.length,
+            `${d.id}.${s.id} is needsReview but still has placeholder items — drop them in favour of empty items: []`,
+          ).toBe(0);
+        }
+      }
+    }
+  });
+
+  it('every needsReview section title is populated in EN AND ES', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (!s.needsReview) continue;
+        expect(
+          (s.title.en || '').trim().length,
+          `${d.id}.${s.id}.title.en is empty`,
+        ).toBeGreaterThan(0);
+        expect(
+          (s.title.es || '').trim().length,
+          `${d.id}.${s.id}.title.es is empty (Spanish UI would fall back to EN)`,
+        ).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('every needsReview section description is populated in EN AND ES and is not a copy-paste', () => {
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (!s.needsReview) continue;
+        const desc = s.description;
+        expect(
+          desc,
+          `${d.id}.${s.id} has no description — pending-state copy is required`,
+        ).toBeDefined();
+        const en = (desc?.en || '').trim();
+        const es = (desc?.es || '').trim();
+        expect(en.length, `${d.id}.${s.id}.description.en empty`).toBeGreaterThan(0);
+        expect(es.length, `${d.id}.${s.id}.description.es empty`).toBeGreaterThan(0);
+        expect(
+          es,
+          `${d.id}.${s.id}.description.es is a verbatim copy of EN — translate it`,
+        ).not.toBe(en);
+      }
+    }
+  });
 });
 
 describe('clan -> discipline consistency', () => {

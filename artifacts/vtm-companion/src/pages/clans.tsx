@@ -11,7 +11,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { getText, isAvailableInLang, getClanDisplayName, getClanSect } from "@/utils/content";
+import {
+  getText,
+  getLocalizedText,
+  getClanDisplayName,
+  getClanSect,
+} from "@/utils/content";
 import {
   applyClanFilters,
   getActiveSectTokens,
@@ -223,7 +228,21 @@ export default function Clans() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 short-landscape:gap-3">
           {visibleClans.map((clan, i) => {
-            const isMissingLang = !isAvailableInLang(clan.summary, activeLanguage);
+            // Card-level localization status (Batch G).
+            //
+            // Previous behavior: `!isAvailableInLang(summary, lang)` lit a
+            // loud red "[Sin traducción]" badge on every Spanish card,
+            // even though `getText` happily falls back to English and
+            // the real card body shows readable English content. The
+            // user perceived this as "every clan card is broken in
+            // Spanish" — which it isn't.
+            //
+            // New behavior: resolve the summary through `getLocalizedText`
+            // and only show a subtle "EN" pill when the fallback is
+            // actually being rendered. If even English is missing the
+            // pill is suppressed (the card body itself goes empty and
+            // the existing empty-list fallback elsewhere handles it).
+            const summaryStatus = getLocalizedText(clan.summary, activeLanguage);
             const dynamicName = getClanDisplayName(clan, activeEdition, activeLanguage);
             const sectLabel = getClanSect(clan, activeEdition, activeLanguage);
 
@@ -276,11 +295,20 @@ export default function Clans() {
                       ))}
                     </div>
                     <p className="text-sm font-sans text-zinc-400 line-clamp-3 mb-4 short-landscape:mb-2 flex-1">
-                      {getText(clan.summary, activeLanguage)}
+                      {summaryStatus.text}
                     </p>
-                    {isMissingLang && (
-                      <span className="bg-red-900/20 text-red-400 border border-red-900/50 mt-auto w-fit text-[10px] px-2 py-1 uppercase tracking-widest">
-                        [{strings.noTranslation}]
+                    {summaryStatus.usingFallback && (
+                      // Subtle EN-fallback chip. Uses zinc tones (not
+                      // red/amber) so it reads as informative metadata
+                      // rather than an error. The pill is also a tooltip
+                      // so a curious user can hover/long-press to see
+                      // what it means without us crowding the card with
+                      // a full sentence on every tile.
+                      <span
+                        className="bg-zinc-900/80 text-zinc-400 border border-zinc-800 mt-auto w-fit text-[10px] px-2 py-0.5 uppercase tracking-widest font-mono"
+                        title={strings.content_english_fallback_notice || 'Showing English content'}
+                      >
+                        {strings.content_english_fallback_chip || 'EN'}
                       </span>
                     )}
                   </div>
@@ -356,32 +384,66 @@ export default function Clans() {
 
                   <div className="p-5 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                     <div className="md:col-span-2 space-y-8 font-sans text-zinc-300">
-                      {!isAvailableInLang(selectedClan.summary, activeLanguage) && (
-                        <div className="bg-amber-950/30 text-amber-500 p-3 text-xs border border-amber-900/50 uppercase tracking-widest">
-                          {strings.contentUnavailable}
-                        </div>
-                      )}
+                      {/*
+                        Top-of-detail localization banner (Batch G).
+
+                        Previously this fired whenever the active language
+                        had no native summary, even when English fallback
+                        was in fact being rendered below. Result: a loud
+                        amber "Content not available" banner stacked on
+                        top of perfectly readable English text — which
+                        the user read as "the page is broken."
+
+                        Now we read the resolved summary status. If we're
+                        rendering English as a fallback the banner is a
+                        quiet zinc one-liner; if the content is genuinely
+                        absent in every supported language the banner
+                        keeps the original amber treatment so the
+                        developer notices.
+                      */}
+                      {(() => {
+                        const summaryStatus = getLocalizedText(selectedClan.summary, activeLanguage);
+                        if (summaryStatus.missing) {
+                          return (
+                            <div className="bg-amber-950/30 text-amber-500 p-3 text-xs border border-amber-900/50 uppercase tracking-widest">
+                              {strings.contentUnavailable}
+                            </div>
+                          );
+                        }
+                        if (summaryStatus.usingFallback) {
+                          return (
+                            <div className="bg-zinc-900/50 text-zinc-400 p-2.5 text-[11px] border border-zinc-800 tracking-wide">
+                              {strings.content_english_fallback_notice || 'Showing English content'}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
 
                       <section>
                         <h3 className="font-serif text-xl mb-3 uppercase tracking-wide border-b border-zinc-900 pb-2" style={{ color: selectedClan.colorTheme }}>
                           {strings.description || "Summary"}
                         </h3>
-                        {getText(selectedClan.summary, activeLanguage) ? (
-                          <p className="leading-relaxed">{getText(selectedClan.summary, activeLanguage)}</p>
-                        ) : (
-                          <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>
-                        )}
+                        {(() => {
+                          const status = getLocalizedText(selectedClan.summary, activeLanguage);
+                          if (status.text === null) {
+                            return <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>;
+                          }
+                          return <p className="leading-relaxed">{status.text}</p>;
+                        })()}
                       </section>
 
                       <section>
                         <h3 className="font-serif text-xl mb-3 uppercase tracking-wide border-b border-zinc-900 pb-2" style={{ color: selectedClan.colorTheme }}>
                           {strings.clans_lore_heading || 'Lore'}
                         </h3>
-                        {getText(selectedClan.lore, activeLanguage) ? (
-                          <p className="leading-relaxed">{getText(selectedClan.lore, activeLanguage)}</p>
-                        ) : (
-                          <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>
-                        )}
+                        {(() => {
+                          const status = getLocalizedText(selectedClan.lore, activeLanguage);
+                          if (status.text === null) {
+                            return <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>;
+                          }
+                          return <p className="leading-relaxed">{status.text}</p>;
+                        })()}
                       </section>
                     </div>
 
@@ -391,13 +453,22 @@ export default function Clans() {
                           {strings.clans_bane_label || '— The Clan Bane —'}
                         </span>
                         <h4 className="font-serif text-lg text-on-surface mb-2 uppercase text-center mt-2">{strings.weakness}</h4>
-                        {getText(selectedClan.weakness, activeLanguage) ? (
-                          <p className="text-sm text-zinc-400 leading-relaxed text-center">
-                            {getText(selectedClan.weakness, activeLanguage)}
-                          </p>
-                        ) : (
-                          <span className="text-xs text-zinc-500 italic text-center block">[{strings.noTranslation}]</span>
-                        )}
+                        {(() => {
+                          // Same fallback-aware pattern as the summary
+                          // and lore sections — render the text when
+                          // available (native or English fallback), only
+                          // show the "[no translation]" placeholder when
+                          // both are empty.
+                          const status = getLocalizedText(selectedClan.weakness, activeLanguage);
+                          if (status.text === null) {
+                            return <span className="text-xs text-zinc-500 italic text-center block">[{strings.noTranslation}]</span>;
+                          }
+                          return (
+                            <p className="text-sm text-zinc-400 leading-relaxed text-center">
+                              {status.text}
+                            </p>
+                          );
+                        })()}
                       </div>
 
                       <div>

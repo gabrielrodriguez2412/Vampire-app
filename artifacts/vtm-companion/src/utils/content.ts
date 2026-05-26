@@ -11,6 +11,54 @@ export function getText(record: Record<LangCode, string> | undefined, lang: Lang
   return (fallback && fallback.trim() !== '') ? fallback : null;
 }
 
+/**
+ * Structured result of resolving a localized text. Same fallback chain
+ * as `getText` (requested lang → 'en' → null) but tells the caller
+ * which branch fired so the UI can render a quiet "showing English"
+ * indicator instead of a loud "content not available" warning when a
+ * usable fallback is in fact being shown.
+ *
+ * Returned shape:
+ *   - `text`           : the actual string to render (already resolved),
+ *                        or null if nothing renderable exists in any
+ *                        supported language.
+ *   - `usingFallback`  : true when `lang` was empty/missing but `en`
+ *                        was used. The card / detail header should
+ *                        render a subtle indicator in this case.
+ *   - `missing`        : true when both `lang` and `en` are empty.
+ *                        Distinct from `usingFallback`; the UI should
+ *                        decide between hiding the section, showing a
+ *                        small `[no translation]` chip, or rendering
+ *                        an amber "content unavailable" notice.
+ *
+ * Centralizing this distinction keeps every consumer (clan card,
+ * clan detail header, future disciplines/rules pages) on the same
+ * fallback contract — the Batch G clan audit found three different
+ * inline conditional patterns that all subtly disagreed about when
+ * to scream "[Sin traducción]" at the user.
+ */
+export interface LocalizedTextResult {
+  text: string | null;
+  usingFallback: boolean;
+  missing: boolean;
+}
+
+export function getLocalizedText(
+  record: Record<LangCode, string> | undefined,
+  lang: LangCode,
+): LocalizedTextResult {
+  if (!record) return { text: null, usingFallback: false, missing: true };
+  const native = record[lang];
+  if (native && native.trim() !== '') {
+    return { text: native, usingFallback: false, missing: false };
+  }
+  const fallback = record['en'];
+  if (fallback && fallback.trim() !== '') {
+    return { text: fallback, usingFallback: lang !== 'en', missing: false };
+  }
+  return { text: null, usingFallback: false, missing: true };
+}
+
 // Returns array in lang. If not available, returns null.
 export function getTextArray(record: Record<LangCode, string[]> | undefined, lang: LangCode): string[] | null {
   if (!record) return null;

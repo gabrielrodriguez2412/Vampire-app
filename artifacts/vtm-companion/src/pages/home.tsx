@@ -8,36 +8,26 @@ import { getClanDisplayName, getClanDisplayNameById, getText } from "@/utils/con
 import { getCharacters } from "@/services/characterStorage";
 import { getChronicles } from "@/services/chronicleStorage";
 import { getAllChronicleSessions } from "@/services/chronicleSessionStorage";
+import { getClanImageSrc } from "@/utils/clanImage";
 import type { Character, Chronicle, ChronicleSession, EditionId } from "@/types";
 import {
   User, ScrollText, CalendarDays, BookOpen, Users, Flame, ArrowRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
-/**
- * Home preview override map. Keys are the canonical clan ids used in
- * `clans.ts` — the previous version of this map used V5 alt-name slugs
- * (`banu_haqim`, `hecata`, `ministry`) which never matched any real clan
- * id, so those entries silently fell back to opengraph. Each entry below
- * mirrors the matching clan's `bannerImage`; `clans.ts` remains the
- * source of truth for what is actually rendered on the dedicated clan
- * page, and we now fall through to `clan.bannerImage` when this map has
- * no entry for an id.
+/*
+ * Home featured-strip clan images.
+ *
+ * Previously this file carried a private `clanImages: Record<string, string>`
+ * map that hard-coded the legacy `/images/<slug>.png` paths under canonical
+ * clan ids. The map duplicated `clan.bannerImage` from `data/clans.ts`,
+ * which made keeping the two sources of truth in sync error-prone.
+ *
+ * Batch M unified that path resolution into `utils/clanImage.ts`. The
+ * featured strip now calls `getClanImageSrc(clan)` like every other
+ * consumer; when final WebP files are dropped under
+ * `public/images/clans/final/`, all three rendering sites pick them up
+ * by flipping a single switch in the helper.
  */
-const clanImages: Record<string, string> = {
-  brujah: "/images/brujah.png",
-  ventrue: "/images/ventrue.png",
-  tremere: "/images/tremere.png",
-  nosferatu: "/images/nosferatu.png",
-  toreador: "/images/toreador.png",
-  malkavian: "/images/malkavian.png",
-  gangrel: "/images/gangrel.png",
-  assamite: "/images/banu-haquim.png",       // V5: Banu Haqim
-  giovanni: "/images/hecata.png",            // V5: Hecata
-  followers_of_set: "/images/ministry.png",  // V5: The Ministry
-  lasombra: "/images/lasombra.png",
-  ravnos: "/images/ravnos.png",
-  salubri: "/images/salubri.png",
-};
 
 // `FEATURED_CLAN_IDS` lives in `@/data/featuredClans` so the regression test
 // can lock its ids against `clans.ts` without pulling in this React module.
@@ -365,7 +355,7 @@ export default function Home() {
                 <div className="flex-none w-52 sm:w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">
                   <div className="h-60 sm:h-72 relative">
                     <img
-                      src={clanImages[clan.id] || clan.bannerImage || "/opengraph.jpg"}
+                      src={getClanImageSrc(clan)}
                       alt={clanName}
                       className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity grayscale contrast-125"
                     />

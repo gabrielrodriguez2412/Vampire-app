@@ -238,21 +238,41 @@ One image per clan id in `src/data/clans.ts` where art exists:
 
 ### 4.2 Naming convention
 
-- File names use the **canonical clan id** from `clans.ts`, lowercase,
-  hyphen-separated.
-- Format suffix matches the file:
-  `clan-brujah.webp`, `clan-ventrue.webp`, `clan-malkavian.webp`,
-  `clan-banu-haqim.webp` (use the V5 slug for the file even if the
-  data id is still `assamite`), `clan-hecata.webp` (data id
-  `giovanni`), `clan-ministry.webp` (data id `followers_of_set`).
-- The mapping from data id → file is handled in
-  `src/data/clans.ts` via `bannerImage`. The file naming convention
-  exists so an unattached `.webp` in `public/images/clans/final/` is
-  obviously a clan banner without grepping.
-- The existing `images/<slug>.png` files keep their current names while
-  they remain in use. Final art lands under
-  `public/images/clans/final/` (see §5) so the old and new files do
-  not collide during the transition.
+File names use the slug from `CLAN_IMAGE_SLUGS` in
+`src/utils/clanImage.ts`, lowercase, hyphen-separated, no
+`clan-` prefix (the parent folder `public/images/clans/final/`
+already provides namespace context).
+
+Canonical mapping (data id → final filename):
+
+| Data id | Final filename |
+|---|---|
+| `brujah` | `brujah.webp` |
+| `gangrel` | `gangrel.webp` |
+| `malkavian` | `malkavian.webp` |
+| `nosferatu` | `nosferatu.webp` |
+| `toreador` | `toreador.webp` |
+| `tremere` | `tremere.webp` |
+| `ventrue` | `ventrue.webp` |
+| `lasombra` | `lasombra.webp` |
+| `tzimisce` | `tzimisce.webp` |
+| `assamite` | `banu-haqim.webp` *(V5 rename, normalized spelling — the legacy PNG is `banu-haquim.png`)* |
+| `followers_of_set` | `ministry.webp` *(V5 rename)* |
+| `giovanni` | `hecata.webp` *(V5 rename)* |
+| `ravnos` | `ravnos.webp` |
+| `salubri` | `salubri.webp` |
+| `caitiff` | `caitiff.webp` |
+| `thin_blood` | `thin-blood.webp` |
+
+The drift-guard test in
+`src/utils/__tests__/clanImage.test.ts` fails if a new clan in
+`data/clans.ts` lacks a slug entry, if two clans claim the same
+slug, or if a slug uses anything outside `[a-z0-9-]`.
+
+The existing `public/images/<slug>.png` files keep their current
+names while they remain in use. Final art lands under
+`public/images/clans/final/` (see §5) so the old and new files do
+not collide during the transition.
 
 ### 4.3 Dimensions and aspect ratio
 
@@ -319,11 +339,42 @@ there is actually distinct V20 vs V5 art to show.
 
 ### 4.8 Fallback behavior
 
-- Continue to support `|| "/opengraph.jpg"` at the consumer sites.
-- Future improvement: add an `onError` handler on the `<img>` in
-  `src/pages/clans.tsx` and `src/pages/home.tsx` that swaps `src` to
-  `/opengraph.jpg`. Low priority — the drift-guard test already
-  prevents the broken-file case in CI.
+All three rendering sites (clan list card, clan detail dialog hero,
+home featured strip) now call **`getClanImageSrc(clan)`** from
+`src/utils/clanImage.ts`. The helper's resolution order is:
+
+1. If `USE_FINAL_CLAN_WEBP_IMAGES` is enabled in the helper AND the
+   clan has a registered slug → returns
+   `/images/clans/final/<slug>.webp`.
+2. Otherwise returns `clan.bannerImage` from `data/clans.ts`
+   (current behaviour, including the legacy PNGs).
+3. If `bannerImage` is empty or missing → returns the OpenGraph
+   placeholder `/opengraph.jpg`.
+
+Future improvement: add an `onError` handler on the `<img>` that
+swaps `src` to `/opengraph.jpg` if the final WebP 404s in
+production. Low priority — the slug-coverage drift-guard already
+catches missing-slug cases in CI, and the final-image switch is
+manual (you choose when to flip it after dropping the files).
+
+### 4.9 Final-image switch procedure
+
+When all final WebP files are ready:
+
+1. Drop the WebPs at `public/images/clans/final/<slug>.webp` using
+   the slugs in §4.2 above. Confirm each file is under the size
+   ceiling in §4.4 (150 KB) before committing.
+2. In `src/utils/clanImage.ts`, change the
+   `USE_FINAL_CLAN_WEBP_IMAGES` constant from `false` to `true`.
+3. Run `pnpm --dir artifacts/vtm-companion run test` — the drift
+   guard reports any clan missing a final WebP file.
+4. Run `pnpm --dir artifacts/vtm-companion run build` and check the
+   `dist/` output for the final assets.
+5. Optional cleanup: once the final WebPs are confirmed working,
+   the legacy PNGs under `public/images/<slug>.png` can be removed
+   and the `bannerImage` field in `data/clans.ts` can be cleaned
+   up (though leaving the field intact is harmless — the helper
+   simply ignores it once the switch is on).
 
 ---
 

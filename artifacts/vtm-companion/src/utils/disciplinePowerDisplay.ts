@@ -138,6 +138,55 @@ const POWER_NAME_OVERRIDES: Record<string, Record<number, Partial<Record<LangCod
   // thin_blood_alchemy has no flat powers list (special-systems only).
   // No entries here is intentional — see the helper's pending-review
   // section in `data/disciplines.ts` for the formulae placeholders.
+
+  // Batch L additions — non-priority classic disciplines. Same
+  // contract as the priority entries above: only Spanish overrides
+  // are stored; English flows through from the data file's power
+  // `name` field via `getDisciplinePowerName`'s fallback chain.
+  obtenebration: {
+    1: { es: 'Visión Sombría' },
+    2: { es: 'Agarre de Sombra' },
+    3: { es: 'Mortaja' },
+    4: { es: 'Cuerpo Sombrío' },
+    5: { es: 'Forma Tenebrosa' },
+  },
+  quietus: {
+    1: { es: 'Silencio Sonoro' },
+    2: { es: 'Mordisco Tóxico' },
+    3: { es: 'Golpe de Precisión' },
+    4: { es: 'Alcance Distante' },
+    5: { es: 'Veredicto Final' },
+  },
+  serpentis: {
+    1: { es: 'Vista de la Serpiente' },
+    2: { es: 'Mordisco Venenoso' },
+    3: { es: 'Cadencia Hipnótica' },
+    4: { es: 'Forma de Serpiente' },
+    5: { es: 'Ocultación del Corazón' },
+  },
+  vicissitude: {
+    1: { es: 'Remodelado Propio' },
+    2: { es: 'Moldeado de Carne' },
+    3: { es: 'Moldeado de Hueso' },
+    4: { es: 'Forma de Combate' },
+    5: { es: 'Forma de Sangre' },
+  },
+  chimerstry: {
+    1: { es: 'Ilusión Menor' },
+    2: { es: 'Ilusión Compartida' },
+    3: { es: 'Ilusión Sólida' },
+    4: { es: 'Ilusión Anclada' },
+    5: { es: 'Velo de Realidad' },
+  },
+  valeren: {
+    1: { es: 'Percibir la Vitalidad' },
+    2: { es: 'Toque Sanador' },
+    3: { es: 'Cargar el Sufrimiento' },
+    4: { es: 'Quietud' },
+    5: { es: 'Golpe del Tercer Ojo' },
+  },
+  // necromancy and thaumaturgy have no flat powers list (specialSystems
+  // only — paths + rituals). No power-name overrides needed.
 };
 
 /**
@@ -221,6 +270,19 @@ const TYPE_OVERRIDES: Record<string, Partial<Record<LangCode, string>>> = {
   blood_sorcery: { es: 'Hechicería' },
   oblivion: { es: 'Sombra/Muerte' },
   thin_blood_alchemy: { es: 'Alquimia' },
+  // Batch L: non-priority classic disciplines. As of Batch L the
+  // `data/disciplines.ts` type field also carries these Spanish
+  // labels via `enEs`, so the helper is now a redundant safety net
+  // for these — duplicated here so both call sites agree if the
+  // data ever drifts back to `fallbackStr`.
+  thaumaturgy: { es: 'Hechicería' },
+  obtenebration: { es: 'Sombra' },
+  necromancy: { es: 'Hechicería/Muerte' },
+  quietus: { es: 'Asesinato' },
+  serpentis: { es: 'Transformación' },
+  vicissitude: { es: 'Moldeado de Carne' },
+  chimerstry: { es: 'Ilusión' },
+  valeren: { es: 'Curación/Combate' },
 };
 
 /**

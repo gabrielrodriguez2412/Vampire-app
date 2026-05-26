@@ -77,6 +77,67 @@ describe('disciplines data', () => {
       }
     }
   });
+
+  /**
+   * Spanish coverage (Batch L).
+   *
+   * After Batch L every discipline's visible top-level fields
+   * (description, type) and every power's description / tacticalUse
+   * should be populated in Spanish, not silently falling back to the
+   * English string baked into the ES slot by the old `fallbackStr`
+   * helper.
+   */
+  it('every discipline description has a non-empty Spanish translation', () => {
+    for (const d of disciplines) {
+      expect(
+        (d.description.es || '').trim().length,
+        `${d.id}.description.es is empty — the disciplines page will silently render English in Spanish mode`,
+      ).toBeGreaterThan(0);
+      expect(
+        d.description.es,
+        `${d.id}.description.es is a verbatim copy of EN — translate it`,
+      ).not.toBe(d.description.en);
+    }
+  });
+
+  it('every discipline type label has a non-empty Spanish translation', () => {
+    for (const d of disciplines) {
+      expect(
+        (d.type.es || '').trim().length,
+        `${d.id}.type.es is empty — type chip will render English in Spanish mode`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('every power description has a non-empty Spanish translation', () => {
+    for (const d of disciplines) {
+      for (const p of d.powers) {
+        expect(
+          (p.description.es || '').trim().length,
+          `${d.id}.${p.name}.description.es is empty`,
+        ).toBeGreaterThan(0);
+        expect(
+          p.description.es,
+          `${d.id}.${p.name}.description.es is a verbatim copy of EN — translate it`,
+        ).not.toBe(p.description.en);
+      }
+    }
+  });
+
+  it('every power tacticalUse has a non-empty Spanish translation', () => {
+    for (const d of disciplines) {
+      for (const p of d.powers) {
+        expect(
+          (p.tacticalUse.es || '').trim().length,
+          `${d.id}.${p.name}.tacticalUse.es is empty`,
+        ).toBeGreaterThan(0);
+        expect(
+          p.tacticalUse.es,
+          `${d.id}.${p.name}.tacticalUse.es is a verbatim copy of EN — translate it`,
+        ).not.toBe(p.tacticalUse.en);
+      }
+    }
+  });
 });
 
 describe('discipline specialSystems shape', () => {

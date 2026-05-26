@@ -37,6 +37,14 @@ const PRIORITY_DISCIPLINES = [
   'protean',
   'blood_sorcery',
   'oblivion',
+  // Batch L: extended to the previously non-priority classics now
+  // that they too have curated Spanish power-name translations.
+  'obtenebration',
+  'quietus',
+  'serpentis',
+  'vicissitude',
+  'chimerstry',
+  'valeren',
 ] as const;
 
 const SPANISH_POWER_NAMES: Array<[string, number, string]> = [
@@ -82,6 +90,19 @@ const SPANISH_POWER_NAMES: Array<[string, number, string]> = [
   // oblivion
   ['oblivion', 1, 'Paso de Sombra'],
   ['oblivion', 5, 'Cuerpo Tenebroso'],
+  // Batch L additions — non-priority classic disciplines.
+  ['obtenebration', 1, 'Visión Sombría'],
+  ['obtenebration', 5, 'Forma Tenebrosa'],
+  ['quietus', 1, 'Silencio Sonoro'],
+  ['quietus', 5, 'Veredicto Final'],
+  ['serpentis', 1, 'Vista de la Serpiente'],
+  ['serpentis', 5, 'Ocultación del Corazón'],
+  ['vicissitude', 1, 'Remodelado Propio'],
+  ['vicissitude', 5, 'Forma de Sangre'],
+  ['chimerstry', 1, 'Ilusión Menor'],
+  ['chimerstry', 5, 'Velo de Realidad'],
+  ['valeren', 1, 'Percibir la Vitalidad'],
+  ['valeren', 5, 'Golpe del Tercer Ojo'],
 ];
 
 describe('getDisciplinePowerName — curated Spanish names', () => {
@@ -140,14 +161,19 @@ describe('isDisciplinePowerNameUsingFallback', () => {
   it('returns false when a curated locale entry exists', () => {
     expect(isDisciplinePowerNameUsingFallback('celerity', 1, 'es')).toBe(false);
     expect(isDisciplinePowerNameUsingFallback('oblivion', 5, 'es')).toBe(false);
+    // Batch L: non-priority disciplines also covered now.
+    expect(isDisciplinePowerNameUsingFallback('vicissitude', 1, 'es')).toBe(false);
+    expect(isDisciplinePowerNameUsingFallback('quietus', 5, 'es')).toBe(false);
+    expect(isDisciplinePowerNameUsingFallback('chimerstry', 3, 'es')).toBe(false);
   });
 
-  it('returns true when no curated locale entry exists', () => {
-    // Non-priority discipline — no entry in the override table.
-    expect(isDisciplinePowerNameUsingFallback('vicissitude', 1, 'es')).toBe(true);
-    // Priority discipline but a locale we have not translated yet.
+  it('returns true for locales we have not translated yet', () => {
+    // PT / FR / DE / IT have no curated rows anywhere; the helper
+    // should still surface this honestly so the page can render the
+    // "EN" pill.
     expect(isDisciplinePowerNameUsingFallback('celerity', 1, 'pt')).toBe(true);
     expect(isDisciplinePowerNameUsingFallback('celerity', 1, 'fr')).toBe(true);
+    expect(isDisciplinePowerNameUsingFallback('vicissitude', 1, 'pt')).toBe(true);
   });
 
   it('never reports fallback when the active locale is English', () => {
@@ -170,13 +196,22 @@ describe('getDisciplineTypeLabel', () => {
     ['thin_blood_alchemy', 'Alquimia'],
     ['animalism', 'Mental'],
     ['auspex', 'Sensorial'],
+    // Batch L additions — non-priority classic disciplines.
+    ['thaumaturgy', 'Hechicería'],
+    ['obtenebration', 'Sombra'],
+    ['necromancy', 'Hechicería/Muerte'],
+    ['quietus', 'Asesinato'],
+    ['serpentis', 'Transformación'],
+    ['vicissitude', 'Moldeado de Carne'],
+    ['chimerstry', 'Ilusión'],
+    ['valeren', 'Curación/Combate'],
   ])('returns curated Spanish type for %s -> %s', (id, expected) => {
     expect(getDisciplineTypeLabel(id, 'English fallback', 'es')).toBe(expected);
   });
 
   it('falls back to the data type string when no curated locale entry exists', () => {
-    // A non-priority discipline asked in Portuguese — no override —
-    // should return whatever the caller passed in as data fallback.
+    // A discipline asked in Portuguese — no override — should return
+    // whatever the caller passed in as data fallback.
     expect(getDisciplineTypeLabel('vicissitude', 'Fleshcrafting', 'pt'))
       .toBe('Fleshcrafting');
   });

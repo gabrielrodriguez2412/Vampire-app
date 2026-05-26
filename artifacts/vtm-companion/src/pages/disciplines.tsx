@@ -11,7 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Search, Flame } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { getText, filterByEdition, isAvailableInLang, getClanDisplayNameById } from "@/utils/content";
+import { getText, getLocalizedText, filterByEdition, getClanDisplayNameById } from "@/utils/content";
+import {
+  getDisciplineDisplayName,
+  isDisciplineNameUsingFallback,
+} from "@/utils/disciplineDisplay";
 
 export default function Disciplines() {
   const [filter, setFilter] = useState("");
@@ -47,8 +51,17 @@ export default function Disciplines() {
   }, [params.id]);
 
   const filteredDiscs = filterByEdition(disciplines, activeEdition).filter(d => {
-    const nameMatch = d.name.toLowerCase().includes(filter.toLowerCase());
-    const clanMatch = d.clansWhoUse.some(c => c.toLowerCase().includes(filter.toLowerCase()));
+    // Search the active-language display name, the English display
+    // name, and the raw data `name` so a Spanish user searching
+    // "celeridad" matches even though the data still stores
+    // "Celerity". Same fallback hierarchy as the title renderer
+    // further down.
+    const q = filter.toLowerCase();
+    const localizedName = getDisciplineDisplayName(d.id, activeLanguage).toLowerCase();
+    const englishName = getDisciplineDisplayName(d.id, 'en').toLowerCase();
+    const dataName = d.name.toLowerCase();
+    const nameMatch = localizedName.includes(q) || englishName.includes(q) || dataName.includes(q);
+    const clanMatch = d.clansWhoUse.some(c => c.toLowerCase().includes(q));
     return nameMatch || clanMatch;
   });
 
@@ -94,7 +107,18 @@ export default function Disciplines() {
         >
           <AnimatePresence>
             {filteredDiscs.map((disc, i) => {
-              const isMissingLang = !isAvailableInLang(disc.description, activeLanguage);
+              // Batch H: replaced the old loud red "[ no translation ]"
+              // badge with the same fallback-aware pattern Batch G
+              // shipped for clan cards. The title chip shows a subtle
+              // monospace "EN" pill only when the active locale lacks
+              // a curated discipline name (i.e. the display-name
+              // helper had to fall back to English). The description
+              // block uses `getLocalizedText` so we can distinguish
+              // "EN fallback rendering" (quiet zinc chip) from
+              // "content truly missing" (amber italic placeholder).
+              const displayName = getDisciplineDisplayName(disc.id, activeLanguage);
+              const nameUsingFallback = isDisciplineNameUsingFallback(disc.id, activeLanguage);
+              const descStatus = getLocalizedText(disc.description, activeLanguage);
               return (
                 <motion.div
                   key={disc.id}
@@ -109,23 +133,31 @@ export default function Disciplines() {
                   <Card className="bg-card border-border overflow-hidden" data-testid={`discipline-card-${disc.id}`}>
                     <CardHeader className="bg-white/[0.02] border-b border-border pb-4 flex flex-row items-start justify-between">
                       <div className="w-full">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-2xl font-serif text-foreground">{disc.name}</CardTitle>
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
+                          <CardTitle className="text-2xl font-serif text-foreground">{displayName}</CardTitle>
                           <Badge variant="outline" className="text-xs font-mono text-muted-foreground border-muted-foreground/30">
                             {getText(disc.type, activeLanguage)}
                           </Badge>
-                          {isMissingLang && (
-                            <Badge variant="destructive" className="bg-red-900/40 text-red-300 border-red-900/50 text-[10px] ml-auto">
-                              [ {strings.noTranslation} ]
-                            </Badge>
+                          {nameUsingFallback && (
+                            <span
+                              className="bg-zinc-900/80 text-zinc-400 border border-zinc-800 text-[10px] px-2 py-0.5 uppercase tracking-widest font-mono ml-auto"
+                              title={strings.content_english_fallback_notice || 'Showing English content'}
+                            >
+                              {strings.content_english_fallback_chip || 'EN'}
+                            </span>
                           )}
                         </div>
-                        {getText(disc.description, activeLanguage) ? (
-                          <p className="text-sm text-foreground/80 leading-relaxed max-w-3xl">
-                            {getText(disc.description, activeLanguage)}
-                          </p>
-                        ) : (
+                        {descStatus.text === null ? (
                           <span className="text-xs text-amber-600/80 italic">[ {strings.noTranslation} ]</span>
+                        ) : (
+                          <p className="text-sm text-foreground/80 leading-relaxed max-w-3xl">
+                            {descStatus.text}
+                          </p>
+                        )}
+                        {descStatus.usingFallback && descStatus.text !== null && (
+                          <p className="text-[11px] text-zinc-500 italic mt-1">
+                            {strings.content_english_fallback_notice || 'Showing English content'}
+                          </p>
                         )}
                         <div className="flex flex-wrap gap-2 mt-3 items-center">
                           <span className="text-xs text-muted-foreground">{strings.clansUsing}</span>

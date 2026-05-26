@@ -1,7 +1,33 @@
 import { DisciplineEntry } from '../types';
 
+/**
+ * `fallbackStr` populates every language slot with the same English
+ * string, which is a polite lie — it tells `getLocalizedText` that
+ * Spanish content exists when it does not. We keep the helper for
+ * fields where the English value is intentionally language-neutral
+ * (e.g. power names, type labels we have not yet translated) so the
+ * existing rendering keeps working, but **description** fields now
+ * use the honest `enOnly` helper below. That lets the Batch G
+ * fallback-aware UI on the disciplines page surface a subtle "EN"
+ * indicator instead of silently rendering English text under a
+ * Spanish heading.
+ *
+ * TODO(batch-h-disciplines): migrate `type` and power `name` slots to
+ * honest per-locale records in a future content batch. Doing it here
+ * would mean translating every type/name string in one go, which is
+ * out of scope for the discipline-name pass.
+ */
 const fallbackStr = (val: string) => ({ es: val, en: val, pt: val, fr: val, de: val, it: val });
 const fallbackArr = (val: string[]) => ({ es: val, en: val, pt: val, fr: val, de: val, it: val });
+
+/**
+ * Honest EN-only string record. Fills only the `en` slot so the
+ * generic `getLocalizedText` fallback chain correctly reports
+ * `usingFallback: true` for any non-EN locale, which lets the
+ * disciplines page render a quiet EN chip instead of pretending the
+ * Spanish translation already landed.
+ */
+const enOnly = (val: string) => ({ es: '', en: val, pt: '', fr: '', de: '', it: '' });
 
 export const disciplines: DisciplineEntry[] = [
   {
@@ -51,7 +77,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Blood Sorcery",
     type: fallbackStr("Sorcery"),
-    description: fallbackStr("The use of vitae for magical effects."),
+    description: enOnly("The use of vitae for magical effects."),
     powers: [
       { name: "Corrosive Vitae", level: 1, description: fallbackStr("Acid blood."), tacticalUse: fallbackStr("Melt locks.") },
       { name: "Vitae Disruption (Level 2)", level: 2, description: fallbackStr("Disturb another vampire's vitae so it grows harder to use."), tacticalUse: fallbackStr("Drain an enemy's reserves before a fight.") },
@@ -81,7 +107,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Thaumaturgy",
     type: fallbackStr("Sorcery"),
-    description: fallbackStr("Old blood magic."),
+    description: enOnly("Old blood magic."),
     powers: [],
     narrativeUses: fallbackArr(["Rituals."]),
     clansWhoUse: ["tremere"],
@@ -119,7 +145,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Obtenebration",
     type: fallbackStr("Shadow"),
-    description: fallbackStr("Control over shadows."),
+    description: enOnly("Control over shadows."),
     powers: [
       { name: "Shadow Sight (Level 1)", level: 1, description: fallbackStr("See clearly into and through darkness."), tacticalUse: fallbackStr("Spot threats in unlit places.") },
       { name: "Shadow Grasp (Level 2)", level: 2, description: fallbackStr("Extend a tendril of shadow to grab, trip, or strike at short range."), tacticalUse: fallbackStr("Reach a target without exposing yourself.") },
@@ -135,7 +161,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Necromancy",
     type: fallbackStr("Sorcery/Death"),
-    description: fallbackStr("The magic of death and souls."),
+    description: enOnly("The magic of death and souls."),
     powers: [],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["giovanni"],
@@ -173,7 +199,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Quietus",
     type: fallbackStr("Assassination"),
-    description: fallbackStr("The silent magic of the blood."),
+    description: enOnly("The silent magic of the blood."),
     powers: [
       { name: "Sound Silencing (Level 1)", level: 1, description: fallbackStr("Smother sound in a small area around you."), tacticalUse: fallbackStr("Move, fight, or feed without alerting anyone.") },
       { name: "Toxic Bite (Level 2)", level: 2, description: fallbackStr("Turn your saliva or vitae into a poison delivered by touch."), tacticalUse: fallbackStr("End a target after a single bite or contact.") },
@@ -189,7 +215,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Serpentis",
     type: fallbackStr("Transformation"),
-    description: fallbackStr("The corrupting gifts of Set."),
+    description: enOnly("The corrupting gifts of Set."),
     powers: [
       { name: "Serpent's Sight (Level 1)", level: 1, description: fallbackStr("Read hidden truths and surface deceptions in others."), tacticalUse: fallbackStr("Spot a lie or read intent during negotiation.") },
       { name: "Venomous Bite (Level 2)", level: 2, description: fallbackStr("Grow fangs that deliver an incapacitating venom on bite."), tacticalUse: fallbackStr("Quiet a struggle by poisoning the prey.") },
@@ -205,7 +231,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Vicissitude",
     type: fallbackStr("Fleshcrafting"),
-    description: fallbackStr("The alien art of shaping bone and flesh."),
+    description: enOnly("The alien art of shaping bone and flesh."),
     powers: [
       { name: "Self-Reshape (Level 1)", level: 1, description: fallbackStr("Reshape your own face and minor features by touch."), tacticalUse: fallbackStr("Wear another's look or hide a known one.") },
       { name: "Fleshcraft (Level 2)", level: 2, description: fallbackStr("Mold the flesh of a willing or restrained target."), tacticalUse: fallbackStr("Disguise allies or punish enemies.") },
@@ -221,7 +247,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Chimerstry",
     type: fallbackStr("Illusion"),
-    description: fallbackStr("The power to craft convincing illusions."),
+    description: enOnly("The power to craft convincing illusions."),
     powers: [
       { name: "Small Illusion (Level 1)", level: 1, description: fallbackStr("Conjure a small, brief, convincing illusion of any sense."), tacticalUse: fallbackStr("Distract a guard or hide a tell.") },
       { name: "Shared Illusion (Level 2)", level: 2, description: fallbackStr("Project an illusion to multiple witnesses at once."), tacticalUse: fallbackStr("Misdirect a crowd or a search party.") },
@@ -237,7 +263,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Celerity",
     type: fallbackStr("Physical"),
-    description: fallbackStr("Supernatural speed."),
+    description: enOnly("Supernatural speed."),
     powers: [
       { name: "Rapid Reflexes", level: 1, description: fallbackStr("React faster than humanly possible."), tacticalUse: fallbackStr("Dodge bullets.") },
       { name: "Fleetness", level: 2, description: fallbackStr("Move with incredible speed."), tacticalUse: fallbackStr("Close the distance instantly.") },
@@ -253,7 +279,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Dominate",
     type: fallbackStr("Mental"),
-    description: fallbackStr("Crush another's mind."),
+    description: enOnly("Crush another's mind."),
     powers: [
       { name: "Cloud Memory", level: 1, description: fallbackStr("Erase short term memory."), tacticalUse: fallbackStr("Cover up a feeding.") },
       { name: "Mesmerize", level: 2, description: fallbackStr("Implant complex commands."), tacticalUse: fallbackStr("Force a guard to let you in.") },
@@ -269,7 +295,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Obfuscate",
     type: fallbackStr("Stealth"),
-    description: fallbackStr("Vanish from minds."),
+    description: enOnly("Vanish from minds."),
     powers: [
       { name: "Cloak of Shadows", level: 1, description: fallbackStr("Hide in the shadows."), tacticalUse: fallbackStr("Eavesdrop.") },
       { name: "Unseen Passage", level: 2, description: fallbackStr("Move while invisible."), tacticalUse: fallbackStr("Infiltrate heavily guarded areas.") },
@@ -285,7 +311,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Presence",
     type: fallbackStr("Social"),
-    description: fallbackStr("Attract and terrify."),
+    description: enOnly("Attract and terrify."),
     powers: [
       { name: "Awe", level: 1, description: fallbackStr("Fascination."), tacticalUse: fallbackStr("Distract crowds.") },
       { name: "Daunt", level: 2, description: fallbackStr("Instill fear."), tacticalUse: fallbackStr("Rout enemies.") },
@@ -301,7 +327,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Protean",
     type: fallbackStr("Transformation"),
-    description: fallbackStr("Alter physical form."),
+    description: enOnly("Alter physical form."),
     powers: [
       { name: "Eyes of the Beast", level: 1, description: fallbackStr("See perfectly in darkness."), tacticalUse: fallbackStr("Night combat.") },
       { name: "Feral Weapons", level: 2, description: fallbackStr("Grow claws."), tacticalUse: fallbackStr("Deal aggravated damage.") },
@@ -317,7 +343,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Fortitude",
     type: fallbackStr("Physical"),
-    description: fallbackStr("Unearthly toughness."),
+    description: enOnly("Unearthly toughness."),
     powers: [
       { name: "Resilience", level: 1, description: fallbackStr("Add rating to Health."), tacticalUse: fallbackStr("Survive longer.") },
       { name: "Toughness", level: 2, description: fallbackStr("Subtract damage."), tacticalUse: fallbackStr("Ignore minor hits.") },
@@ -333,7 +359,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Potence",
     type: fallbackStr("Physical"),
-    description: fallbackStr("Supernatural strength."),
+    description: enOnly("Supernatural strength."),
     powers: [
       { name: "Lethal Body", level: 1, description: fallbackStr("Add damage to unarmed."), tacticalUse: fallbackStr("Brawl advantage.") },
       { name: "Prowess", level: 2, description: fallbackStr("Feats of strength."), tacticalUse: fallbackStr("Break doors.") },
@@ -349,7 +375,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Oblivion",
     type: fallbackStr("Shadow/Death"),
-    description: fallbackStr("Shadows and necromancy merged in V5."),
+    description: enOnly("Shadows and necromancy merged in V5."),
     powers: [
       { name: "Shadow Step (Level 1)", level: 1, description: fallbackStr("Step from one shadow to a nearby spot."), tacticalUse: fallbackStr("Slip out of sight and reappear behind cover.") },
       { name: "Reach into Shadow (Level 2)", level: 2, description: fallbackStr("Extend a shadowy limb or grasp from your own shadow."), tacticalUse: fallbackStr("Pull, strike, or trip a foe from cover.") },
@@ -379,7 +405,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Valeren",
     type: fallbackStr("Healing/Combat"),
-    description: fallbackStr("The discipline of the Salubri."),
+    description: enOnly("The discipline of the Salubri."),
     powers: [
       { name: "Sense Vitality (Level 1)", level: 1, description: fallbackStr("Read the health, injury, and life-force of those nearby."), tacticalUse: fallbackStr("Triage allies or pick out the weak link of a foe.") },
       { name: "Healing Touch (Level 2)", level: 2, description: fallbackStr("Heal injuries with a touch by drawing on your own vitae."), tacticalUse: fallbackStr("Stabilize a downed ally between fights.") },
@@ -395,7 +421,7 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Thin-Blood Alchemy",
     type: fallbackStr("Alchemy"),
-    description: fallbackStr("Counterfeit disciplines via alchemy."),
+    description: enOnly("Counterfeit disciplines via alchemy."),
     powers: [],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["thin_blood"],

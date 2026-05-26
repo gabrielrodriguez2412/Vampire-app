@@ -18,6 +18,7 @@ import {
   getClanSect,
 } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
+import { getClanImageSrc } from "@/utils/clanImage";
 import {
   applyClanFilters,
   getActiveSectTokens,
@@ -264,7 +265,7 @@ export default function Clans() {
                 >
                   <div className="h-48 short-landscape:h-32 relative overflow-hidden border-b border-zinc-900">
                     <img
-                      src={clan.bannerImage || "/opengraph.jpg"}
+                      src={getClanImageSrc(clan)}
                       alt={dynamicName || clan.id}
                       className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 grayscale contrast-125"
                     />
@@ -351,7 +352,7 @@ export default function Clans() {
                   */}
                   <div className="relative h-52 sm:h-64 short-landscape:h-32 border-b border-zinc-900">
                     <img
-                      src={selectedClan.bannerImage || "/opengraph.jpg"}
+                      src={getClanImageSrc(selectedClan)}
                       alt={getClanDisplayName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}
                       className="w-full h-full object-cover opacity-40 grayscale contrast-125"
                     />

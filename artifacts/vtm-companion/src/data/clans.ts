@@ -183,13 +183,22 @@ export const clans: ClanEntry[] = [
     name: en("Toreador"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: sectLabel("Camarilla", "Camarilla"),
-    summary: en("Aesthetes, artists, and social manipulators addicted to beauty and sensation."),
-    weakness: en("Aesthetic Fixation: When confronted with true beauty, they can become completely enraptured and incapacitated for hours, oblivious to their surroundings."),
+    summary: enEs(
+      "Aesthetes, artists, and social manipulators addicted to beauty and sensation.",
+      "Estetas, artistas y manipuladores sociales adictos a la belleza y la sensación.",
+    ),
+    weakness: enEs(
+      "Aesthetic Fixation: When confronted with true beauty, they can become completely enraptured and incapacitated for hours, oblivious to their surroundings.",
+      "Fijación Estética: Ante la verdadera belleza pueden quedar completamente embelesados e incapacitados durante horas, ajenos a cuanto les rodea.",
+    ),
     disciplines: ["auspex", "celerity", "presence"],
     icon: "🌹",
     bannerImage: "/images/toreador.png",
     colorTheme: "#C71585",
-    lore: en("The Toreador consider themselves the connoisseurs of human passion, art, and beauty. They effortlessly navigate mortal high society, pulling the strings of cultural icons, politicians, and socialites. To a Toreador, unlife is a performance, and boredom is the true enemy. Their deep connection to human emotion allows them to feign life better than most, but their obsession with beauty can easily become a deadly distraction."),
+    lore: enEs(
+      "The Toreador consider themselves the connoisseurs of human passion, art, and beauty. They effortlessly navigate mortal high society, pulling the strings of cultural icons, politicians, and socialites. To a Toreador, unlife is a performance, and boredom is the true enemy. Their deep connection to human emotion allows them to feign life better than most, but their obsession with beauty can easily become a deadly distraction.",
+      "Los Toreador se consideran a sí mismos los expertos en pasión, arte y belleza humanas. Se mueven con soltura por la alta sociedad mortal, manejando los hilos de íconos culturales, políticos y figuras de élite. Para un Toreador, la no-vida es una representación y el aburrimiento es el verdadero enemigo. Su profunda conexión con la emoción humana les permite fingir la vida mejor que la mayoría, pero su obsesión con la belleza puede convertirse fácilmente en una distracción mortal.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -198,13 +207,22 @@ export const clans: ClanEntry[] = [
     name: en("Tremere"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: sectLabel("Camarilla", "Camarilla"),
-    summary: en("Secretive warlocks and scholars who stole immortality through dark blood magic."),
-    weakness: en("Blood Defect: In earlier editions, they were easily bound to clan elders. In V5, their blood is too weak to blood bond other Kindred."),
+    summary: enEs(
+      "Secretive warlocks and scholars who stole immortality through dark blood magic.",
+      "Brujos secretos y eruditos que robaron la inmortalidad mediante oscura magia de sangre.",
+    ),
+    weakness: enEs(
+      "Blood Defect: In earlier editions, they were easily bound to clan elders. In V5, their blood is too weak to blood bond other Kindred.",
+      "Defecto de Sangre: En ediciones clásicas eran vinculados con facilidad a los ancianos del clan. En V5 su sangre es demasiado débil para imponer un vínculo de sangre a otros Cainitas.",
+    ),
     disciplines: ["auspex", "blood_sorcery", "dominate", "thaumaturgy"],
     icon: "🩸",
     bannerImage: "/images/tremere.png",
     colorTheme: "#800000",
-    lore: en("Originally a cabal of mortal hermetic mages, the Tremere stole the Embrace in the Dark Ages to escape their fading magic. They quickly adapted, developing Blood Sorcery (Thaumaturgy) to defend themselves against enraged clans like the Tzimisce and Salubri. For centuries, the Tremere operated under a rigid, pyramidal hierarchy from Vienna. However, the destruction of the Prime Chantry in modern nights shattered the pyramid, leaving the clan fractured but fiercely independent."),
+    lore: enEs(
+      "Originally a cabal of mortal hermetic mages, the Tremere stole the Embrace in the Dark Ages to escape their fading magic. They quickly adapted, developing Blood Sorcery (Thaumaturgy) to defend themselves against enraged clans like the Tzimisce and Salubri. For centuries, the Tremere operated under a rigid, pyramidal hierarchy from Vienna. However, the destruction of the Prime Chantry in modern nights shattered the pyramid, leaving the clan fractured but fiercely independent.",
+      "Originalmente una cábala de magos herméticos mortales, los Tremere robaron el Abrazo en la Edad Oscura para huir de su magia menguante. Se adaptaron con rapidez y desarrollaron Hechicería de Sangre (Taumaturgia) para defenderse de clanes enfurecidos como los Tzimisce y los Salubri. Durante siglos operaron bajo una rígida jerarquía piramidal desde Viena. La destrucción de la Sede Principal en las noches modernas hizo añicos la pirámide, dejando al clan fracturado pero ferozmente independiente.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -322,13 +340,22 @@ export const clans: ClanEntry[] = [
     sectByEdition: {
       V5: sectLabel("Camarilla", "Camarilla"),
     },
-    summary: en("Assassins, judges, and scholars of the blood from the Middle East."),
-    weakness: en("Blood Curse/Addiction: In earlier editions, they were cursed to take damage from Kindred blood. In V5, they have a terrible addiction to vampiric vitae."),
+    summary: enEs(
+      "Assassins, judges, and scholars of the blood from the Middle East.",
+      "Asesinos, jueces y eruditos de la sangre procedentes de Medio Oriente.",
+    ),
+    weakness: enEs(
+      "Blood Curse/Addiction: In earlier editions, they were cursed to take damage from Kindred blood. In V5, they have a terrible addiction to vampiric vitae.",
+      "Maldición/Adicción de Sangre: En ediciones clásicas estaban malditos a sufrir daño con la sangre Cainita. En V5 padecen una terrible adicción a la vitae vampírica.",
+    ),
     disciplines: ["blood_sorcery", "celerity", "obfuscate", "quietus"],
     icon: "⚖️",
     bannerImage: "/images/banu-haquim.png",
     colorTheme: "#2E2B5F",
-    lore: en("Historically an independent clan of assassins and viziers from Alamut, the Assamites exacted their own form of justice on the Kindred world. Known as the Banu Haqim in modern nights, a massive schism has split the clan. While the traditionalist warriors remain independent or join the Ashirra, a significant sect of judges and scholars have officially joined the Camarilla, offering their services as sheriffs and enforcers."),
+    lore: enEs(
+      "Historically an independent clan of assassins and viziers from Alamut, the Assamites exacted their own form of justice on the Kindred world. Known as the Banu Haqim in modern nights, a massive schism has split the clan. While the traditionalist warriors remain independent or join the Ashirra, a significant sect of judges and scholars have officially joined the Camarilla, offering their services as sheriffs and enforcers.",
+      "Históricamente un clan independiente de asesinos y visires de Alamut, los Asamitas impartían su propia forma de justicia sobre el mundo Cainita. Conocidos como Banu Haqim en las noches modernas, un cisma enorme ha dividido al clan. Mientras los guerreros tradicionalistas siguen independientes o se unen a los Ashirra, una facción importante de jueces y eruditos se ha sumado oficialmente a la Camarilla, ofreciendo sus servicios como sheriffs y ejecutores.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -345,13 +372,22 @@ export const clans: ClanEntry[] = [
       // after rejection by the Camarilla.
       V5: sectLabel("Anarch", "Anarquista"),
     },
-    summary: en("Tempters, liberators, and religious zealots who seek to corrupt through vice."),
-    weakness: en("Light Sensitivity: They suffer far greater damage from sunlight than other vampires, and bright lights cause physical pain and subtract from dice pools."),
+    summary: enEs(
+      "Tempters, liberators, and religious zealots who seek to corrupt through vice.",
+      "Tentadores, liberadores y fanáticos religiosos que buscan corromper mediante el vicio.",
+    ),
+    weakness: enEs(
+      "Light Sensitivity: They suffer far greater damage from sunlight than other vampires, and bright lights cause physical pain and subtract from dice pools.",
+      "Sensibilidad a la Luz: Sufren un daño mucho mayor por la luz solar que otros vampiros, y las luces brillantes les provocan dolor físico y restan dados a sus reservas.",
+    ),
     disciplines: ["obfuscate", "presence", "protean", "serpentis"],
     icon: "🐍",
     bannerImage: "/images/ministry.png",
     colorTheme: "#B8860B",
-    lore: en("Traditionally an independent cult worshipping the dark god Set, they offer forbidden knowledge and earthly pleasures to ensnare mortals and Kindred alike. To them, corruption is a tool of spiritual liberation. Rebranding themselves as 'The Ministry' in modern nights, they have shifted their focus to a broader message of freedom and self-actualization, recently allying with the Anarch Movement after being rejected by the Camarilla."),
+    lore: enEs(
+      "Traditionally an independent cult worshipping the dark god Set, they offer forbidden knowledge and earthly pleasures to ensnare mortals and Kindred alike. To them, corruption is a tool of spiritual liberation. Rebranding themselves as 'The Ministry' in modern nights, they have shifted their focus to a broader message of freedom and self-actualization, recently allying with the Anarch Movement after being rejected by the Camarilla.",
+      "Tradicionalmente un culto independiente que adora al dios oscuro Set, ofrecen conocimiento prohibido y placeres terrenales para atrapar tanto a mortales como a Cainitas. Para ellos, la corrupción es una herramienta de liberación espiritual. Rebautizados como 'El Ministerio' en las noches modernas, han desplazado su discurso hacia un mensaje más amplio de libertad y autorrealización, aliándose recientemente con el Movimiento Anarca tras ser rechazados por la Camarilla.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -363,13 +399,22 @@ export const clans: ClanEntry[] = [
     },
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: sectLabel("Independent", "Independiente"),
-    summary: en("A twisted, incestuous Venetian family of necromancers and merchants."),
-    weakness: en("Painful Kiss: Their bite is excruciatingly painful, causing damage rather than the ecstatic pleasure associated with the vampiric Kiss."),
+    summary: enEs(
+      "A twisted, incestuous Venetian family of necromancers and merchants.",
+      "Una retorcida familia veneciana, incestuosa, de nigromantes y mercaderes.",
+    ),
+    weakness: enEs(
+      "Painful Kiss: Their bite is excruciatingly painful, causing damage rather than the ecstatic pleasure associated with the vampiric Kiss.",
+      "Beso Doloroso: Su mordisco es atrozmente doloroso y causa daño en lugar del placer extático asociado al Beso vampírico.",
+    ),
     disciplines: ["auspex", "fortitude", "oblivion", "necromancy"],
     icon: "💀",
     bannerImage: "/images/hecata.png",
     colorTheme: "#4A4A4A",
-    lore: en("The Giovanni were unique among clans for exclusively Embracing within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance. In recent times, devastating losses forced the Giovanni to merge with the remnants of the Cappadocians, Samedi, and other death-cults to form the Hecata—the united Clan of Death."),
+    lore: enEs(
+      "The Giovanni were unique among clans for exclusively Embracing within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance. In recent times, devastating losses forced the Giovanni to merge with the remnants of the Cappadocians, Samedi, and other death-cults to form the Hecata—the united Clan of Death.",
+      "Los Giovanni eran únicos entre los clanes por Abrazar exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento. En tiempos recientes, las pérdidas devastadoras forzaron a los Giovanni a fusionarse con los remanentes de los Cappadocianos, los Samedi y otros cultos de la muerte para formar a los Hecata: el Clan de la Muerte unificado.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -378,13 +423,22 @@ export const clans: ClanEntry[] = [
     name: en("Ravnos"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: sectLabel("Independent", "Independiente"),
-    summary: en("Doomed wanderers, rogues, and masters of illusion from the East."),
-    weakness: en("Doomed to Wander / Vice: If they sleep in the same place more than once, they risk burning. They also suffer from a specific criminal vice they must indulge."),
+    summary: enEs(
+      "Doomed wanderers, rogues, and masters of illusion from the East.",
+      "Errantes condenados, ladrones y maestros de la ilusión procedentes de Oriente.",
+    ),
+    weakness: enEs(
+      "Doomed to Wander / Vice: If they sleep in the same place more than once, they risk burning. They also suffer from a specific criminal vice they must indulge.",
+      "Condenados a Vagar / Vicio: Si duermen más de una vez en el mismo lugar se exponen a arder. Además padecen un vicio criminal específico que deben satisfacer.",
+    ),
     disciplines: ["animalism", "obfuscate", "presence", "chimerstry", "fortitude"],
     icon: "🃏",
     bannerImage: "/images/ravnos.png",
     colorTheme: "#CD5C5C",
-    lore: en("The Ravnos were a sprawling clan of wanderers, thieves, and tricksters with deep ties to the East and mastery over illusions (Chimerstry). Their numbers were absolutely decimated during the Week of Nightmares when their Antediluvian awakened in India and frenzied before being destroyed. Today, the Ravnos are a nearly extinct, tragic bloodline fleeing a constant, supernatural doom that hunts them if they ever stop running."),
+    lore: enEs(
+      "The Ravnos were a sprawling clan of wanderers, thieves, and tricksters with deep ties to the East and mastery over illusions (Chimerstry). Their numbers were absolutely decimated during the Week of Nightmares when their Antediluvian awakened in India and frenzied before being destroyed. Today, the Ravnos are a nearly extinct, tragic bloodline fleeing a constant, supernatural doom that hunts them if they ever stop running.",
+      "Los Ravnos eran un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente y un dominio único de las ilusiones (Quimerismo). Sus números fueron prácticamente diezmados durante la Semana de Pesadillas, cuando su Antediluviano despertó en India y entró en frenesí antes de ser destruido. Hoy los Ravnos son una estirpe casi extinta y trágica, que huye de una condena sobrenatural constante que los persigue si llegan a detenerse.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -393,13 +447,22 @@ export const clans: ClanEntry[] = [
     name: en("Salubri"),
     editionAvailability: ["1ST", "2ND", "REVISED", "V20", "V5"],
     sect: sectLabel("Independent", "Independiente"),
-    summary: en("A nearly extinct, three-eyed bloodline of hunted healers and soul-gazers."),
-    weakness: en("Prey Exclusion: They can only feed from mortals who offer their blood willingly. Forcing the Kiss causes severe spiritual and physical backlash."),
+    summary: enEs(
+      "A nearly extinct, three-eyed bloodline of hunted healers and soul-gazers.",
+      "Una estirpe casi extinta y de tres ojos, formada por sanadores y contempladores de almas perseguidos.",
+    ),
+    weakness: enEs(
+      "Prey Exclusion: They can only feed from mortals who offer their blood willingly. Forcing the Kiss causes severe spiritual and physical backlash.",
+      "Restricción de Presa: Solo pueden alimentarse de mortales que ofrezcan su sangre de buen grado. Forzar el Beso provoca una grave reacción espiritual y física.",
+    ),
     disciplines: ["auspex", "fortitude", "obfuscate"],
     icon: "👁️‍🗨️",
     bannerImage: "/images/salubri.png",
     colorTheme: "#F0E68C",
-    lore: en("Once a respected clan of healers and holy warriors, the Salubri were driven to the brink of extinction by the Tremere, who usurped their Antediluvian and systematically branded them as soul-stealing infernalists. The few Salubri who remain exist in complete secrecy. Their most striking feature is a third eye that opens on their forehead whenever they use their unique disciplines."),
+    lore: enEs(
+      "Once a respected clan of healers and holy warriors, the Salubri were driven to the brink of extinction by the Tremere, who usurped their Antediluvian and systematically branded them as soul-stealing infernalists. The few Salubri who remain exist in complete secrecy. Their most striking feature is a third eye that opens on their forehead whenever they use their unique disciplines.",
+      "Antaño un respetado clan de sanadores y guerreros sagrados, los Salubri fueron empujados al borde de la extinción por los Tremere, quienes usurparon a su Antediluviano y los acusaron sistemáticamente de ser infernalistas devoradores de almas. Los pocos Salubri que quedan existen en absoluto secreto. Su rasgo más característico es un tercer ojo que se abre en su frente cada vez que emplean sus disciplinas únicas.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -415,13 +478,22 @@ export const clans: ClanEntry[] = [
       // Movement historically absorbed most Caitiff.
       V5: sectLabel("Unaligned", "Sin facción"),
     },
-    summary: en("Clanless vampires abandoned by their sires, lacking the specific traits of any lineage."),
-    weakness: en("Clanless: They have no clan weakness, but they also have no clan disciplines. They learn all disciplines at a higher experience cost and face severe social prejudice."),
+    summary: enEs(
+      "Clanless vampires abandoned by their sires, lacking the specific traits of any lineage.",
+      "Vampiros sin clan, abandonados por sus sires y sin los rasgos específicos de ningún linaje.",
+    ),
+    weakness: enEs(
+      "Clanless: They have no clan weakness, but they also have no clan disciplines. They learn all disciplines at a higher experience cost and face severe social prejudice.",
+      "Sin Clan: No tienen debilidad de clan, pero tampoco tienen disciplinas de clan. Aprenden todas las disciplinas con un costo de experiencia más alto y enfrentan un severo prejuicio social.",
+    ),
     disciplines: [],
     icon: "🗑️",
     bannerImage: "/opengraph.jpg",
     colorTheme: "#888888",
-    lore: en("Caitiff are the clanless trash of Kindred society. Whether they were abandoned by their sires before learning their heritage, or whether the Blood simply failed to transmit a clan's curse and gifts, the Caitiff belong nowhere. The Camarilla treats them as second-class citizens or immediate Masquerade threats, pushing the vast majority of Caitiff into the welcoming arms of the Anarchs."),
+    lore: enEs(
+      "Caitiff are the clanless trash of Kindred society. Whether they were abandoned by their sires before learning their heritage, or whether the Blood simply failed to transmit a clan's curse and gifts, the Caitiff belong nowhere. The Camarilla treats them as second-class citizens or immediate Masquerade threats, pushing the vast majority of Caitiff into the welcoming arms of the Anarchs.",
+      "Los Caitiff son la basura sin clan de la sociedad Cainita. Ya sea porque sus sires los abandonaron antes de enseñarles su herencia, o porque la Sangre simplemente no transmitió la maldición ni los dones de ningún clan, los Caitiff no pertenecen a ninguna parte. La Camarilla los trata como ciudadanos de segunda o como amenazas inmediatas a la Mascarada, empujando a la inmensa mayoría hacia los brazos acogedores de los Anarcas.",
+    ),
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -439,13 +511,22 @@ export const clans: ClanEntry[] = [
       // default keeps the previous lean.
       V5: sectLabel("Unaligned", "Sin facción"),
     },
-    summary: en("Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath."),
-    weakness: en("Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food."),
+    summary: enEs(
+      "Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath.",
+      "Vampiros de las generaciones 14, 15 y 16 cuya sangre es demasiado débil para sostener una no-muerte plena.",
+    ),
+    weakness: enEs(
+      "Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food.",
+      "Nacidos del Crepúsculo: No pueden crear vínculos de sangre, engendrar chiquillos con facilidad ni curarse como los vampiros normales. Sin embargo, pueden caminar a la luz del día y consumir alimentos humanos.",
+    ),
     disciplines: ["thin_blood_alchemy"],
     icon: "🩸💧",
     bannerImage: "/opengraph.jpg",
     colorTheme: "#5C5C5C",
-    lore: en("The Thin-Bloods are the ultimate heralds of Gehenna. Born of generations so far removed from Caine that they are barely vampires, they exist in a twilight state between life and undeath. They are hunted mercilessly by the Camarilla and the Sabbat, forcing them to hide in the fringes of society. In modern nights, they have developed Thin-Blood Alchemy, using their mixed blood to replicate powers they cannot naturally learn."),
+    lore: enEs(
+      "The Thin-Bloods are the ultimate heralds of Gehenna. Born of generations so far removed from Caine that they are barely vampires, they exist in a twilight state between life and undeath. They are hunted mercilessly by the Camarilla and the Sabbat, forcing them to hide in the fringes of society. In modern nights, they have developed Thin-Blood Alchemy, using their mixed blood to replicate powers they cannot naturally learn.",
+      "Los Sangre Débil son los heraldos definitivos del Gehenna. Nacidos de generaciones tan alejadas de Caín que apenas son vampiros, existen en un estado de penumbra entre la vida y la no-muerte. Son cazados sin piedad por la Camarilla y el Sabbat, lo que los obliga a esconderse en los márgenes de la sociedad. En las noches modernas han desarrollado la Alquimia de Sangre Débil, usando su sangre mezclada para replicar poderes que no pueden aprender de forma natural.",
+    ),
     playableStatus: { "REVISED": false, "V20": true, "V5": true },
     sourceEdition: "REVISED"
   }

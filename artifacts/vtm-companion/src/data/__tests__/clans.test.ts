@@ -155,48 +155,39 @@ describe('clan sect assignment by edition', () => {
 });
 
 /**
- * Spanish body-text coverage (Batch G2).
+ * Spanish body-text coverage (Batch G2 + Batch J).
  *
- * Batch G2 added Spanish translations for the most-viewed clans across
- * summary, weakness, and lore. These cases pin that coverage so a
- * future content edit cannot silently revert a clan back to the
- * English-only state and trigger the "EN" fallback chip in Spanish
- * mode again. Intentionally narrow scope — only the prioritized
- * clans are checked; the rest may still rely on the EN fallback and
- * surface the chip, which is the documented intentional state.
+ * Batch G2 added Spanish translations for the seven most-viewed
+ * clans across summary, weakness, and lore. Batch J extended that
+ * coverage to the remaining nine clans (Toreador, Tremere, Assamite,
+ * Followers of Set, Giovanni, Ravnos, Salubri, Caitiff, Thin-Blood).
+ *
+ * The test pins **every clan** now — going forward, every clan body
+ * field must carry a non-empty Spanish string distinct from the
+ * English one. If a new clan is added without a Spanish translation,
+ * this test fails loudly rather than silently shipping the loud
+ * "EN" fallback chip on yet another clan card.
  */
 describe('Spanish clan body translation coverage', () => {
-  const PRIORITIZED_CLAN_IDS = [
-    'brujah',
-    'gangrel',
-    'malkavian',
-    'nosferatu',
-    'ventrue',
-    'tzimisce',
-    'lasombra',
-  ] as const;
-
   const FIELDS: Array<'summary' | 'weakness' | 'lore'> = [
     'summary',
     'weakness',
     'lore',
   ];
 
-  for (const id of PRIORITIZED_CLAN_IDS) {
+  for (const clan of clans) {
     for (const field of FIELDS) {
-      it(`${id}.${field} has non-empty Spanish text`, () => {
-        const clan = clanById(id);
+      it(`${clan.id}.${field} has non-empty Spanish text`, () => {
         const value = clan[field].es;
         expect(
           (value || '').trim().length,
-          `${id}.${field}.es should not be empty after Batch G2`,
+          `${clan.id}.${field}.es should not be empty`,
         ).toBeGreaterThan(0);
       });
 
-      it(`${id}.${field} Spanish text is distinct from English`, () => {
+      it(`${clan.id}.${field} Spanish text is distinct from English`, () => {
         // Catches accidental copy-paste regressions where someone
         // duplicates the EN into ES instead of translating.
-        const clan = clanById(id);
         expect(clan[field].es).not.toBe(clan[field].en);
       });
     }

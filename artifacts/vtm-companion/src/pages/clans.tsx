@@ -18,7 +18,7 @@ import {
   getClanSect,
 } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
-import { getClanImageSrc } from "@/utils/clanImage";
+import { getClanImageSrc, getClanHeroObjectPosition } from "@/utils/clanImage";
 import {
   applyClanFilters,
   getActiveSectTokens,
@@ -263,11 +263,33 @@ export default function Clans() {
                     setLocation(`/compendium/clanes/${clan.id}`);
                   }}
                 >
-                  <div className="h-48 short-landscape:h-32 relative overflow-hidden border-b border-zinc-900">
+                  {/*
+                    Card banner. Heights tuned so the 16:9 Batch-N source
+                    isn't sliced into a sliver in landscape:
+                      - tall viewports:        h-48 (192px)
+                      - short-landscape phones: h-44 (176px)  ← was h-36
+                    At 844×390, the grid is 2 cols (~400px-wide cards) so
+                    h-44 (176px) is ≈ 2.27:1 — only ~22 % vertical crop
+                    of the 1.78:1 source, much better than the previous
+                    ~64 % crop at h-32 or ~52 % at h-36.
+
+                    `object-position` is sourced from
+                    `getClanHeroObjectPosition(clan.id)` so individual
+                    banners can later be biased upward/downward via the
+                    `CLAN_HERO_OBJECT_POSITION` map in `utils/clanImage.ts`
+                    without touching JSX. Default is `'50% 50%'`, which
+                    matches our smart-center-cropped sources.
+
+                    `grayscale contrast-125` was removed in Batch N
+                    follow-up; opacity 60→80 + bottom gradient still
+                    keeps title text legible.
+                  */}
+                  <div className="h-48 short-landscape:h-44 relative overflow-hidden border-b border-zinc-900 bg-zinc-950">
                     <img
                       src={getClanImageSrc(clan)}
                       alt={dynamicName || clan.id}
-                      className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700 grayscale contrast-125"
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
+                      style={{ objectPosition: getClanHeroObjectPosition(clan.id) }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
                     <div className="absolute top-4 right-4" onClick={e => e.stopPropagation()}>
@@ -335,26 +357,66 @@ export default function Clans() {
               <ScrollArea className="max-h-[85vh] short-landscape:max-h-[calc(100dvh-1.5rem)]">
                 <div className="p-0">
                   {/*
-                    Clan detail hero.
+                    Dialog hero — three sizing modes, each tuned for its
+                    viewport class. All modes share `object-cover` and
+                    `bg-zinc-950`; the difference is purely in the
+                    container box.
 
-                    Phone-landscape (short-landscape) used to collapse the
-                    banner to h-24, which left the back button at top-3 and
-                    the title block at bottom-4 fighting for the same ~96px
-                    of vertical space — the back chip overlapped the sect
-                    pill, and the chevron + Spanish "Volver a clanes"
-                    pushed against the clan icon. The fix gives landscape
-                    its own complete layout: taller banner (h-32 = 128px),
-                    shorter back chip flush to the top corner, title block
-                    flush to the bottom corner with reduced font sizes,
-                    smaller icon emoji (driven by font-size on the parent),
-                    and a smaller favourite button so it stops dropping
-                    onto a second row at narrow widths.
+                    1. Phone portrait (default, e.g. 390×844)
+                       `h-56` (224px). Modal width ≈ 358px → visible
+                       ratio ≈ 1.60 : 1 vs. source 1.78 : 1, so the
+                       image fills edge-to-edge with only ~10 % side
+                       crop. Looks great — preserved unchanged from the
+                       previous pass.
+
+                    2. Desktop / tablet (`sm:`)
+                       `sm:h-[22rem]` (352px). Slight bump from the
+                       prior sm:h-80 (320px) so subject heads stop
+                       getting clipped on busier banners. At max-w-3xl
+                       (768px) the visible aspect is ~2.18 : 1, still
+                       a cinematic letterbox, with ~18 % vertical
+                       crop of the 1.78 : 1 source (was ~26 %).
+
+                    3. Short-landscape phones (`short-landscape:`,
+                       ≤ 500px viewport height, e.g. 844×390)
+                       Hero becomes `aspect-video` with `h-auto`,
+                       letting the modal's full width drive the
+                       height. At max-w-3xl ≈ 768px, that's ~432px
+                       tall — taller than the 390px viewport, which
+                       is intentional. The dialog's existing
+                       ScrollArea (`short-landscape:max-h-[calc(100dvh-1.5rem)]`)
+                       handles vertical scrolling, so the user lands
+                       on the full-resolution clan artwork first and
+                       scrolls down to reveal the sect/title row and
+                       body copy. Because container ratio (16:9)
+                       matches the Batch-N source ratio (16:9) exactly,
+                       `object-cover` displays the image edge-to-edge
+                       with zero crop — no dark side gutters, no
+                       letterbox bars. This replaces the previous
+                       `object-contain + h-44` arrangement that the
+                       user reported as "too small with too much
+                       empty dark gutter space".
+
+                    Opacity stays at 0.55 in tall modes (image is the
+                    background behind overlaid text/title) and is
+                    raised to 0.90 in landscape (image is the
+                    foreground; the bottom `from-zinc-950 to-transparent`
+                    gradient still darkens the bottom area where the
+                    title sits, so readability is preserved).
+
+                    `object-position` reads from
+                    `getClanHeroObjectPosition(clan.id)` — empty by
+                    default, so the centered 70 % safe area of the
+                    Batch-N WebPs is honoured. Per-clan overrides can
+                    be added in `utils/clanImage.ts` later without
+                    touching this JSX.
                   */}
-                  <div className="relative h-52 sm:h-64 short-landscape:h-32 border-b border-zinc-900">
+                  <div className="relative h-56 sm:h-[22rem] short-landscape:h-auto short-landscape:aspect-video border-b border-zinc-900 bg-zinc-950 overflow-hidden">
                     <img
                       src={getClanImageSrc(selectedClan)}
                       alt={getClanDisplayName(selectedClan, activeEdition, activeLanguage) || selectedClan.id}
-                      className="w-full h-full object-cover opacity-40 grayscale contrast-125"
+                      className="w-full h-full object-cover opacity-55 short-landscape:opacity-90"
+                      style={{ objectPosition: getClanHeroObjectPosition(selectedClan.id) }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent"></div>
 

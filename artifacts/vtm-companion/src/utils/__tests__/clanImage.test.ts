@@ -67,37 +67,37 @@ describe('getClanFinalImagePath', () => {
   });
 });
 
-describe('getClanImageSrc — preserves current behaviour', () => {
+describe('getClanImageSrc — final WebP switch enabled', () => {
   const fakeClan = (id: string, bannerImage: string): Pick<ClanEntry, 'id' | 'bannerImage'> =>
     ({ id, bannerImage });
 
-  it('returns the clan bannerImage when present', () => {
+  it('returns the final WebP path when the clan has a registered slug, ignoring bannerImage', () => {
     expect(getClanImageSrc(fakeClan('brujah', '/images/brujah.png')))
-      .toBe('/images/brujah.png');
+      .toBe('/images/clans/final/brujah.webp');
     expect(getClanImageSrc(fakeClan('lasombra', '/images/lasombra.png')))
-      .toBe('/images/lasombra.png');
+      .toBe('/images/clans/final/lasombra.webp');
   });
 
-  it('falls back to the OpenGraph placeholder when bannerImage is missing or empty', () => {
+  it('returns the final WebP path even when bannerImage is missing or empty (slug-backed clans)', () => {
     expect(getClanImageSrc(fakeClan('caitiff', '')))
-      .toBe('/opengraph.jpg');
+      .toBe('/images/clans/final/caitiff.webp');
     expect(getClanImageSrc(fakeClan('thin_blood', '   ')))
+      .toBe('/images/clans/final/thin-blood.webp');
+  });
+
+  it('falls back to the OpenGraph placeholder when no slug exists and bannerImage is empty', () => {
+    expect(getClanImageSrc(fakeClan('not_a_clan', '')))
       .toBe('/opengraph.jpg');
   });
 
-  it('matches the rendering all three consumer sites used before Batch M', () => {
-    // The clan list card, the clan detail dialog, and the home
-    // featured strip all rendered
-    //   `clan.bannerImage || "/opengraph.jpg"`
-    // before this helper landed. Lock that contract so the
-    // current PNGs continue to load until the final WebP switch
-    // is flipped.
+  it('routes every clan in data/clans.ts to its final WebP path', () => {
+    // Batch N flipped USE_FINAL_CLAN_WEBP_IMAGES to true, so the
+    // three rendering sites (clan list card, clan detail dialog,
+    // home featured strip) now all serve the optimized WebP files
+    // from `public/images/clans/final/<slug>.webp`.
     for (const clan of clans) {
-      const expected = clan.bannerImage && clan.bannerImage.trim() !== ''
-        ? clan.bannerImage
-        : '/opengraph.jpg';
       expect(getClanImageSrc(clan), `${clan.id} src changed unexpectedly`)
-        .toBe(expected);
+        .toBe(getClanFinalImagePath(clan.id));
     }
   });
 });

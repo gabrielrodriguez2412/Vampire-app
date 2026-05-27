@@ -138,6 +138,86 @@ describe('disciplines data', () => {
       }
     }
   });
+
+  /**
+   * narrativeUses coverage (Batch O).
+   *
+   * `narrativeUses` is rendered as a small "ideas of play" list inside
+   * the disciplines page. Previously three disciplines (blood_sorcery,
+   * thaumaturgy, obtenebration) shipped content through `fallbackArr`,
+   * which copies the same English item into every locale slot — so
+   * Spanish users silently saw English text without even the EN
+   * fallback chip firing (the chip only triggers on empty slots).
+   *
+   * Contract enforced here:
+   *   - If the EN array has items, the ES array must have the same
+   *     number of items (no half-translated lists).
+   *   - Each ES item must be non-empty.
+   *   - The ES list must not be a verbatim copy of EN (catches a
+   *     `fallbackArr` regression directly).
+   *
+   * Disciplines that intentionally have no narrative-uses content
+   * still ship `enEsArr([], [])` / `fallbackArr([])` (both empty)
+   * and pass this test trivially.
+   */
+  it('every narrativeUses list with EN content has matching non-empty Spanish content', () => {
+    for (const d of disciplines) {
+      const en = d.narrativeUses.en ?? [];
+      const es = d.narrativeUses.es ?? [];
+      if (en.length === 0) continue;
+      expect(
+        es.length,
+        `${d.id}.narrativeUses has ${en.length} EN item(s) but ${es.length} ES item(s) — either drop the EN entries or translate them`,
+      ).toBe(en.length);
+      for (let i = 0; i < es.length; i++) {
+        expect(
+          (es[i] || '').trim().length,
+          `${d.id}.narrativeUses.es[${i}] is empty`,
+        ).toBeGreaterThan(0);
+      }
+      // Deep-equal copy means the data shipped via fallbackArr —
+      // the original problem this test guards against.
+      const verbatim = en.length === es.length && en.every((v, i) => v === es[i]);
+      expect(
+        verbatim,
+        `${d.id}.narrativeUses.es is a verbatim copy of EN — translate it (likely shipped via fallbackArr instead of enEsArr)`,
+      ).toBe(false);
+    }
+  });
+
+  /**
+   * Batch-O priority drift guard.
+   *
+   * The user-flagged "remaining problem" disciplines must keep
+   * meaningful, paraphrased Spanish descriptions instead of regressing
+   * to one-liner placeholders like "Antigua magia de la sangre.".
+   * Threshold: 60 characters in ES (short enough to allow concise
+   * summaries, long enough to catch the single-clause placeholders
+   * Batch O replaced).
+   */
+  const BATCH_O_PRIORITY_IDS = [
+    'thaumaturgy',
+    'quietus',
+    'necromancy',
+    'obtenebration',
+    'dominate',
+    'obfuscate',
+    'oblivion',
+    'thin_blood_alchemy',
+    'blood_sorcery',
+  ];
+
+  it('Batch O priority disciplines all have informative (≥ 60 char) Spanish descriptions', () => {
+    for (const id of BATCH_O_PRIORITY_IDS) {
+      const d = disciplines.find(x => x.id === id);
+      expect(d, `priority discipline ${id} missing from data`).toBeDefined();
+      const es = (d!.description.es || '').trim();
+      expect(
+        es.length,
+        `${id}.description.es is too short (${es.length} chars) — Batch O paraphrases run > 60 chars; this looks like a regression to a one-liner`,
+      ).toBeGreaterThanOrEqual(60);
+    }
+  });
 });
 
 describe('discipline specialSystems shape', () => {

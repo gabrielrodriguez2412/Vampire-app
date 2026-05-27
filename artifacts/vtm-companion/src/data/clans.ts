@@ -324,7 +324,17 @@ export const clans: ClanEntry[] = [
   },
   {
     id: "assamite",
-    name: en("Assamite"),
+    // Batch P: classic-edition Spanish UI used to show "Assamite" (the
+    // English spelling) because the data record only filled `en`. The
+    // disciplines page calls `getClanDisplayName(clan, edition, lang)`
+    // which uses `alternateNames[edition]` first (so V5 ES → "Banu
+    // Haqim") and otherwise falls back to `name`. Adding `es:
+    // "Assamita"` here gives the classic-edition Spanish UI its
+    // canonical Spanish form without affecting V5 (still routed
+    // through `alternateNames.V5` → "Banu Haqim"). Other locales fall
+    // through to the English proper noun via the existing `getText`
+    // chain.
+    name: enEs("Assamite", "Assamita"),
     alternateNames: {
       "V5": en("Banu Haqim")
     },

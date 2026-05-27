@@ -82,6 +82,46 @@ export function getClanFinalImagePath(clanId: string): string | null {
 }
 
 /**
+ * Per-clan `object-position` overrides for hero/banner imagery.
+ *
+ * The final WebPs (Batch N) are all smart-center-cropped to 16:9 with
+ * the subject inside a centered 70 % safe area, so the default value
+ * of `'50% 50%'` works for every clan. If, after a visual pass, a
+ * specific banner ends up with its subject clipped at the top or
+ * bottom in `object-cover` containers (most likely on tall portrait
+ * thumbnails or short landscape strips), add an override here.
+ *
+ * Format: standard CSS `object-position` value (e.g. `'50% 30%'` to
+ * bias toward the top, `'50% 70%'` to bias toward the bottom). The
+ * map intentionally ships empty so we don't apply unverified shifts;
+ * fill it in as actual presentation problems are spotted.
+ *
+ * Keyed by `ClanEntry.id` (the same id used everywhere else), not by
+ * filename slug — that way callers don't need to translate between
+ * the two before looking up.
+ */
+export const CLAN_HERO_OBJECT_POSITION: Record<string, string> = {
+  // Examples (left commented until a visual pass confirms they help):
+  //   nosferatu: '50% 35%',
+  //   gangrel:   '50% 40%',
+};
+
+/**
+ * Resolve the CSS `object-position` value to apply to a clan banner
+ * image. Defaults to `'50% 50%'` (centered) for any clan not listed
+ * in `CLAN_HERO_OBJECT_POSITION`. Safe to spread directly into a
+ * React `style` prop:
+ *
+ *     <img
+ *       src={getClanImageSrc(clan)}
+ *       style={{ objectPosition: getClanHeroObjectPosition(clan.id) }}
+ *     />
+ */
+export function getClanHeroObjectPosition(clanId: string): string {
+  return CLAN_HERO_OBJECT_POSITION[clanId] ?? '50% 50%';
+}
+
+/**
  * Master switch for the planned image migration.
  *
  * Set this to `true` once the final WebP files have been dropped at
@@ -95,7 +135,7 @@ export function getClanFinalImagePath(clanId: string): string | null {
  * and a runtime toggle would only add complexity. Future developer
  * flipping this also needs to commit the final image files.
  */
-const USE_FINAL_CLAN_WEBP_IMAGES = false;
+const USE_FINAL_CLAN_WEBP_IMAGES = true;
 
 /**
  * Final placeholder fallback. The OpenGraph share image lives at

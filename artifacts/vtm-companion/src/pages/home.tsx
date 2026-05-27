@@ -8,7 +8,7 @@ import { getClanDisplayName, getClanDisplayNameById, getText } from "@/utils/con
 import { getCharacters } from "@/services/characterStorage";
 import { getChronicles } from "@/services/chronicleStorage";
 import { getAllChronicleSessions } from "@/services/chronicleSessionStorage";
-import { getClanImageSrc } from "@/utils/clanImage";
+import { getClanImageSrc, getClanHeroObjectPosition } from "@/utils/clanImage";
 import type { Character, Chronicle, ChronicleSession, EditionId } from "@/types";
 import {
   User, ScrollText, CalendarDays, BookOpen, Users, Flame, ArrowRight, ChevronLeft, ChevronRight,
@@ -353,11 +353,24 @@ export default function Home() {
             return (
               <Link key={clan.id} href={`/compendium/clanes/${clan.id}`}>
                 <div className="flex-none w-52 sm:w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">
-                  <div className="h-60 sm:h-72 relative">
+                  {/*
+                    Home featured-clan tile. Restored color in Batch N
+                    follow-up: `grayscale contrast-125` removed; the dark
+                    bottom gradient overlay + 0.60 opacity still keep the
+                    title readable while letting the clan art's color
+                    come through.
+
+                    `object-position` is now sourced from the
+                    `CLAN_HERO_OBJECT_POSITION` map (default `'50% 50%'`),
+                    so per-clan tuning here, the clans-list card, and
+                    the clan detail dialog all share one source of truth.
+                  */}
+                  <div className="h-60 sm:h-72 relative bg-zinc-950">
                     <img
                       src={getClanImageSrc(clan)}
                       alt={clanName}
-                      className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity grayscale contrast-125"
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+                      style={{ objectPosition: getClanHeroObjectPosition(clan.id) }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"></div>
                   </div>

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { disciplines } from '../disciplines';
 import { clans } from '../clans';
 import { EDITION_LIST } from '../editions';
+import { UI_STRINGS } from '../../i18n/ui';
 
 const editionIds = new Set(EDITION_LIST.map(e => e.id));
 const disciplineIds = new Set(disciplines.map(d => d.id));
@@ -337,6 +338,150 @@ describe('discipline specialSystems shape', () => {
           `${d.id}.${s.id}.description.es is a verbatim copy of EN — translate it`,
         ).not.toBe(en);
       }
+    }
+  });
+
+  /**
+   * Batch Q — production-polish pinning for pending special sections.
+   *
+   * The pending sections used to:
+   *   - sometimes ship a placeholder `name: "Ritual (Level 1) — Needs review"`
+   *     inside `items` (Batch K removed those),
+   *   - end every `description` with a redundant "is pending review and
+   *     will be added in a future content batch" tail in both languages,
+   *     which read as a work-in-progress notice on a production page
+   *     when the amber `Needs review` badge in the section header
+   *     already conveyed that.
+   *
+   * Batch Q pins three additional contracts on top of the Batch K
+   * contract already enforced above:
+   *
+   *   (1) The set of `needsReview: true` sections is exactly the known
+   *       pending list. A future content edit that flips a normal
+   *       section to `needsReview` (or quietly clears a known pending
+   *       one without filling it in) fails this set-equality check.
+   *
+   *   (2) No pending section's `description.es` leaks English
+   *       work-in-progress wording — "Needs review", "pending review",
+   *       "placeholder", or "future content batch". A future edit that
+   *       copies an English sentence verbatim into the ES slot trips
+   *       this regex sweep.
+   *
+   *   (3) Non-pending special-systems sections (none today, but a
+   *       future batch may add them) must not silently inherit the
+   *       `needsReview` flag. The set-equality check in (1) handles
+   *       both directions.
+   */
+  const EXPECTED_NEEDS_REVIEW_SECTIONS = new Set<string>([
+    'blood_sorcery::blood-sorcery-rituals',
+    'thaumaturgy::thaumaturgy-paths',
+    'thaumaturgy::thaumaturgy-rituals',
+    'necromancy::necromancy-paths',
+    'necromancy::necromancy-rituals',
+    'oblivion::oblivion-ceremonies',
+    'thin_blood_alchemy::thin-blood-alchemy-formulae',
+  ]);
+
+  it('the set of needsReview special-systems sections is the pinned Batch-Q list', () => {
+    const actual = new Set<string>();
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (s.needsReview) actual.add(`${d.id}::${s.id}`);
+      }
+    }
+    // Asymmetric-diff so the failure message lists exactly what
+    // drifted, instead of just "sets differ".
+    const added: string[] = [];
+    const removed: string[] = [];
+    for (const key of actual) if (!EXPECTED_NEEDS_REVIEW_SECTIONS.has(key)) added.push(key);
+    for (const key of EXPECTED_NEEDS_REVIEW_SECTIONS) if (!actual.has(key)) removed.push(key);
+    expect(
+      { added, removed },
+      'needsReview drift — update EXPECTED_NEEDS_REVIEW_SECTIONS only when the change is intentional',
+    ).toEqual({ added: [], removed: [] });
+  });
+
+  it('every needsReview section description.es contains no leaked English work-in-progress wording', () => {
+    // Case-insensitive regex matches against the ES description text.
+    // These phrases would only appear if someone copy-pasted EN text
+    // verbatim into the ES slot, or re-introduced the apologetic
+    // "future content batch" tail Batch Q removed.
+    const FORBIDDEN: Array<{ pattern: RegExp; label: string }> = [
+      { pattern: /\bneeds\s+review\b/i,        label: '"needs review"' },
+      { pattern: /\bpending\s+review\b/i,      label: '"pending review"' },
+      { pattern: /\bplaceholder\b/i,           label: '"placeholder"' },
+      { pattern: /\bfuture\s+content\s+batch\b/i, label: '"future content batch"' },
+    ];
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (!s.needsReview) continue;
+        const es = s.description?.es ?? '';
+        for (const { pattern, label } of FORBIDDEN) {
+          expect(
+            pattern.test(es),
+            `${d.id}.${s.id}.description.es leaks English ${label} — the amber badge already conveys "pending"; describe the system in Spanish only`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('every needsReview section item carries no placeholder "Needs review" name (defensive — items[] is currently empty)', () => {
+    // Catches the *next* regression class: if a future content batch
+    // populates `items` on a still-pending section, none of those
+    // items should ship the literal "Needs review" string as their
+    // visible name (that's a Batch K placeholder pattern, not a
+    // real entry).
+    const FORBIDDEN_NAME_PATTERNS = [/\bneeds\s+review\b/i, /\bplaceholder\b/i];
+    for (const d of disciplines) {
+      for (const s of d.specialSystems ?? []) {
+        if (!s.needsReview) continue;
+        for (const item of s.items) {
+          for (const pattern of FORBIDDEN_NAME_PATTERNS) {
+            expect(
+              pattern.test(item.name),
+              `${d.id}.${s.id}.${item.id}.name is a Batch-K-style placeholder — remove it or finish the item`,
+            ).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('"needs_review" badge string is fully localized in EN and ES (Batch-Q badge guard)', () => {
+    // The amber "Needs review / Necesita revisión" badge in the
+    // disciplines page section header reads `strings.needs_review`,
+    // which routes through `UI_STRINGS[lang]`. If a future i18n
+    // refactor empties the ES slot, Spanish users would see the EN
+    // fallback "Needs review" on a pending section under a Spanish
+    // UI — exactly the leak Batch Q forbids.
+    const en = (UI_STRINGS.en.needs_review || '').trim();
+    const es = (UI_STRINGS.es.needs_review || '').trim();
+    expect(en.length, 'UI_STRINGS.en.needs_review empty').toBeGreaterThan(0);
+    expect(es.length, 'UI_STRINGS.es.needs_review empty — Spanish badge would fall back to English').toBeGreaterThan(0);
+    expect(
+      es,
+      'UI_STRINGS.es.needs_review is a verbatim copy of EN — translate it',
+    ).not.toBe(en);
+  });
+
+  it('discipline-level powers list on flat-powers disciplines is untouched (Batch-Q sanity guard)', () => {
+    // Catches a future cleanup PR that accidentally clears a flat
+    // powers list while editing pending sections. Every discipline
+    // that historically shipped a flat L1–5 powers list still does.
+    const FLAT_POWERS_DISCIPLINES = [
+      'animalism', 'auspex', 'celerity', 'dominate', 'fortitude',
+      'obfuscate', 'potence', 'presence', 'protean',
+      'blood_sorcery', 'oblivion',
+      'obtenebration', 'quietus', 'serpentis', 'vicissitude', 'chimerstry', 'valeren',
+    ];
+    for (const id of FLAT_POWERS_DISCIPLINES) {
+      const d = disciplines.find(x => x.id === id);
+      expect(d, `${id} missing from disciplines data`).toBeDefined();
+      expect(
+        d!.powers.length,
+        `${id}.powers list collapsed — flat-powers disciplines must keep their L1–5 entries`,
+      ).toBeGreaterThanOrEqual(5);
     }
   });
 });

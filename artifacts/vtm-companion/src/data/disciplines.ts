@@ -44,6 +44,29 @@ const enEs = (enStr: string, esStr: string) => ({
   it: '',
 });
 
+/**
+ * EN + ES array form of `enEs`. Use for `narrativeUses` lists when the
+ * data carries real content (not the no-content `fallbackArr([])`
+ * pattern). Previously `narrativeUses` content lists were baked via
+ * `fallbackArr(["..."])`, which copied the same English item into
+ * every locale slot — the disciplines page then silently showed
+ * English under a Spanish UI without surfacing the EN fallback chip
+ * (the chip only fires when the locale slot is actually empty).
+ *
+ * Batch O migrates the three offenders (blood_sorcery, thaumaturgy,
+ * obtenebration) to `enEsArr` and adds a regression test in
+ * `__tests__/disciplines.test.ts` that fails the next time a
+ * `narrativeUses` list ships with `es` literally equal to `en`.
+ */
+const enEsArr = (enArr: string[], esArr: string[]) => ({
+  en: enArr,
+  es: esArr,
+  pt: [],
+  fr: [],
+  de: [],
+  it: [],
+});
+
 export const disciplines: DisciplineEntry[] = [
   {
     id: "animalism",
@@ -92,7 +115,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Blood Sorcery",
     type: enEs("Sorcery", "Hechicería"),
-    description: enEs("The use of vitae for magical effects.", "Uso de la vitae para producir efectos mágicos."),
+    description: enEs(
+      "V5 blood magic. Vitae is spent and shaped into corrosive, draining, or wounding effects; rituals are learned separately from the dot powers.",
+      "Magia de sangre de V5. La vitae se gasta y se moldea en efectos corrosivos, drenantes o lesivos; los rituales se aprenden aparte de los poderes principales.",
+    ),
     powers: [
       { name: "Corrosive Vitae", level: 1, description: enEs("Acid blood.", "Sangre ácida."), tacticalUse: enEs("Melt locks.", "Derretir cerraduras.") },
       { name: "Vitae Disruption (Level 2)", level: 2, description: enEs("Disturb another vampire's vitae so it grows harder to use.", "Perturba la vitae de otro vampiro para que le cueste usarla."), tacticalUse: enEs("Drain an enemy's reserves before a fight.", "Drenar las reservas del enemigo antes de un combate.") },
@@ -100,7 +126,18 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Distant Vitae Theft (Level 4)", level: 4, description: enEs("Pull blood out of a target's body at a distance.", "Extrae sangre del cuerpo de un objetivo a distancia."), tacticalUse: enEs("Feed without ever touching the prey.", "Alimentarte sin tocar a la presa.") },
       { name: "Killing Touch (Level 5)", level: 5, description: enEs("Turn vitae itself into a weapon by touch or short range.", "Convierte la propia vitae en arma por contacto o corta distancia."), tacticalUse: enEs("Cripple or kill in a single contact.", "Mutilar o matar con un solo toque.") }
     ],
-    narrativeUses: fallbackArr(["Warding a haven."]),
+    narrativeUses: enEsArr(
+      [
+        "Warding a haven against intruders.",
+        "Tracking a target through tasted vitae.",
+        "Preparing a ritual circle before a confrontation.",
+      ],
+      [
+        "Proteger un refugio contra intrusos.",
+        "Rastrear a un objetivo por la vitae probada.",
+        "Preparar un círculo ritual antes de un enfrentamiento.",
+      ],
+    ),
     clansWhoUse: ["tremere", "assamite"],
     // Special-systems pending-state copy (Batch K).
     //
@@ -137,9 +174,23 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Thaumaturgy",
     type: enEs("Sorcery", "Hechicería"),
-    description: enEs("Old blood magic.", "Antigua magia de la sangre."),
+    description: enEs(
+      "Classic Tremere blood magic, taught through paths of related effects plus separate one-time rituals learned outside the path structure.",
+      "Magia de sangre clásica de los Tremere, enseñada en sendas de efectos afines, más rituales sueltos que se aprenden fuera de la estructura de las sendas.",
+    ),
     powers: [],
-    narrativeUses: fallbackArr(["Rituals."]),
+    narrativeUses: enEsArr(
+      [
+        "Preparing a circle of rituals before a major operation.",
+        "Quietly using a path effect in court instead of brute force.",
+        "Researching an unfamiliar path from a Tremere archive.",
+      ],
+      [
+        "Preparar un círculo de rituales antes de una operación importante.",
+        "Usar un efecto de senda en la corte en vez de fuerza bruta.",
+        "Investigar una senda desconocida en un archivo Tremere.",
+      ],
+    ),
     clansWhoUse: ["tremere"],
     specialSystems: [
       {
@@ -171,7 +222,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Obtenebration",
     type: enEs("Shadow", "Sombra"),
-    description: enEs("Control over shadows.", "Control sobre las sombras."),
+    description: enEs(
+      "Lasombra command of living darkness — reaching, grasping, hiding, and at the higher levels becoming shadow itself.",
+      "Dominio Lasombra de la oscuridad viva: extenderla, agarrar con ella, ocultarse y, en los niveles altos, volverse sombra.",
+    ),
     powers: [
       { name: "Shadow Sight (Level 1)", level: 1, description: enEs("See clearly into and through darkness.", "Ve con claridad en la oscuridad y a través de ella."), tacticalUse: enEs("Spot threats in unlit places.", "Detectar amenazas en sitios sin iluminación.") },
       { name: "Shadow Grasp (Level 2)", level: 2, description: enEs("Extend a tendril of shadow to grab, trip, or strike at short range.", "Extiende un tentáculo de sombra para agarrar, derribar o golpear a corta distancia."), tacticalUse: enEs("Reach a target without exposing yourself.", "Alcanzar a un objetivo sin exponerte.") },
@@ -179,7 +233,18 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Shadow Body (Level 4)", level: 4, description: enEs("Reshape part of yourself into living darkness.", "Reconfigura parte de tu cuerpo en oscuridad viviente."), tacticalUse: enEs("Resist mundane weapons by being only partially solid.", "Resistir armas mundanas al ser solo parcialmente sólido.") },
       { name: "Tenebrous Form (Level 5)", level: 5, description: enEs("Become a body of darkness entirely.", "Convierte tu cuerpo entero en oscuridad."), tacticalUse: enEs("Slip through light gaps and physical barriers.", "Colarte por aberturas de luz y barreras físicas.") }
     ],
-    narrativeUses: fallbackArr(["Scaring mortals."]),
+    narrativeUses: enEsArr(
+      [
+        "Terrifying mortals by twisting a room into living darkness.",
+        "Snuffing a candle-lit meeting before a strike.",
+        "Reaching across a hallway with a tendril of shadow.",
+      ],
+      [
+        "Aterrar a mortales convirtiendo una sala en oscuridad viva.",
+        "Apagar una reunión iluminada por velas antes de un ataque.",
+        "Cruzar un pasillo con un tentáculo de sombra.",
+      ],
+    ),
     clansWhoUse: ["lasombra"]
   },
   {
@@ -187,7 +252,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Necromancy",
     type: enEs("Sorcery/Death", "Hechicería/Muerte"),
-    description: enEs("The magic of death and souls.", "Magia relacionada con la muerte y los espíritus."),
+    description: enEs(
+      "Death magic that touches corpses, ghosts, and the boundary between living and dead. Organized into paths of related effects plus standalone rituals.",
+      "Magia de muerte que toca cadáveres, fantasmas y la frontera entre vivos y muertos. Se organiza en sendas de efectos afines más rituales independientes.",
+    ),
     powers: [],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["giovanni"],
@@ -221,7 +289,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20"],
     name: "Quietus",
     type: enEs("Assassination", "Asesinato"),
-    description: enEs("The silent magic of the blood.", "Artes silenciosas de sangre, veneno y asesinato."),
+    description: enEs(
+      "Banu Haqim arts of imposed silence, blood-borne poison, and clean killing — built for assassins who cannot afford to be heard or chased.",
+      "Artes Banu Haqim de silencio impuesto, veneno por sangre y muerte limpia, pensadas para asesinos que no pueden permitirse ser oídos ni perseguidos.",
+    ),
     powers: [
       { name: "Sound Silencing (Level 1)", level: 1, description: enEs("Smother sound in a small area around you.", "Sofoca el sonido en un pequeño área a tu alrededor."), tacticalUse: enEs("Move, fight, or feed without alerting anyone.", "Moverte, pelear o alimentarte sin alertar a nadie.") },
       { name: "Toxic Bite (Level 2)", level: 2, description: enEs("Turn your saliva or vitae into a poison delivered by touch.", "Convierte tu saliva o vitae en un veneno aplicado por contacto."), tacticalUse: enEs("End a target after a single bite or contact.", "Acabar con un objetivo tras un único mordisco o contacto.") },
@@ -301,7 +372,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Dominate",
     type: enEs("Mental", "Mental"),
-    description: enEs("Crush another's mind.", "Imposición sobrenatural de la voluntad sobre otra mente."),
+    description: enEs(
+      "Bend another mind to your will: erase moments, plant complex commands, rewrite memories, and at the top tier force a single absolute order.",
+      "Doblegar otra mente a tu voluntad: borrar momentos, implantar órdenes complejas, reescribir recuerdos y, en el nivel más alto, imponer una única orden absoluta.",
+    ),
     powers: [
       { name: "Cloud Memory", level: 1, description: enEs("Erase short term memory.", "Borra la memoria reciente."), tacticalUse: enEs("Cover up a feeding.", "Encubrir una alimentación.") },
       { name: "Mesmerize", level: 2, description: enEs("Implant complex commands.", "Implanta órdenes complejas."), tacticalUse: enEs("Force a guard to let you in.", "Forzar a un guardia a dejarte pasar.") },
@@ -317,7 +391,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["1ST", "2ND", "REVISED", "V20", "V5"],
     name: "Obfuscate",
     type: enEs("Stealth", "Sigilo"),
-    description: enEs("Vanish from minds.", "Ocultarse de la atención y desaparecer de la memoria."),
+    description: enEs(
+      "Slip out of perception — first by stillness in shadow, then while moving and on camera, and eventually by wearing someone else's face entirely.",
+      "Salirse de la percepción: primero por inmovilidad en sombra, luego en movimiento y ante cámaras, y finalmente portando el rostro de otra persona.",
+    ),
     powers: [
       { name: "Cloak of Shadows", level: 1, description: enEs("Hide in the shadows.", "Ocúltate en las sombras."), tacticalUse: enEs("Eavesdrop.", "Escuchar a escondidas.") },
       { name: "Unseen Passage", level: 2, description: enEs("Move while invisible.", "Muévete mientras eres invisible."), tacticalUse: enEs("Infiltrate heavily guarded areas.", "Infiltrarte en zonas muy vigiladas.") },
@@ -397,7 +474,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Oblivion",
     type: enEs("Shadow/Death", "Sombra/Muerte"),
-    description: enEs("Shadows and necromancy merged in V5.", "Sombras y nigromancia unidas en un único poder oscuro en V5."),
+    description: enEs(
+      "The V5 fusion of shadow and death magic, shared by Lasombra and Hecata. Dot powers reach, decay, and shroud; ceremonies are learned separately.",
+      "La fusión V5 de magia de sombra y muerte, compartida por Lasombra y Hecata. Los poderes principales alcanzan, marchitan y velan; las ceremonias se aprenden aparte.",
+    ),
     powers: [
       { name: "Shadow Step (Level 1)", level: 1, description: enEs("Step from one shadow to a nearby spot.", "Pasa de una sombra a otra cercana."), tacticalUse: enEs("Slip out of sight and reappear behind cover.", "Salir de la vista y reaparecer tras un cubierto.") },
       { name: "Reach into Shadow (Level 2)", level: 2, description: enEs("Extend a shadowy limb or grasp from your own shadow.", "Extiende una extremidad o agarre de sombra desde tu propia sombra."), tacticalUse: enEs("Pull, strike, or trip a foe from cover.", "Tirar, golpear o derribar a un enemigo desde el cubierto.") },
@@ -442,7 +522,10 @@ export const disciplines: DisciplineEntry[] = [
     editions: ["V5"],
     name: "Thin-Blood Alchemy",
     type: enEs("Alchemy", "Alquimia"),
-    description: enEs("Counterfeit disciplines via alchemy.", "Imitación inestable de poderes vampíricos mediante alquimia."),
+    description: enEs(
+      "Thin-blood-only craft that brews short-lived imitations of vampiric powers from blood, distillation, and reagents. Each formula is learned individually.",
+      "Arte exclusivo de la sangre débil que mezcla imitaciones efímeras de poderes vampíricos a partir de sangre, destilación y reactivos. Cada fórmula se aprende por separado.",
+    ),
     powers: [],
     narrativeUses: fallbackArr([]),
     clansWhoUse: ["thin_blood"],

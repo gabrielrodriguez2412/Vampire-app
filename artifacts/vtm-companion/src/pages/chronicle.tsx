@@ -24,6 +24,7 @@ import { ModalPortal } from "@/components/ui/modal-portal";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { useToast } from "@/hooks/use-toast";
+import { useFavorites } from "@/hooks/useFavorites";
 import {
   Chronicle, ChronicleStatus, EditionId, Character,
   ChronicleSession, ChronicleSessionDetails,
@@ -90,6 +91,11 @@ export default function ChroniclePage() {
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  // Batch R: per-card favorite toggle for chronicle cards. Mirrors the
+  // character page's three-dot menu addition so chronicles can be
+  // bookmarked from the list view without opening the manage dialog
+  // (which already carries its own FavoriteButton in the header).
+  const { isFavoriteTyped, toggleFavoriteTyped } = useFavorites();
 
   const [chronicles, setChronicles] = useState<Chronicle[]>([]);
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -1065,20 +1071,99 @@ export default function ChroniclePage() {
                       )}
                     </div>
 
-                    {/* ⋯ menu */}
+                    {/* ⋯ menu.
+                        Trigger visibility: same Batch R fix as the character
+                        card — `md:opacity-0 md:group-hover:opacity-100` keeps
+                        the desktop card clean (button only appears on hover or
+                        focus), but `md:` also matches landscape phones (844×390),
+                        where touch users couldn't see the button at all.
+                        `pointer-coarse:opacity-100` forces the button visible
+                        on any touch / coarse-pointer device, preserving the
+                        original reveal-on-hover behaviour on desktop mice. */}
                     <div onClick={e => e.stopPropagation()} className="shrink-0 -mt-1 -mr-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 pointer-coarse:opacity-100 transition-opacity"
                             aria-label="Chronicle actions"
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuContent
+                          // Batch R follow-up #3 — chronicle card menu only.
+                          //
+                          // Recap of the iteration:
+                          //   #1: tried collisionPadding + a maxHeight tied
+                          //       to Radix's available-height var. Failed
+                          //       because the menu still flipped to `top`
+                          //       and the first item rendered above the
+                          //       viewport before the var-driven clamp
+                          //       could resolve.
+                          //   #2: added `side="bottom"` +
+                          //       `avoidCollisions={false}` to forbid the
+                          //       flip entirely. First item became visible
+                          //       (good) but the 22rem cap was too tall
+                          //       for shorter desktop windows — the bottom
+                          //       items (Archivar, Eliminar) ran off the
+                          //       viewport, and the only scrollbar was
+                          //       below the visible area, so users could
+                          //       not reach Delete.
+                          //   #3 (this change): keep the forced-downward
+                          //       positioning, shrink the cap to `max-h-64`
+                          //       (16rem ≈ 256 px). With 9 items at ~32 px
+                          //       each, the menu now always shows ~7
+                          //       items with a clearly-visible scrollbar
+                          //       inside the menu region; the remaining
+                          //       items (including the red Delete) are
+                          //       reachable via internal scroll without
+                          //       needing the viewport to grow. The base
+                          //       component's `max-h-[var(...)]` from
+                          //       Radix still composes with this cap —
+                          //       whichever is smaller wins — so on very
+                          //       short viewports the menu shrinks further
+                          //       and scrolls. `overscroll-contain` keeps
+                          //       wheel scrolling inside the menu from
+                          //       bubbling out to the page once the menu
+                          //       region is hit-tested.
+                          //
+                          // The character card menu (8 items) is still
+                          // unchanged — its native layout already fits
+                          // without clipping and the user asked to keep
+                          // its working behaviour.
+                          align="end"
+                          side="bottom"
+                          sideOffset={8}
+                          collisionPadding={8}
+                          avoidCollisions={false}
+                          className="w-56 max-h-64 overflow-y-auto overscroll-contain"
+                        >
+                          {/* Batch R: favorite toggle at the top of the menu.
+                              Same typed-favorite store the manage-dialog
+                              header FavoriteButton already uses, so the two
+                              affordances stay in sync. Filled heart when
+                              already a favourite. No separator below — the
+                              rest of the menu items are all non-destructive
+                              actions; the only separator divides them from
+                              the red Delete at the bottom. (Initial Batch-R
+                              pass added a separator here that made the
+                              favorite item visually detached.) */}
+                          {(() => {
+                            const isFav = isFavoriteTyped('chronicle', chr.id);
+                            return (
+                              <DropdownMenuItem
+                                onClick={() => toggleFavoriteTyped('chronicle', chr.id)}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Heart className={`w-4 h-4 ${isFav ? 'fill-current text-primary' : ''}`} />
+                                {isFav
+                                  ? (strings.favorite_remove || "Remove from favorites")
+                                  : (strings.favorite_add || "Add to favorites")}
+                              </DropdownMenuItem>
+                            );
+                          })()}
                           <DropdownMenuItem
                             onClick={() => openManage(chr, 'overview')}
                             className="gap-2 cursor-pointer"

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId, CharacterType, Chronicle } from "@/types";
@@ -19,6 +19,7 @@ import {
   CharacterChronicleFilter,
 } from "@/utils/characterFilter";
 import { useToast } from "@/hooks/use-toast";
+import { useFavorites } from "@/hooks/useFavorites";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle } from "@/services/characterStorage";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
@@ -69,6 +70,11 @@ export default function CharacterPage() {
   const { activeLanguage, activeEdition } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
   const { toast } = useToast();
+  // Batch R: per-card favorite toggle. The character-card three-dot menu
+  // surfaces "Add to favorites / Remove from favorites" so users can bookmark
+  // a character without opening the sheet. Reuses the existing typed-favorite
+  // store (`character:<id>` keys) shared with the Favorites page.
+  const { isFavoriteTyped, toggleFavoriteTyped } = useFavorites();
 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [chronicles, setChronicles] = useState<Chronicle[]>([]);
@@ -821,19 +827,57 @@ export default function CharacterPage() {
                           )}
                         </div>
 
-                        {/* ⋯ More menu */}
+                        {/* ⋯ More menu.
+                            Trigger visibility: the `md:opacity-0 md:group-hover:opacity-100`
+                            pattern keeps the desktop card clean by only showing
+                            the dots on hover/focus, but `md:` (≥ 768 px) also
+                            matches landscape phones (e.g. 844×390), where there
+                            is no real hover — touch users couldn't see the
+                            button at all (Batch R bug report). `pointer-coarse:opacity-100`
+                            forces the button visible on any touch / coarse-pointer
+                            device, while desktop mouse users (pointer:fine,
+                            hover:hover) keep the original reveal-on-hover
+                            behaviour. The `focus:opacity-100` line still covers
+                            keyboard users on desktop. */}
                         <div onClick={e => e.stopPropagation()}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition-opacity -mt-1 -mr-2"
+                                aria-label="Character actions"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 pointer-coarse:opacity-100 transition-opacity -mt-1 -mr-2"
                               >
                                 <MoreHorizontal className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-56">
+                              {/* Batch R: favorite toggle at the top of the menu.
+                                  Routed through the typed-favorite store so the
+                                  Favorites page picks it up alongside clans /
+                                  disciplines / rules. Filled heart when already
+                                  a favourite, mirroring `FavoriteButton`. No
+                                  separator below — the rest of the menu items
+                                  are all non-destructive actions; the only
+                                  separator divides them from the red Delete at
+                                  the bottom. (Initial Batch-R pass added a
+                                  separator here that made the favorite item
+                                  visually detached; manual QA flagged that as
+                                  uneven spacing.) */}
+                              {(() => {
+                                const isFav = isFavoriteTyped('character', char.id);
+                                return (
+                                  <DropdownMenuItem
+                                    onClick={() => toggleFavoriteTyped('character', char.id)}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <Heart className={`w-4 h-4 ${isFav ? 'fill-current text-primary' : ''}`} />
+                                    {isFav
+                                      ? (strings.favorite_remove || "Remove from favorites")
+                                      : (strings.favorite_add || "Add to favorites")}
+                                  </DropdownMenuItem>
+                                );
+                              })()}
                               <DropdownMenuItem
                                 onClick={() => { setRenamingId(char.id); setRenameValue(char.name); }}
                                 className="gap-2 cursor-pointer"
@@ -890,7 +934,7 @@ export default function CharacterPage() {
                                 onClick={() => setPrintingId(char.id)}
                                 className="gap-2 cursor-pointer"
                               >
-                                <Printer className="w-4 h-4" /> {strings.char_print || "Print / PDF"}
+                                <Printer className="w-4 h-4" /> {strings.char_print_pdf || "Print / PDF"}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -1154,8 +1198,8 @@ export default function CharacterPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setPrintingId(activeChar.id)}
-                            aria-label={strings.char_print || "Print / PDF"}
-                            title={strings.char_print || "Print / PDF"}
+                            aria-label={strings.char_print_pdf || "Print / PDF"}
+                            title={strings.char_print_pdf || "Print / PDF"}
                             className="gap-2 text-muted-foreground hover:text-foreground"
                           >
                             <Printer className="w-4 h-4" />

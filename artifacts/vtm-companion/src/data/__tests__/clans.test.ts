@@ -319,6 +319,18 @@ describe('edition-aware clan body resolution (Batch T)', () => {
       '16th generation',
       'generación 16',
       'generaciones 14, 15 y 16',
+      // Batch T audit: additional V5-only system vocabulary that
+      // shouldn't appear in classic-edition prose.
+      'Second Inquisition',
+      'Segunda Inquisición',
+      'Gehenna War',
+      'Guerra de Gehena',
+      'blood resonance',
+      'resonancia de sangre',
+      'predator type',
+      'tipo de depredador',
+      'hunger dice',
+      'dados de hambre',
     ];
     const classicEditions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20'];
     for (const clan of clans) {
@@ -380,11 +392,11 @@ describe('edition-aware clan body resolution (Batch T)', () => {
    * future helper bug that accidentally requires the override map.
    */
   it('clans without overrides fall back to the flat field for both editions', () => {
-    // Lasombra and thin_blood got per-edition splits in the Batch T
-    // follow-up; they're no longer flat-only. The clans below have
-    // no overrides on any of the three fields and must still resolve
-    // correctly via fallback.
-    const flatOnlyClans = ['brujah', 'gangrel', 'malkavian', 'caitiff'];
+    // Lasombra, thin_blood, gangrel and tzimisce got per-edition
+    // splits in the Batch T audit pass; they're no longer flat-only.
+    // The clans below have no overrides on any of the three fields
+    // and must still resolve correctly via fallback.
+    const flatOnlyClans = ['brujah', 'malkavian', 'caitiff'];
     for (const id of flatOnlyClans) {
       const c = find(id);
       // Both helpers should return the same string as the flat field
@@ -536,5 +548,92 @@ describe('edition-aware clan body resolution (Batch T)', () => {
     expect(v5LoreEn).toContain('Duskborn');
     expect(v5LoreEn).toContain('Thin-Blood Alchemy');
     expect(v5WeaknessEn).toContain('Duskborn');
+  });
+
+  /**
+   * Batch T audit: live clan detail pages must not contain
+   * cross-edition comparison commentary. Phrases like "in earlier
+   * editions, X. In V5, Y." were the original sin Batch T set out
+   * to remove; this guard prevents a future content edit from
+   * re-introducing the pattern by accident.
+   *
+   * Runs against every clan × every edition × both languages × all
+   * three textual fields (summary, lore, weakness). Scans for
+   * comparison phrases in EN and ES.
+   */
+  it('no resolved clan detail text contains cross-edition comparison language', () => {
+    const FORBIDDEN_COMPARISON_PHRASES: Array<{ pattern: RegExp; label: string }> = [
+      { pattern: /\bin v5\b/i,                       label: '"in V5"' },
+      { pattern: /\ben v5\b/i,                       label: '"en V5"' },
+      { pattern: /\bin v20\b/i,                      label: '"in V20"' },
+      { pattern: /\ben v20\b/i,                      label: '"en V20"' },
+      { pattern: /\bin earlier editions\b/i,         label: '"in earlier editions"' },
+      { pattern: /\bin previous editions\b/i,        label: '"in previous editions"' },
+      { pattern: /\bin classic editions\b/i,         label: '"in classic editions"' },
+      { pattern: /\ben ediciones anteriores\b/i,     label: '"en ediciones anteriores"' },
+      { pattern: /\ben ediciones cl[áa]sicas\b/i,    label: '"en ediciones clásicas"' },
+      { pattern: /\ben ediciones previas\b/i,        label: '"en ediciones previas"' },
+    ];
+    const editions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20', 'V5'];
+    for (const clan of clans) {
+      for (const ed of editions) {
+        for (const lang of ['en', 'es'] as LangCode[]) {
+          const fields: Array<{ name: string; text: string }> = [
+            { name: 'summary',  text: getLocalizedClanSummary(clan, ed, lang).text ?? '' },
+            { name: 'lore',     text: getLocalizedClanLore(clan, ed, lang).text ?? '' },
+            { name: 'weakness', text: getLocalizedClanWeakness(clan, ed, lang).text ?? '' },
+          ];
+          for (const { name, text } of fields) {
+            for (const { pattern, label } of FORBIDDEN_COMPARISON_PHRASES) {
+              expect(
+                pattern.test(text),
+                `${clan.id} ${ed} ${lang} ${name} contains comparison phrase ${label} — clan detail pages should be edition-pure, not encyclopaedic`,
+              ).toBe(false);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  /**
+   * Batch T audit: Gangrel must not say "left the Camarilla" on
+   * 1ST or 2ND edition (they were still Camarilla then). The
+   * Revised-onward overrides keep the original departure framing.
+   */
+  it('Gangrel 1ST/2ND lore does not contradict the Camarilla sect override', () => {
+    const gangrel = find('gangrel');
+    for (const ed of ['1ST', '2ND'] as EditionId[]) {
+      for (const lang of ['en', 'es'] as LangCode[]) {
+        const lore = getLocalizedClanLore(gangrel, ed, lang).text ?? '';
+        expect(lore.toLowerCase()).not.toContain('left the camarilla');
+        expect(lore.toLowerCase()).not.toContain('abandonaron formalmente la camarilla');
+      }
+    }
+  });
+
+  /**
+   * Batch T audit: Tzimisce V5 paragraphs must not lean on the
+   * pre-V5 Sabbat / Vicissitude framing. (Vicissitude in V5 was
+   * folded into a Protean variant; Sabbat dissolved in V5.) Each
+   * V5 page should describe the clan with V5 vocabulary only.
+   */
+  it('Tzimisce V5 lore does not lean on classic Sabbat + Vicissitude framing', () => {
+    const tzimisce = find('tzimisce');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(tzimisce, 'V5', lang).text ?? '';
+      // V5 Tzimisce are no longer "spiritual heart of the Sabbat"
+      expect(lore.toLowerCase()).not.toContain('spiritual heart of the sabbat');
+      expect(lore.toLowerCase()).not.toContain('corazón espiritual del sabbat');
+      // V5 doesn't use "Vicissitude" as a clan discipline name.
+      expect(lore).not.toContain('Vicissitude');
+      expect(lore).not.toContain('Vicisitud');
+    }
+    // V5 disciplines must also stay free of Vicissitude.
+    const v5Disc = getClanDisciplinesForEdition(tzimisce, 'V5');
+    expect(v5Disc).not.toContain('vicissitude');
+    // Classic-era Tzimisce keep Vicissitude — guard the inverse.
+    const v20Disc = getClanDisciplinesForEdition(tzimisce, 'V20');
+    expect(v20Disc).toContain('vicissitude');
   });
 });

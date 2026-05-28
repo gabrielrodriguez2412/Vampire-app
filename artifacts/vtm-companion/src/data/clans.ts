@@ -123,10 +123,32 @@ export const clans: ClanEntry[] = [
     icon: "🐺",
     bannerImage: "/images/gangrel.png",
     colorTheme: "#556B2F",
+    // Batch T audit: the flat lore previously baked the
+    // Revised-era "they formally left the Camarilla" sentence into
+    // every edition. That contradicted the 1ST/2ND sect override
+    // (Camarilla), so a 1st-Edition reader saw a paragraph saying
+    // the clan had left the sect they were currently shown as
+    // belonging to. The flat field now stops at the wilderness
+    // framing common to every edition; the Revised-onward addition
+    // lives in a dedicated override.
     lore: enEs(
-      "The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, the Gangrel embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself. They formally left the Camarilla shortly before the modern nights, choosing to forge their own paths independent of the sect's politics.",
-      "Los Gangrel son errantes, parias y supervivientes que rara vez permanecen mucho tiempo en un mismo dominio. A diferencia de otros vampiros que se aferran a la sociedad mortal, abrazan su naturaleza monstruosa y suelen habitar los páramos salvajes, donde comulgan con los animales y la tierra. Abandonaron formalmente la Camarilla poco antes de las noches modernas para forjar su propio camino, ajenos a la política de la secta.",
+      "The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, the Gangrel embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself.",
+      "Los Gangrel son errantes, parias y supervivientes que rara vez permanecen mucho tiempo en un mismo dominio. A diferencia de otros vampiros que se aferran a la sociedad mortal, abrazan su naturaleza monstruosa y suelen habitar los páramos salvajes, donde comulgan con los animales y la tierra.",
     ),
+    loreByEdition: {
+      "REVISED": enEs(
+        "The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, they embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself. They formally left the Camarilla shortly before the modern nights, choosing to forge their own paths independent of the sect's politics.",
+        "Los Gangrel son errantes, parias y supervivientes que rara vez permanecen mucho tiempo en un mismo dominio. A diferencia de otros vampiros que se aferran a la sociedad mortal, abrazan su naturaleza monstruosa y suelen habitar los páramos salvajes, donde comulgan con los animales y la tierra. Abandonaron formalmente la Camarilla poco antes de las noches modernas para forjar su propio camino, ajenos a la política de la secta.",
+      ),
+      "V20": enEs(
+        "The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, they embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself. They formally left the Camarilla shortly before the modern nights, choosing to forge their own paths independent of the sect's politics.",
+        "Los Gangrel son errantes, parias y supervivientes que rara vez permanecen mucho tiempo en un mismo dominio. A diferencia de otros vampiros que se aferran a la sociedad mortal, abrazan su naturaleza monstruosa y suelen habitar los páramos salvajes, donde comulgan con los animales y la tierra. Abandonaron formalmente la Camarilla poco antes de las noches modernas para forjar su propio camino, ajenos a la política de la secta.",
+      ),
+      "V5": enEs(
+        "The Gangrel are wanderers, outcasts, and survivors who rarely stay in one domain for long. Unlike other vampires who cling to mortal society, they embrace their monstrous nature, often dwelling in the wilderness where they commune with animals and the earth itself. They walk apart from the Camarilla and drift between the Anarch Movement and unaligned territories, ready to vanish the moment a city stops feeling like the wild.",
+        "Los Gangrel son errantes, parias y supervivientes que rara vez permanecen mucho tiempo en un mismo dominio. A diferencia de otros vampiros que se aferran a la sociedad mortal, abrazan su naturaleza monstruosa y suelen habitar los páramos salvajes, donde comulgan con los animales y la tierra. Se mantienen al margen de la Camarilla y se mueven entre el Movimiento Anarca y territorios sin facción, listos para desaparecer en cuanto una ciudad deje de sentirse salvaje.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -416,10 +438,38 @@ export const clans: ClanEntry[] = [
     icon: "🐉",
     bannerImage: "/opengraph.jpg",
     colorTheme: "#3E000F",
+    // Batch T audit: the flat lore was V20-era — "spiritual heart of
+    // the Sabbat", "Masters of fleshcrafting (Vicissitude)". V5
+    // Tzimisce stand apart from the dissolved Sabbat and no longer
+    // use Vicissitude as a discrete discipline (their fleshcraft
+    // moved into the V5 Protean variant). Each edition now gets its
+    // own paragraph.
     lore: enEs(
-      "The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis.",
-      "Los Demonios de Europa del Este son quizá el clan más aterrador de todos. Maestros del moldeado de carne (Vicisitud), trabajan hueso y músculo como si fueran arcilla, creando espantosos ghouls de guerra y transformando sus propios cuerpos en formas ajenas a lo humano. Como corazón espiritual del Sabbat, ven la humanidad como una debilidad que purgar, persiguiendo en su lugar la metamorfosis espiritual y física.",
+      "Tyrant lords of bone and territory, the Tzimisce reshape themselves and their domains as freely as a sculptor reshapes clay, and treat humanity as a base material to be improved away.",
+      "Señores tiránicos del hueso y del territorio, los Tzimisce remoldean sus cuerpos y sus dominios con la libertad de un escultor que trabaja la arcilla, y tratan la humanidad como una materia prima a la que conviene mejorar haciéndola desaparecer.",
     ),
+    loreByEdition: {
+      "1ST": enEs(
+        "The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis.",
+        "Los Demonios de Europa del Este son quizá el clan más aterrador de todos. Maestros del moldeado de carne (Vicisitud), trabajan hueso y músculo como si fueran arcilla, creando espantosos ghouls de guerra y transformando sus propios cuerpos en formas ajenas a lo humano. Como corazón espiritual del Sabbat, ven la humanidad como una debilidad que purgar, persiguiendo en su lugar la metamorfosis espiritual y física.",
+      ),
+      "2ND": enEs(
+        "The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis.",
+        "Los Demonios de Europa del Este son quizá el clan más aterrador de todos. Maestros del moldeado de carne (Vicisitud), trabajan hueso y músculo como si fueran arcilla, creando espantosos ghouls de guerra y transformando sus propios cuerpos en formas ajenas a lo humano. Como corazón espiritual del Sabbat, ven la humanidad como una debilidad que purgar, persiguiendo en su lugar la metamorfosis espiritual y física.",
+      ),
+      "REVISED": enEs(
+        "The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis.",
+        "Los Demonios de Europa del Este son quizá el clan más aterrador de todos. Maestros del moldeado de carne (Vicisitud), trabajan hueso y músculo como si fueran arcilla, creando espantosos ghouls de guerra y transformando sus propios cuerpos en formas ajenas a lo humano. Como corazón espiritual del Sabbat, ven la humanidad como una debilidad que purgar, persiguiendo en su lugar la metamorfosis espiritual y física.",
+      ),
+      "V20": enEs(
+        "The Fiends of Eastern Europe are perhaps the most terrifying of all clans. Masters of fleshcrafting (Vicissitude), they mold bone and muscle like clay, creating horrific war ghouls and modifying their own bodies into alien forms. As the spiritual heart of the Sabbat, they view the concept of humanity as a weakness to be purged, striving instead for spiritual and physical metamorphosis.",
+        "Los Demonios de Europa del Este son quizá el clan más aterrador de todos. Maestros del moldeado de carne (Vicisitud), trabajan hueso y músculo como si fueran arcilla, creando espantosos ghouls de guerra y transformando sus propios cuerpos en formas ajenas a lo humano. Como corazón espiritual del Sabbat, ven la humanidad como una debilidad que purgar, persiguiendo en su lugar la metamorfosis espiritual y física.",
+      ),
+      "V5": enEs(
+        "Tyrant lords of bone and territory, the V5 Tzimisce stand apart from the great sects entirely, ruling private demesnes through brutal hospitality and the slow, deliberate reshaping of everything they own — including themselves. War-ghouls, alien forms, and land tied to the master's body remain their signature.",
+        "Señores tiránicos del hueso y del territorio, los Tzimisce de V5 se mantienen al margen por completo de las grandes sectas y gobiernan dominios privados a base de hospitalidad brutal y de remodelar lenta y deliberadamente todo lo que poseen, incluidos ellos mismos. Ghouls de guerra, formas ajenas a lo humano y una tierra atada al cuerpo del señor siguen siendo su sello.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },

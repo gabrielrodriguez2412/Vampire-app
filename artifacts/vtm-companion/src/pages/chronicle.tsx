@@ -2203,12 +2203,13 @@ export default function ChroniclePage() {
           ];
 
           return (
+            <ModalPortal key="link-picker">
             <motion.div
               key="link-picker"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
               onClick={() => setLinkPickerOpen(false)}
             >
               <motion.div
@@ -2313,6 +2314,7 @@ export default function ChroniclePage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>
@@ -2332,12 +2334,13 @@ export default function ChroniclePage() {
             setPendingReassign(null);
           };
           return (
+            <ModalPortal key="reassign-confirm">
             <motion.div
               key="reassign-confirm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
               onClick={() => setPendingReassign(null)}
             >
               <motion.div
@@ -2386,6 +2389,7 @@ export default function ChroniclePage() {
                 </div>
               </motion.div>
             </motion.div>
+            </ModalPortal>
           );
         })()}
       </AnimatePresence>

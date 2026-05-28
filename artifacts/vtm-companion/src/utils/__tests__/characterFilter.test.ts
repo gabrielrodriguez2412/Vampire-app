@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { sortAndFilterCharacters } from '../characterFilter';
-import { Character, EditionId, CharacterType } from '../../types';
+import { Character, EditionId, CharacterType, CharacterStatus } from '../../types';
 
 // Minimal character fixtures — the helper only reads name, clan, edition,
-// characterType and updatedAt. Cast to Character to satisfy the call site.
+// characterType, status and updatedAt. Cast to Character to satisfy the call site.
 function fixture(props: {
   name: string;
   clan: string;
   edition: EditionId;
   characterType?: CharacterType;
+  status?: CharacterStatus;
   updatedAt?: string;
   chronicleId?: string;
 }): Character {
@@ -18,6 +19,7 @@ function fixture(props: {
     clan: props.clan,
     edition: props.edition,
     characterType: props.characterType,
+    status: props.status,
     chronicleId: props.chronicleId,
     createdAt: '2020-01-01T00:00:00.000Z',
     updatedAt: props.updatedAt ?? '2020-01-01T00:00:00.000Z',
@@ -210,6 +212,44 @@ describe('sortAndFilterCharacters', () => {
       });
       // No character is *validly* linked to chr-deleted any more.
       expect(r).toEqual([]);
+    });
+  });
+
+  describe('filter: status (archive)', () => {
+    const list = () => [
+      fixture({ name: 'ActiveA', clan: 'brujah', edition: 'V5', status: 'active' }),
+      fixture({ name: 'ArchivedB', clan: 'brujah', edition: 'V5', status: 'archived' }),
+      fixture({ name: 'LegacyNoStatus', clan: 'brujah', edition: 'V5' }), // undefined → active
+    ];
+
+    it('defaults to no status filtering (filterStatus omitted)', () => {
+      const result = sortAndFilterCharacters(list(), { sortBy: 'name', language: 'en' });
+      expect(result.map(c => c.name)).toEqual(['ActiveA', 'ArchivedB', 'LegacyNoStatus']);
+    });
+
+    it("'all' keeps both active and archived", () => {
+      const result = sortAndFilterCharacters(list(), { sortBy: 'name', filterStatus: 'all', language: 'en' });
+      expect(result).toHaveLength(3);
+    });
+
+    it("'active' keeps active and status-less (legacy) characters only", () => {
+      const result = sortAndFilterCharacters(list(), { sortBy: 'name', filterStatus: 'active', language: 'en' });
+      expect(result.map(c => c.name)).toEqual(['ActiveA', 'LegacyNoStatus']);
+    });
+
+    it("'archived' keeps archived characters only", () => {
+      const result = sortAndFilterCharacters(list(), { sortBy: 'name', filterStatus: 'archived', language: 'en' });
+      expect(result.map(c => c.name)).toEqual(['ArchivedB']);
+    });
+
+    it('combines with other filters (archived + NPC)', () => {
+      const mixed = [
+        fixture({ name: 'ArchPC', clan: 'brujah', edition: 'V5', status: 'archived', characterType: 'player' }),
+        fixture({ name: 'ArchNPC', clan: 'brujah', edition: 'V5', status: 'archived', characterType: 'npc' }),
+        fixture({ name: 'ActiveNPC', clan: 'brujah', edition: 'V5', status: 'active', characterType: 'npc' }),
+      ];
+      const result = sortAndFilterCharacters(mixed, { sortBy: 'name', filterStatus: 'archived', filterType: 'npc', language: 'en' });
+      expect(result.map(c => c.name)).toEqual(['ArchNPC']);
     });
   });
 

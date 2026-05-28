@@ -170,6 +170,31 @@ describe('character sheet action labels are localized (Batch U pin)', () => {
   });
 });
 
+describe('character archive labels are localized (Batch AA)', () => {
+  it('Spanish archive / filter / status labels are translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    expect(es.char_archive).toBe('Archivar');
+    expect(es.char_archive).not.toBe(en.char_archive);
+    expect(es.char_unarchive).toBe('Desarchivar');
+    expect(es.char_unarchive).not.toBe(en.char_unarchive);
+    expect(es.char_archived_toast).toBe('Personaje archivado');
+    expect(es.char_unarchived_toast).toBe('Personaje desarchivado');
+    expect(es.char_filter_active).toBe('Activos');
+    expect(es.char_filter_archived).toBe('Archivados');
+    expect(es.char_filter_all).toBe('Todos');
+    expect(es.char_status_archived).toBe('Archivado');
+
+    // English values unchanged.
+    expect(en.char_archive).toBe('Archive');
+    expect(en.char_unarchive).toBe('Unarchive');
+    expect(en.char_archived_toast).toBe('Character archived');
+    expect(en.char_filter_archived).toBe('Archived');
+    expect(en.char_status_archived).toBe('Archived');
+  });
+});
+
 describe('discipline-section helper labels are localized (Batch V)', () => {
   it('Spanish discipline-section labels are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

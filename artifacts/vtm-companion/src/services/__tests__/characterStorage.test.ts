@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory, normalizeCharacterNotes, normalizeClassicHealth } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, setCharacterArchived, normalizeInventory, normalizeCharacterNotes, normalizeClassicHealth, normalizeCharacterStatus } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -69,6 +69,18 @@ describe('characterStorage', () => {
       expect(char.health).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
     });
 
+    it('defaults a missing/unknown archive status to active on load', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', edition: 'V5' },                  // missing status
+        { id: '2', edition: 'V20', status: 'bogus' }, // unknown status
+        { id: '3', edition: 'V5', status: 'archived' },
+      ]));
+      const chars = getCharacters() as any[];
+      expect(chars[0].status).toBe('active');
+      expect(chars[1].status).toBe('active');
+      expect(chars[2].status).toBe('archived');
+    });
+
     it('migrates a legacy numeric classic health into the box track (as bashing)', () => {
       localStorageMock.setItem('vtm-characters', JSON.stringify([
         { id: '1', edition: 'V20', health: 3 }
@@ -136,6 +148,63 @@ describe('characterStorage', () => {
       expect(char.name).toBe('Test V20');
       expect((char as any).generation).toBe(13);
       expect((char as any).bloodPool).toEqual({ current: 10, max: 10 });
+    });
+
+    it('creates characters as active', () => {
+      expect(createEmptyCharacter('V5', 'brujah', 'A').status).toBe('active');
+      expect(createEmptyCharacter('V20', 'tremere', 'B').status).toBe('active');
+    });
+  });
+
+  describe('normalizeCharacterStatus', () => {
+    it('keeps "archived" and coerces everything else to "active"', () => {
+      expect(normalizeCharacterStatus('archived')).toBe('archived');
+      expect(normalizeCharacterStatus('active')).toBe('active');
+      expect(normalizeCharacterStatus('bogus')).toBe('active');
+      expect(normalizeCharacterStatus(undefined)).toBe('active');
+      expect(normalizeCharacterStatus(null)).toBe('active');
+    });
+  });
+
+  describe('setCharacterArchived', () => {
+    it('archives an active character and persists it', () => {
+      const char = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Archie'));
+      const updated = setCharacterArchived(char.id, 'archived');
+      expect(updated).not.toBeNull();
+      expect(updated!.status).toBe('archived');
+      // Persisted, not deleted.
+      const loaded = getCharacters();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0].status).toBe('archived');
+    });
+
+    it('unarchives an archived character (restore)', () => {
+      const char = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Resto'));
+      setCharacterArchived(char.id, 'archived');
+      const restored = setCharacterArchived(char.id, 'active');
+      expect(restored!.status).toBe('active');
+      expect(getCharacters()[0].status).toBe('active');
+    });
+
+    it('coerces an unknown status to active', () => {
+      const char = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Coerce'));
+      const updated = setCharacterArchived(char.id, 'nonsense' as any);
+      expect(updated!.status).toBe('active');
+    });
+
+    it('returns null for a non-existent character', () => {
+      expect(setCharacterArchived('does-not-exist', 'archived')).toBeNull();
+    });
+
+    it('preserves other fields (name, chronicle link, type) when archiving', () => {
+      const char = saveCharacter(createEmptyCharacter('V20', 'ventrue', 'Keeper'));
+      setCharacterChronicle(char.id, 'chron-1');
+      setCharacterType(char.id, 'npc');
+      const updated = setCharacterArchived(char.id, 'archived');
+      expect(updated!.name).toBe('Keeper');
+      expect(updated!.chronicleId).toBe('chron-1');
+      expect(updated!.characterType).toBe('npc');
+      expect(updated!.status).toBe('archived');
     });
   });
 

@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart, Archive, ArchiveRestore } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId, CharacterType, Chronicle } from "@/types";
+import { Character, EditionId, CharacterType, CharacterStatus, Chronicle } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
@@ -17,10 +17,11 @@ import {
   CharacterEditionFilter,
   CharacterClanFilter,
   CharacterChronicleFilter,
+  CharacterStatusFilter,
 } from "@/utils/characterFilter";
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/hooks/useFavorites";
-import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle } from "@/services/characterStorage";
+import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle, setCharacterArchived } from "@/services/characterStorage";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
@@ -131,6 +132,9 @@ export default function CharacterPage() {
   const [filterEdition, setFilterEdition] = useState<CharacterEditionFilter>('all');
   const [filterClan, setFilterClan] = useState<CharacterClanFilter>('all');
   const [filterChronicle, setFilterChronicle] = useState<CharacterChronicleFilter>('all');
+  // Archive status tab. Defaults to 'active' (mirrors the Chronicle list) so
+  // archived characters are tucked away until the user switches tabs.
+  const [filterStatus, setFilterStatus] = useState<CharacterStatusFilter>('active');
 
   const availableClans = useMemo(() => clans.filter(c => c.editionAvailability.includes(newEdition)), [newEdition]);
 
@@ -165,10 +169,11 @@ export default function CharacterPage() {
         filterEdition,
         filterClan,
         filterChronicle,
+        filterStatus,
         validChronicleIds,
         language: activeLanguage,
       }),
-    [characters, sortBy, filterType, filterEdition, filterClan, filterChronicle, validChronicleIds, activeLanguage]
+    [characters, sortBy, filterType, filterEdition, filterClan, filterChronicle, filterStatus, validChronicleIds, activeLanguage]
   );
 
   const clearListFilters = () => {
@@ -176,6 +181,7 @@ export default function CharacterPage() {
     setFilterEdition('all');
     setFilterClan('all');
     setFilterChronicle('all');
+    setFilterStatus('active');
   };
 
   // Refresh chronicles from storage; used after mount and when modals open
@@ -695,6 +701,40 @@ export default function CharacterPage() {
               </div>
             )}
 
+            {/* Archive status tabs (active / archived / all) — mirrors the
+                Chronicle list. Counts are computed from the full character set
+                so the badges stay accurate regardless of the active tab. */}
+            {characters.length > 0 && (
+              <div className="flex gap-1 mb-4 border-b border-border">
+                {(['active', 'archived', 'all'] as CharacterStatusFilter[]).map(opt => {
+                  const isActive = filterStatus === opt;
+                  const count =
+                    opt === 'active'   ? characters.filter(c => c.status !== 'archived').length
+                    : opt === 'archived' ? characters.filter(c => c.status === 'archived').length
+                    : characters.length;
+                  const label =
+                    opt === 'active'   ? `${strings.char_filter_active   || "Active"} (${count})`
+                    : opt === 'archived' ? `${strings.char_filter_archived || "Archived"} (${count})`
+                    : `${strings.char_filter_all || "All"} (${count})`;
+                  return (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => setFilterStatus(opt)}
+                      aria-pressed={isActive}
+                      className={`px-3 py-1.5 text-xs uppercase tracking-widest font-medium transition-colors border-b-2 -mb-px ${
+                        isActive
+                          ? "border-primary text-foreground"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {characters.length === 0 ? (
               <div className="text-center py-16 bg-card border border-border rounded-lg">
                 <Users className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
@@ -782,6 +822,15 @@ export default function CharacterPage() {
                               same V5 / classic split the rest of the
                               app uses on the Tools combat summary. */}
                           <div className="flex items-center flex-wrap gap-1.5 text-sm text-muted-foreground">
+                            {char.status === 'archived' && (
+                              <span
+                                className="inline-flex items-center gap-1 uppercase text-[10px] tracking-wider border px-1.5 rounded border-zinc-700 bg-zinc-900 text-zinc-400"
+                                title={strings.char_status_archived || "Archived"}
+                              >
+                                <Archive className="w-3 h-3" />
+                                {strings.char_status_archived || "Archived"}
+                              </span>
+                            )}
                             <span
                               className={`uppercase text-[10px] tracking-wider border px-1.5 rounded ${
                                 isV5
@@ -936,6 +985,32 @@ export default function CharacterPage() {
                                 className="gap-2 cursor-pointer"
                               >
                                 <Printer className="w-4 h-4" /> {strings.char_print_pdf || "Print / PDF"}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const next: CharacterStatus = char.status === 'archived' ? 'active' : 'archived';
+                                  const updated = setCharacterArchived(char.id, next);
+                                  if (updated) {
+                                    setCharacters(getCharacters());
+                                    if (activeChar?.id === char.id) setActiveChar(updated);
+                                    toast({
+                                      title: next === 'archived'
+                                        ? (strings.char_archived_toast || "Character archived")
+                                        : (strings.char_unarchived_toast || "Character unarchived"),
+                                    });
+                                  }
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                {char.status === 'archived' ? (
+                                  <>
+                                    <ArchiveRestore className="w-4 h-4" /> {strings.char_unarchive || "Unarchive"}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Archive className="w-4 h-4" /> {strings.char_archive || "Archive"}
+                                  </>
+                                )}
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem

@@ -1376,6 +1376,7 @@ export default function CharacterPage() {
                   schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)}
                   onChange={handleSheetUpdate}
                   readonly={!isEditing}
+                  linkedChronicleName={activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId)?.name : undefined}
                 />
               </>
             ) : (

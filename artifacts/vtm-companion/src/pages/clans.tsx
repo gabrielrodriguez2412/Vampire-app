@@ -16,6 +16,9 @@ import {
   getClanDisplayName,
   getClanSect,
   getClanDisciplinesForEdition,
+  getLocalizedClanSummary,
+  getLocalizedClanLore,
+  getLocalizedClanWeakness,
 } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 import { getClanImageSrc, getClanHeroObjectPosition } from "@/utils/clanImage";
@@ -244,7 +247,14 @@ export default function Clans() {
             // actually being rendered. If even English is missing the
             // pill is suppressed (the card body itself goes empty and
             // the existing empty-list fallback elsewhere handles it).
-            const summaryStatus = getLocalizedText(clan.summary, activeLanguage);
+            // Batch T: card summary is now edition-aware too.
+            // `getLocalizedClanSummary` returns the per-edition
+            // override when present (no clan currently overrides
+            // `summary`, but the helper composes the same way as the
+            // lore/weakness pair and stays future-proof) and otherwise
+            // falls through to the flat `clan.summary` — same path the
+            // old `getLocalizedText(clan.summary, …)` call took.
+            const summaryStatus = getLocalizedClanSummary(clan, activeEdition, activeLanguage);
             const dynamicName = getClanDisplayName(clan, activeEdition, activeLanguage);
             const sectLabel = getClanSect(clan, activeEdition, activeLanguage);
 
@@ -479,7 +489,8 @@ export default function Clans() {
                         developer notices.
                       */}
                       {(() => {
-                        const summaryStatus = getLocalizedText(selectedClan.summary, activeLanguage);
+                        // Batch T: edition-aware summary resolution.
+                        const summaryStatus = getLocalizedClanSummary(selectedClan, activeEdition, activeLanguage);
                         if (summaryStatus.missing) {
                           return (
                             <div className="bg-amber-950/30 text-amber-500 p-3 text-xs border border-amber-900/50 uppercase tracking-widest">
@@ -502,7 +513,10 @@ export default function Clans() {
                           {strings.description || "Summary"}
                         </h3>
                         {(() => {
-                          const status = getLocalizedText(selectedClan.summary, activeLanguage);
+                          // Batch T: route the summary section through the
+                          // edition-aware helper so the user always reads
+                          // copy that matches their selected edition.
+                          const status = getLocalizedClanSummary(selectedClan, activeEdition, activeLanguage);
                           if (status.text === null) {
                             return <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>;
                           }
@@ -515,7 +529,13 @@ export default function Clans() {
                           {strings.clans_lore_heading || 'Lore'}
                         </h3>
                         {(() => {
-                          const status = getLocalizedText(selectedClan.lore, activeLanguage);
+                          // Batch T: edition-aware lore. Clans like
+                          // Giovanni (V20) / Hecata (V5), Ravnos pre/post
+                          // Week of Nightmares, Followers of Set / The
+                          // Ministry, and Assamite / Banu Haqim now read
+                          // as standalone single-edition narratives
+                          // instead of mixed-era encyclopaedia entries.
+                          const status = getLocalizedClanLore(selectedClan, activeEdition, activeLanguage);
                           if (status.text === null) {
                             return <span className="text-xs text-zinc-500 italic">[{strings.noTranslation}]</span>;
                           }
@@ -536,7 +556,14 @@ export default function Clans() {
                           // available (native or English fallback), only
                           // show the "[no translation]" placeholder when
                           // both are empty.
-                          const status = getLocalizedText(selectedClan.weakness, activeLanguage);
+                          //
+                          // Batch T: weakness is the field with the most
+                          // mixed-edition prose in the prior data (e.g.
+                          // Tremere "In earlier editions, X. In V5, Y.";
+                          // Assamite curse-vs-addiction). The edition-
+                          // aware helper picks the override matching the
+                          // active edition so each bane reads cleanly.
+                          const status = getLocalizedClanWeakness(selectedClan, activeEdition, activeLanguage);
                           if (status.text === null) {
                             return <span className="text-xs text-zinc-500 italic text-center block">[{strings.noTranslation}]</span>;
                           }

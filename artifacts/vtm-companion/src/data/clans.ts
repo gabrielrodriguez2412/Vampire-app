@@ -211,18 +211,55 @@ export const clans: ClanEntry[] = [
       "Secretive warlocks and scholars who stole immortality through dark blood magic.",
       "Brujos secretos y eruditos que robaron la inmortalidad mediante oscura magia de sangre.",
     ),
+    // Batch T: split the mixed-edition Tremere weakness into two
+    // edition-specific paragraphs. The flat `weakness` stays as the
+    // generic default for search / i18n parity tests; the V20 and V5
+    // overrides each tell the user only about the bane that applies
+    // to the active edition.
     weakness: enEs(
-      "Blood Defect: In earlier editions, they were easily bound to clan elders. In V5, their blood is too weak to blood bond other Kindred.",
-      "Defecto de Sangre: En ediciones clásicas eran vinculados con facilidad a los ancianos del clan. En V5 su sangre es demasiado débil para imponer un vínculo de sangre a otros Cainitas.",
+      "Blood Defect tied to the clan's bond with its elders and its own vitae.",
+      "Defecto de Sangre vinculado al lazo con los ancianos del clan y a su propia vitae.",
     ),
+    weaknessByEdition: {
+      "1ST":     enEs(
+        "Blood Defect: They are easily blood bound to other Kindred — especially their own clan elders, who exploit this to keep the pyramid in line.",
+        "Defecto de Sangre: se vinculan con facilidad a otros Cainitas, en especial a los ancianos de su propio clan, que aprovechan esto para mantener la pirámide bajo control.",
+      ),
+      "2ND":     enEs(
+        "Blood Defect: They are easily blood bound to other Kindred — especially their own clan elders, who exploit this to keep the pyramid in line.",
+        "Defecto de Sangre: se vinculan con facilidad a otros Cainitas, en especial a los ancianos de su propio clan, que aprovechan esto para mantener la pirámide bajo control.",
+      ),
+      "REVISED": enEs(
+        "Blood Defect: They are easily blood bound to other Kindred — especially their own clan elders, who exploit this to keep the pyramid in line.",
+        "Defecto de Sangre: se vinculan con facilidad a otros Cainitas, en especial a los ancianos de su propio clan, que aprovechan esto para mantener la pirámide bajo control.",
+      ),
+      "V20":     enEs(
+        "Blood Defect: They are easily blood bound to other Kindred — especially their own clan elders, who exploit this to keep the pyramid in line.",
+        "Defecto de Sangre: se vinculan con facilidad a otros Cainitas, en especial a los ancianos de su propio clan, que aprovechan esto para mantener la pirámide bajo control.",
+      ),
+      "V5":      enEs(
+        "Deficient Blood: Their vitae is too thin to forge a blood bond with another Kindred, and feeding their own ghouls demands extra effort.",
+        "Sangre Deficiente: su vitae es demasiado débil para forjar un vínculo de sangre con otro Cainita, y alimentar a sus propios ghouls exige un esfuerzo adicional.",
+      ),
+    },
     disciplines: ["auspex", "blood_sorcery", "dominate", "thaumaturgy"],
     icon: "🩸",
     bannerImage: "/images/tremere.png",
     colorTheme: "#800000",
     lore: enEs(
-      "Originally a cabal of mortal hermetic mages, the Tremere stole the Embrace in the Dark Ages to escape their fading magic. They quickly adapted, developing Blood Sorcery (Thaumaturgy) to defend themselves against enraged clans like the Tzimisce and Salubri. For centuries, the Tremere operated under a rigid, pyramidal hierarchy from Vienna. However, the destruction of the Prime Chantry in modern nights shattered the pyramid, leaving the clan fractured but fiercely independent.",
-      "Originalmente una cábala de magos herméticos mortales, los Tremere robaron el Abrazo en la Edad Oscura para huir de su magia menguante. Se adaptaron con rapidez y desarrollaron Hechicería de Sangre (Taumaturgia) para defenderse de clanes enfurecidos como los Tzimisce y los Salubri. Durante siglos operaron bajo una rígida jerarquía piramidal desde Viena. La destrucción de la Sede Principal en las noches modernas hizo añicos la pirámide, dejando al clan fracturado pero ferozmente independiente.",
+      "Originally a cabal of mortal hermetic mages, the Tremere stole the Embrace in the Dark Ages to escape their fading magic. They adapted quickly, developing Thaumaturgy to defend themselves against enraged clans like the Tzimisce and Salubri, and operated for centuries under a rigid, pyramidal hierarchy from Vienna.",
+      "Originalmente una cábala de magos herméticos mortales, los Tremere robaron el Abrazo en la Edad Oscura para huir de su magia menguante. Se adaptaron con rapidez y desarrollaron la Taumaturgia para defenderse de clanes enfurecidos como los Tzimisce y los Salubri, y operaron durante siglos bajo una rígida jerarquía piramidal desde Viena.",
     ),
+    // Batch T: V20 keeps the classic Vienna-pyramid framing; V5
+    // narrates the post-Gehenna shattering of the Pyramid and the
+    // rebrand under the Camarilla. Each edition reads as its own
+    // standalone story.
+    loreByEdition: {
+      "V5": enEs(
+        "Once a cabal of hermetic mages who stole the Embrace in the Dark Ages, the Tremere built an iron pyramid of Thaumaturgy from Vienna. The destruction of the Prime Chantry and the loss of Tremere himself shattered that hierarchy; the clan now operates as a fractured but fiercely independent Camarilla pillar, with House Carna openly breaking away.",
+        "Antaño una cábala de magos herméticos que robó el Abrazo en la Edad Oscura, los Tremere levantaron una pirámide férrea de Taumaturgia desde Viena. La destrucción de la Sede Principal y la pérdida del propio Tremere quebraron esa jerarquía; el clan opera ahora como un pilar fracturado pero ferozmente independiente de la Camarilla, con la Casa Carna escindiéndose abiertamente.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -365,18 +402,71 @@ export const clans: ClanEntry[] = [
       "Assassins, judges, and scholars of the blood from the Middle East.",
       "Asesinos, jueces y eruditos de la sangre procedentes de Medio Oriente.",
     ),
+    // Batch T: weakness was one of the most obvious mixed-edition
+    // paragraphs in the data — it literally explained both editions
+    // in the same sentence. The flat field now carries a neutral
+    // summary; each edition's override gives the user only the bane
+    // that applies to them.
     weakness: enEs(
-      "Blood Curse/Addiction: In earlier editions, they were cursed to take damage from Kindred blood. In V5, they have a terrible addiction to vampiric vitae.",
-      "Maldición/Adicción de Sangre: En ediciones clásicas estaban malditos a sufrir daño con la sangre Cainita. En V5 padecen una terrible adicción a la vitae vampírica.",
+      "A blood-borne curse from the clan's founder shapes how they drink.",
+      "Una maldición ligada a la sangre del fundador del clan condiciona la forma en que se alimentan.",
     ),
+    weaknessByEdition: {
+      "1ST":     enEs(
+        "Blood Curse: They suffer aggravated damage whenever they try to drink Kindred vitae, enforcing the founder's prohibition on diablerie among their own kind.",
+        "Maldición de Sangre: sufren daño agravado al intentar beber vitae Cainita, lo que refuerza la prohibición del fundador de practicar diablerie entre los suyos.",
+      ),
+      "2ND":     enEs(
+        "Blood Curse: They suffer aggravated damage whenever they try to drink Kindred vitae, enforcing the founder's prohibition on diablerie among their own kind.",
+        "Maldición de Sangre: sufren daño agravado al intentar beber vitae Cainita, lo que refuerza la prohibición del fundador de practicar diablerie entre los suyos.",
+      ),
+      "REVISED": enEs(
+        "Blood Curse: They suffer aggravated damage whenever they try to drink Kindred vitae, enforcing the founder's prohibition on diablerie among their own kind.",
+        "Maldición de Sangre: sufren daño agravado al intentar beber vitae Cainita, lo que refuerza la prohibición del fundador de practicar diablerie entre los suyos.",
+      ),
+      "V20":     enEs(
+        "Blood Curse: They suffer aggravated damage whenever they try to drink Kindred vitae, enforcing the founder's prohibition on diablerie among their own kind.",
+        "Maldición de Sangre: sufren daño agravado al intentar beber vitae Cainita, lo que refuerza la prohibición del fundador de practicar diablerie entre los suyos.",
+      ),
+      "V5":      enEs(
+        "Blood Addiction: Drinking Kindred vitae triggers a powerful compulsion to keep feeding from the same victim, risking exposure and turning judges into hunters.",
+        "Adicción a la Sangre: beber vitae Cainita desencadena una compulsión intensa de seguir alimentándose del mismo donante, arriesgando la exposición y convirtiendo a los jueces en cazadores.",
+      ),
+    },
     disciplines: ["blood_sorcery", "celerity", "obfuscate", "quietus"],
     icon: "⚖️",
     bannerImage: "/images/banu-haquim.png",
     colorTheme: "#2E2B5F",
     lore: enEs(
-      "Historically an independent clan of assassins and viziers from Alamut, the Assamites exacted their own form of justice on the Kindred world. Known as the Banu Haqim in modern nights, a massive schism has split the clan. While the traditionalist warriors remain independent or join the Ashirra, a significant sect of judges and scholars have officially joined the Camarilla, offering their services as sheriffs and enforcers.",
-      "Históricamente un clan independiente de asesinos y visires de Alamut, los Asamitas impartían su propia forma de justicia sobre el mundo Cainita. Conocidos como Banu Haqim en las noches modernas, un cisma enorme ha dividido al clan. Mientras los guerreros tradicionalistas siguen independientes o se unen a los Ashirra, una facción importante de jueces y eruditos se ha sumado oficialmente a la Camarilla, ofreciendo sus servicios como sheriffs y ejecutores.",
+      "An independent clan of assassins and viziers descended from a founder who once judged the Kindred world. Their stronghold at Alamut shaped a culture of contracts, secret schools, and ruthless discipline; their leadership and very name shift across the eras.",
+      "Un clan independiente de asesinos y visires descendientes de un fundador que en su día juzgó al mundo Cainita. Su fortaleza en Alamut moldeó una cultura de contratos, escuelas secretas y disciplina implacable; su liderazgo y su propio nombre cambian de era en era.",
     ),
+    // Batch T: V20 talks about the Assamites of Alamut and their
+    // Independent stance; V5 picks up after the schism and rebrand,
+    // with the judge faction joining the Camarilla under the Banu
+    // Haqim name. Each version reads without mentioning the other.
+    loreByEdition: {
+      "1ST":     enEs(
+        "An independent clan of assassins and viziers from Alamut, the Assamites act as judges of the Kindred world. Their pyramidal hierarchy of warriors, sorcerers, and viziers answers only to the eldest in their mountain fortress; outside the clan they sell their blades and rarely their loyalty.",
+        "Un clan independiente de asesinos y visires de Alamut. Los Asamitas actúan como jueces del mundo Cainita: su jerarquía piramidal de guerreros, hechiceros y visires responde solo al más anciano en la fortaleza de la montaña, y fuera del clan venden sus hojas y rara vez su lealtad.",
+      ),
+      "2ND":     enEs(
+        "An independent clan of assassins and viziers from Alamut, the Assamites act as judges of the Kindred world. Their pyramidal hierarchy of warriors, sorcerers, and viziers answers only to the eldest in their mountain fortress; outside the clan they sell their blades and rarely their loyalty.",
+        "Un clan independiente de asesinos y visires de Alamut. Los Asamitas actúan como jueces del mundo Cainita: su jerarquía piramidal de guerreros, hechiceros y visires responde solo al más anciano en la fortaleza de la montaña, y fuera del clan venden sus hojas y rara vez su lealtad.",
+      ),
+      "REVISED": enEs(
+        "An independent clan of assassins and viziers from Alamut, the Assamites act as judges of the Kindred world. Their pyramidal hierarchy of warriors, sorcerers, and viziers answers only to the eldest in their mountain fortress; outside the clan they sell their blades and rarely their loyalty.",
+        "Un clan independiente de asesinos y visires de Alamut. Los Asamitas actúan como jueces del mundo Cainita: su jerarquía piramidal de guerreros, hechiceros y visires responde solo al más anciano en la fortaleza de la montaña, y fuera del clan venden sus hojas y rara vez su lealtad.",
+      ),
+      "V20":     enEs(
+        "An independent clan of assassins and viziers from Alamut, the Assamites act as judges of the Kindred world. Their pyramidal hierarchy of warriors, sorcerers, and viziers answers only to the eldest in their mountain fortress; outside the clan they sell their blades and rarely their loyalty.",
+        "Un clan independiente de asesinos y visires de Alamut. Los Asamitas actúan como jueces del mundo Cainita: su jerarquía piramidal de guerreros, hechiceros y visires responde solo al más anciano en la fortaleza de la montaña, y fuera del clan venden sus hojas y rara vez su lealtad.",
+      ),
+      "V5": enEs(
+        "After a schism that split the warriors from the judges, the clan now calls itself Banu Haqim. The judge faction has formally joined the Camarilla as sheriffs and enforcers of the Traditions, while the traditionalist warriors keep to Alamut and the Ashirra. A blood addiction shadows them either way.",
+        "Tras un cisma que separó a los guerreros de los jueces, el clan se llama ahora Banu Haqim. La facción de los jueces se ha sumado formalmente a la Camarilla como sheriffs y ejecutores de las Tradiciones, mientras los guerreros tradicionalistas siguen ligados a Alamut y a los Ashirra. En cualquier caso, una adicción a la sangre los acompaña.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -418,9 +508,35 @@ export const clans: ClanEntry[] = [
     bannerImage: "/images/ministry.png",
     colorTheme: "#B8860B",
     lore: enEs(
-      "Traditionally an independent cult worshipping the dark god Set, they offer forbidden knowledge and earthly pleasures to ensnare mortals and Kindred alike. To them, corruption is a tool of spiritual liberation. Rebranding themselves as 'The Ministry' in modern nights, they have shifted their focus to a broader message of freedom and self-actualization, recently allying with the Anarch Movement after being rejected by the Camarilla.",
-      "Tradicionalmente un culto independiente que adora al dios oscuro Set, ofrecen conocimiento prohibido y placeres terrenales para atrapar tanto a mortales como a Cainitas. Para ellos, la corrupción es una herramienta de liberación espiritual. Rebautizados como 'El Ministerio' en las noches modernas, han desplazado su discurso hacia un mensaje más amplio de libertad y autorrealización, aliándose recientemente con el Movimiento Anarca tras ser rechazados por la Camarilla.",
+      "An ancient cult devoted to the dark god Set, they offer forbidden knowledge and earthly pleasures to ensnare mortals and Kindred alike. To them, corruption is a tool of spiritual liberation, and every favour they grant carries a hook.",
+      "Un antiguo culto consagrado al dios oscuro Set, ofrecen conocimiento prohibido y placeres terrenales para atrapar a mortales y Cainitas por igual. Para ellos la corrupción es una herramienta de liberación espiritual, y todo favor que conceden lleva un anzuelo.",
     ),
+    // Batch T: V20 narrates the Followers of Set as the Independent
+    // serpent cult; V5 picks up the rebrand to The Ministry and the
+    // alliance with the Anarchs. Each edition reads as its own
+    // standalone narrative — no cross-edition references.
+    loreByEdition: {
+      "1ST":     enEs(
+        "Independent worshippers of the dark god Set, the Followers of Set run temples disguised as nightclubs, brothels, and apothecaries from the Mediterranean to the New World. They trade in forbidden pleasures and forbidden knowledge, viewing each corrupted soul as a small victory over their enemies.",
+        "Adoradores independientes del dios oscuro Set, los Seguidores de Set regentan templos camuflados como discotecas, burdeles y boticas desde el Mediterráneo hasta el Nuevo Mundo. Trafican con placeres y conocimientos prohibidos, y ven cada alma corrompida como una pequeña victoria sobre sus enemigos.",
+      ),
+      "2ND":     enEs(
+        "Independent worshippers of the dark god Set, the Followers of Set run temples disguised as nightclubs, brothels, and apothecaries from the Mediterranean to the New World. They trade in forbidden pleasures and forbidden knowledge, viewing each corrupted soul as a small victory over their enemies.",
+        "Adoradores independientes del dios oscuro Set, los Seguidores de Set regentan templos camuflados como discotecas, burdeles y boticas desde el Mediterráneo hasta el Nuevo Mundo. Trafican con placeres y conocimientos prohibidos, y ven cada alma corrompida como una pequeña victoria sobre sus enemigos.",
+      ),
+      "REVISED": enEs(
+        "Independent worshippers of the dark god Set, the Followers of Set run temples disguised as nightclubs, brothels, and apothecaries from the Mediterranean to the New World. They trade in forbidden pleasures and forbidden knowledge, viewing each corrupted soul as a small victory over their enemies.",
+        "Adoradores independientes del dios oscuro Set, los Seguidores de Set regentan templos camuflados como discotecas, burdeles y boticas desde el Mediterráneo hasta el Nuevo Mundo. Trafican con placeres y conocimientos prohibidos, y ven cada alma corrompida como una pequeña victoria sobre sus enemigos.",
+      ),
+      "V20":     enEs(
+        "Independent worshippers of the dark god Set, the Followers of Set run temples disguised as nightclubs, brothels, and apothecaries from the Mediterranean to the New World. They trade in forbidden pleasures and forbidden knowledge, viewing each corrupted soul as a small victory over their enemies.",
+        "Adoradores independientes del dios oscuro Set, los Seguidores de Set regentan templos camuflados como discotecas, burdeles y boticas desde el Mediterráneo hasta el Nuevo Mundo. Trafican con placeres y conocimientos prohibidos, y ven cada alma corrompida como una pequeña victoria sobre sus enemigos.",
+      ),
+      "V5": enEs(
+        "Rebranded as The Ministry, the clan now speaks of liberation and self-actualisation rather than open Setite worship. Pushed aside by the Camarilla, they have allied with the Anarch Movement, recruiting the disaffected in clubs, recovery groups, and street pulpits — every promise of freedom a quiet contract.",
+        "Rebautizados como El Ministerio, el clan ahora habla de liberación y autorrealización antes que de adoración abierta a Set. Apartados por la Camarilla, se han aliado con el Movimiento Anarca y reclutan a los descontentos en clubes, grupos de recuperación y púlpitos callejeros: toda promesa de libertad es un contrato silencioso.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -460,9 +576,35 @@ export const clans: ClanEntry[] = [
     bannerImage: "/images/hecata.png",
     colorTheme: "#4A4A4A",
     lore: enEs(
-      "The Giovanni were unique among clans for exclusively Embracing within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance. In recent times, devastating losses forced the Giovanni to merge with the remnants of the Cappadocians, Samedi, and other death-cults to form the Hecata—the united Clan of Death.",
-      "Los Giovanni eran únicos entre los clanes por Abrazar exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento. En tiempos recientes, las pérdidas devastadoras forzaron a los Giovanni a fusionarse con los remanentes de los Cappadocianos, los Samedi y otros cultos de la muerte para formar a los Hecata: el Clan de la Muerte unificado.",
+      "A merchant-dynasty of necromancers who walk the line between the living and the dead. Their wealth, their command of ghosts, and their willingness to traffic in either currency keep them at the centre of every deal that requires absolute silence.",
+      "Una dinastía mercantil de nigromantes que camina la línea entre los vivos y los muertos. Su riqueza, su dominio sobre los fantasmas y su disposición a comerciar con cualquiera de ambas monedas los mantiene en el centro de todo trato que exija silencio absoluto.",
     ),
+    // Batch T: V20 follows the Giovanni — the Venetian merchant
+    // family that stole Necromancy from the Cappadocians. V5 picks
+    // up after the Hecata fusion. Each version stays in its own
+    // edition.
+    loreByEdition: {
+      "1ST":     enEs(
+        "The Giovanni are unique among clans for Embracing almost exclusively within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance and have used it — alongside their fortune — to broker influence across both the living world and the lands of the dead.",
+        "Los Giovanni son únicos entre los clanes por Abrazar casi exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento y lo han usado — junto a su fortuna — para tejer influencia tanto en el mundo de los vivos como en las tierras de los muertos.",
+      ),
+      "2ND":     enEs(
+        "The Giovanni are unique among clans for Embracing almost exclusively within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance and have used it — alongside their fortune — to broker influence across both the living world and the lands of the dead.",
+        "Los Giovanni son únicos entre los clanes por Abrazar casi exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento y lo han usado — junto a su fortuna — para tejer influencia tanto en el mundo de los vivos como en las tierras de los muertos.",
+      ),
+      "REVISED": enEs(
+        "The Giovanni are unique among clans for Embracing almost exclusively within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance and have used it — alongside their fortune — to broker influence across both the living world and the lands of the dead.",
+        "Los Giovanni son únicos entre los clanes por Abrazar casi exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento y lo han usado — junto a su fortuna — para tejer influencia tanto en el mundo de los vivos como en las tierras de los muertos.",
+      ),
+      "V20":     enEs(
+        "The Giovanni are unique among clans for Embracing almost exclusively within their mortal family, a wealthy Venetian merchant dynasty. They stole the power of Necromancy from the Cappadocians during the Renaissance and have used it — alongside their fortune — to broker influence across both the living world and the lands of the dead.",
+        "Los Giovanni son únicos entre los clanes por Abrazar casi exclusivamente dentro de su familia mortal, una rica dinastía de mercaderes venecianos. Robaron el poder de la Nigromancia a los Cappadocianos durante el Renacimiento y lo han usado — junto a su fortuna — para tejer influencia tanto en el mundo de los vivos como en las tierras de los muertos.",
+      ),
+      "V5": enEs(
+        "Hecata, the Clan of Death, is a fusion of several death-touched bloodlines into a single house. They sit aside from the great sects, running a global Necropolis Plenum of funerary parlours, séance circles, and offshore banks — every contract paid in silence, every favour written in a ledger that does not forget.",
+        "Hecata, el Clan de la Muerte, es la fusión de varios linajes tocados por la muerte en una sola casa. Se mantienen al margen de las grandes sectas y dirigen un Plenum de Necrópolis global formado por funerarias, círculos de séance y bancos en paraísos fiscales: cada contrato pagado en silencio, cada favor anotado en un libro que no olvida.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -496,9 +638,35 @@ export const clans: ClanEntry[] = [
     bannerImage: "/images/ravnos.png",
     colorTheme: "#CD5C5C",
     lore: enEs(
-      "The Ravnos were a sprawling clan of wanderers, thieves, and tricksters with deep ties to the East and mastery over illusions (Chimerstry). Their numbers were absolutely decimated during the Week of Nightmares when their Antediluvian awakened in India and frenzied before being destroyed. Today, the Ravnos are a nearly extinct, tragic bloodline fleeing a constant, supernatural doom that hunts them if they ever stop running.",
-      "Los Ravnos eran un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente y un dominio único de las ilusiones (Quimerismo). Sus números fueron prácticamente diezmados durante la Semana de Pesadillas, cuando su Antediluviano despertó en India y entró en frenesí antes de ser destruido. Hoy los Ravnos son una estirpe casi extinta y trágica, que huye de una condena sobrenatural constante que los persigue si llegan a detenerse.",
+      "Wanderers, thieves, and tricksters with deep ties to the East, the Ravnos answer to no court and trust no haven. A specific criminal vice rides every one of them, and the road behind is always shorter than the road ahead.",
+      "Errantes, ladrones y embaucadores con profundos lazos con Oriente, los Ravnos no responden a corte alguna y no confían en ningún refugio. Un vicio criminal específico cabalga con cada uno de ellos, y el camino recorrido siempre es más corto que el que queda por delante.",
     ),
+    // Batch T: V20 paints the Ravnos as a sprawling itinerant clan
+    // of illusionists; V5 picks up the near-extinction left by the
+    // Week of Nightmares and the supernatural doom that hunts the
+    // survivors. Each edition stays in its own moment.
+    loreByEdition: {
+      "1ST":     enEs(
+        "A sprawling clan of wanderers, thieves, and tricksters with deep ties to the East, the Ravnos hold a unique mastery of Chimerstry — illusion-craft no other clan can match. Caravans, kumpanias, and crime families scatter their kind across the world; ancient feuds with the Brujah and the Setites stay open across generations.",
+        "Un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente, los Ravnos poseen un dominio único del Quimerismo — un arte de la ilusión que ningún otro clan iguala. Caravanas, kumpanias y familias criminales esparcen a los suyos por el mundo; sus antiguas enemistades con los Brujah y los Setitas siguen abiertas a lo largo de generaciones.",
+      ),
+      "2ND":     enEs(
+        "A sprawling clan of wanderers, thieves, and tricksters with deep ties to the East, the Ravnos hold a unique mastery of Chimerstry — illusion-craft no other clan can match. Caravans, kumpanias, and crime families scatter their kind across the world; ancient feuds with the Brujah and the Setites stay open across generations.",
+        "Un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente, los Ravnos poseen un dominio único del Quimerismo — un arte de la ilusión que ningún otro clan iguala. Caravanas, kumpanias y familias criminales esparcen a los suyos por el mundo; sus antiguas enemistades con los Brujah y los Setitas siguen abiertas a lo largo de generaciones.",
+      ),
+      "REVISED": enEs(
+        "A sprawling clan of wanderers, thieves, and tricksters with deep ties to the East, the Ravnos hold a unique mastery of Chimerstry — illusion-craft no other clan can match. Caravans, kumpanias, and crime families scatter their kind across the world; ancient feuds with the Brujah and the Setites stay open across generations.",
+        "Un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente, los Ravnos poseen un dominio único del Quimerismo — un arte de la ilusión que ningún otro clan iguala. Caravanas, kumpanias y familias criminales esparcen a los suyos por el mundo; sus antiguas enemistades con los Brujah y los Setitas siguen abiertas a lo largo de generaciones.",
+      ),
+      "V20":     enEs(
+        "A sprawling clan of wanderers, thieves, and tricksters with deep ties to the East, the Ravnos hold a unique mastery of Chimerstry — illusion-craft no other clan can match. Caravans, kumpanias, and crime families scatter their kind across the world; ancient feuds with the Brujah and the Setites stay open across generations.",
+        "Un clan extenso de errantes, ladrones y embaucadores con profundos lazos con Oriente, los Ravnos poseen un dominio único del Quimerismo — un arte de la ilusión que ningún otro clan iguala. Caravanas, kumpanias y familias criminales esparcen a los suyos por el mundo; sus antiguas enemistades con los Brujah y los Setitas siguen abiertas a lo largo de generaciones.",
+      ),
+      "V5": enEs(
+        "A near-extinct line of wanderers running from a supernatural doom that hunts any Ravnos who stops moving. Survivors keep contact light, hide their bloodline, and burn through havens night after night — the road behind is always shorter than the road ahead.",
+        "Una estirpe casi extinta de errantes que huyen de una condena sobrenatural que persigue a cualquier Ravnos que se detenga. Los supervivientes mantienen los contactos al mínimo, ocultan su linaje y queman refugios noche tras noche — el camino recorrido siempre es más corto que el que queda por delante.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },

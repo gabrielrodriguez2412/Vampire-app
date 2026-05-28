@@ -38,7 +38,30 @@ export interface ClanEntry {
    */
   sectByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   summary: Record<LangCode, string>;
+  /**
+   * Optional per-edition summary overrides (Batch T).
+   *
+   * Use when the short clan summary actually needs different wording
+   * between editions — most clans don't, since the short pitch is the
+   * same. When present, `getLocalizedClanSummary(clan, edition, lang)`
+   * prefers the override; otherwise it falls back to the flat
+   * `summary` field above. Editions not listed here always use the
+   * flat field.
+   */
+  summaryByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   weakness: Record<LangCode, string>;
+  /**
+   * Optional per-edition weakness/bane overrides (Batch T).
+   *
+   * Several clans had their weakness paragraph baked as "In earlier
+   * editions, X. In V5, Y." — useful as encyclopaedia copy, painful
+   * inside the clan detail page when the user has explicitly picked
+   * one edition. Populate this map to give each edition its own
+   * stand-alone text; the flat `weakness` field stays populated as
+   * the default for unspecified editions and as the search-index
+   * source of truth.
+   */
+  weaknessByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   /**
    * Union of every discipline this clan can have across all editions.
    * Used as the default list when no edition-specific override exists,
@@ -72,6 +95,17 @@ export interface ClanEntry {
   bannerImage: string;
   colorTheme: string;
   lore: Record<LangCode, string>;
+  /**
+   * Optional per-edition lore overrides (Batch T).
+   *
+   * The base `lore` paragraph often slipped into "X in earlier
+   * editions, Y in modern nights" prose so the encyclopaedia entry
+   * could cover both eras. On the clan detail page that read as a
+   * leak (V20 readers seeing V5 framing and vice versa). Populating
+   * this map gives each edition its own stand-alone narrative; the
+   * flat field stays as the default and the search-index source.
+   */
+  loreByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   playableStatus: Partial<Record<EditionId, boolean>>;
   sourceEdition: EditionId;
 }

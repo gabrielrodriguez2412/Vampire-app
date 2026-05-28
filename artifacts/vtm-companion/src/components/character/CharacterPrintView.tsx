@@ -7,7 +7,7 @@ import { Character, EditionId, V5Character, ClassicCharacter, InventoryItem, Cha
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { getClanDisplayNameById } from "@/utils/content";
-import { disciplines as disciplineData } from "@/data/disciplines";
+import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 import { readDisciplineEntry } from "./DynamicSheet";
 
 /**
@@ -20,11 +20,6 @@ export function dotsString(rating: number, max: number): string {
   const filled = "●".repeat(safe);
   const empty = "○".repeat(Math.max(0, max - safe));
   return (filled + empty).split("").join(" ");
-}
-
-function getDisciplineDisplayName(id: string): string {
-  const d = disciplineData.find(x => x.id === id);
-  return d?.name || id;
 }
 
 function humanize(key: string): string {
@@ -264,7 +259,7 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
               return (
                 <div key={id} className="vtm-print-atom py-px">
                   <div className="flex justify-between items-baseline gap-2">
-                    <span className="font-medium">{getDisciplineDisplayName(id)}</span>
+                    <span className="font-medium">{getDisciplineDisplayName(id, activeLanguage)}</span>
                     <span className="font-mono">{dotsString(rating, 5)}</span>
                   </div>
                   {powers.length > 0 && (

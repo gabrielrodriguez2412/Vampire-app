@@ -1,5 +1,10 @@
-import { Character, EditionId, V5Character, ClassicCharacter, ClassicHealth, CharacterType, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, ClassicHealth, CharacterType, CharacterStatus, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
 import { normalizeEditionId } from '../utils/content';
+
+/** Coerce any value to a valid CharacterStatus. Unknown values default to 'active'. */
+export function normalizeCharacterStatus(raw: unknown): CharacterStatus {
+  return raw === 'archived' ? 'archived' : 'active';
+}
 
 /** Standard classic / WoD health track length (Bruised … Incapacitated). */
 export const CLASSIC_HEALTH_MAX = 7;
@@ -208,6 +213,9 @@ export function getCharacters(): Character[] {
         // Default unknown/missing/garbage characterType to 'player' so legacy
         // saved characters (and any malformed entries) load safely.
         characterType: (c?.characterType === 'npc' ? 'npc' : 'player') as CharacterType,
+        // Default unknown/missing archive status to 'active' so legacy saved
+        // characters (created before archiving existed) always load as active.
+        status: normalizeCharacterStatus(c?.status),
         // Normalize inventory to a valid InventoryItem[]; tolerates missing field,
         // legacy free-text strings, or malformed arrays.
         inventory: normalizeInventory(c?.inventory),
@@ -292,6 +300,7 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
     clan,
     edition,
     characterType: 'player' as CharacterType,
+    status: 'active' as CharacterStatus,
     inventory: [] as InventoryItem[],
     characterNotes: [] as CharacterNote[],
     createdAt: new Date().toISOString(),
@@ -339,6 +348,28 @@ export function setCharacterType(id: string, type: CharacterType): Character | n
   const updated = {
     ...chars[index],
     characterType: normalized,
+    updatedAt: new Date().toISOString(),
+  } as Character;
+  chars[index] = updated;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(chars));
+  return updated;
+}
+
+/**
+ * Set a character's archive `status` ('active' | 'archived'). Archiving never
+ * deletes — the character stays in storage and can be restored. Mirrors
+ * `setChronicleStatus`. Returns the updated character, or null if not found.
+ * Any value other than 'archived' is coerced to 'active'.
+ */
+export function setCharacterArchived(id: string, status: CharacterStatus): Character | null {
+  const chars = getCharacters();
+  const index = chars.findIndex(c => c.id === id);
+  if (index < 0) return null;
+
+  const normalized = normalizeCharacterStatus(status);
+  const updated = {
+    ...chars[index],
+    status: normalized,
     updatedAt: new Date().toISOString(),
   } as Character;
   chars[index] = updated;

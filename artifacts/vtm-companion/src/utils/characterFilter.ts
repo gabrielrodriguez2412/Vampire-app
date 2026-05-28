@@ -13,6 +13,8 @@ export type CharacterClanFilter = 'all' | string;
  *   - any other string — a specific chronicle id
  */
 export type CharacterChronicleFilter = 'all' | 'unassigned' | string;
+/** Archive-status filter: 'all' (no filter), 'active', or 'archived'. */
+export type CharacterStatusFilter = 'all' | 'active' | 'archived';
 
 export interface CharacterListOptions {
   sortBy: CharacterSortKey;
@@ -20,6 +22,11 @@ export interface CharacterListOptions {
   filterEdition?: CharacterEditionFilter;
   filterClan?: CharacterClanFilter;
   filterChronicle?: CharacterChronicleFilter;
+  /**
+   * Archive-status filter. Defaults to 'all' (no filtering) so existing callers
+   * are unaffected. A character with no `status` is treated as 'active'.
+   */
+  filterStatus?: CharacterStatusFilter;
   /**
    * Optional set of currently-valid chronicle ids. When provided, characters
    * whose `chronicleId` is not in this set are treated as 'unassigned' for
@@ -57,12 +64,17 @@ export function sortAndFilterCharacters(
     filterEdition = 'all',
     filterClan = 'all',
     filterChronicle = 'all',
+    filterStatus = 'all',
     validChronicleIds,
     language,
   } = options;
 
   // Filter first
   const filtered = characters.filter(c => {
+    if (filterStatus !== 'all') {
+      const s = c.status === 'archived' ? 'archived' : 'active';
+      if (s !== filterStatus) return false;
+    }
     if (filterType !== 'all') {
       const t = c.characterType === 'npc' ? 'npc' : 'player';
       if (t !== filterType) return false;

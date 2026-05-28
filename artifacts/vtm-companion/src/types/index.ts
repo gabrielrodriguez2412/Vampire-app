@@ -271,11 +271,20 @@ export interface CharacterNote {
   updatedAt: string;
 }
 
+/**
+ * Character lifecycle status. Mirrors `ChronicleStatus`. Optional and
+ * backward-compatible: characters saved before this field existed simply omit
+ * it, and `getCharacters` normalizes a missing/unknown value to 'active'.
+ */
+export type CharacterStatus = 'active' | 'archived';
+
 export interface BaseCharacter {
   id: string;
   name: string;
   playerName?: string;
   chronicle?: string;
+  /** 'active' or 'archived'. Defaults to 'active' on load via getCharacters normalization. */
+  status?: CharacterStatus;
   /**
    * Optional link to a Chronicle's `id`. Legacy characters and characters
    * created before this field was introduced will not have it; `getCharacters`

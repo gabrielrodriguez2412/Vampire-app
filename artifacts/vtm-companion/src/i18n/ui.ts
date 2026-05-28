@@ -348,6 +348,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     char_confirm_delete: "¿Eliminar personaje?", char_confirm_delete_desc: "Esta acción no se puede deshacer.", char_name_required: "El nombre no puede estar vacío.",
     char_export: "Exportar", char_import: "Importar", char_exported: "Personaje exportado", char_imported: "Personaje importado",
     char_print: "Imprimir", char_print_pdf: "Imprimir / PDF", print_preview: "Vista previa de impresión",
+    char_archive: "Archivar", char_unarchive: "Desarchivar",
+    char_archived_toast: "Personaje archivado", char_unarchived_toast: "Personaje desarchivado",
+    char_filter_active: "Activos", char_filter_archived: "Archivados", char_filter_all: "Todos",
+    char_status_archived: "Archivado",
     char_import_failed: "Error al importar", char_import_invalid_json: "El archivo no es un JSON válido.",
 
     combat_melee: 'Cuerpo a Cuerpo: Tirada enfrentada. Daño = (Éxitos propios − Éxitos del rival) + Modificador del Arma.',
@@ -769,6 +773,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     char_confirm_delete: "Delete Character?", char_confirm_delete_desc: "This action cannot be undone.", char_name_required: "Name cannot be blank.",
     char_export: "Export", char_import: "Import", char_exported: "Character exported", char_imported: "Character imported",
     char_print: "Print", char_print_pdf: "Print / PDF", print_preview: "Print preview",
+    char_archive: "Archive", char_unarchive: "Unarchive",
+    char_archived_toast: "Character archived", char_unarchived_toast: "Character unarchived",
+    char_filter_active: "Active", char_filter_archived: "Archived", char_filter_all: "All",
+    char_status_archived: "Archived",
     char_import_failed: "Import failed", char_import_invalid_json: "The file is not valid JSON.",
 
     combat_melee: 'Melee: Contested roll. Damage = (Own successes − Opponent successes) + Weapon modifier.',

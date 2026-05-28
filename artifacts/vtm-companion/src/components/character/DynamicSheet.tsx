@@ -16,6 +16,7 @@ import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
 import { clans } from "@/data/clans";
 import { getClanDisciplinesForEdition } from "@/utils/content";
+import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 
 /**
  * Normalize a stored discipline value into `{ rating, powers }`.
@@ -176,6 +177,12 @@ function DynamicDotList({ value, label, max, fieldId, isReadOnly, handleUpdate, 
 }
 
 function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character }: any) {
+  // Batch U: pull the active language so discipline names render in
+  // the selected locale (e.g. Obfuscate → Ofuscación in Spanish)
+  // through the shared `getDisciplineDisplayName` helper, instead of
+  // the old `strings[d.name] || d.name` lookup that only ever matched
+  // English data-side names and silently fell back to English.
+  const { activeLanguage } = useAppContext();
   const currentMap = typeof value === 'object' && value !== null ? value : {};
   const entries = Object.entries(currentMap);
   const [selectedId, setSelectedId] = useState('');
@@ -240,8 +247,12 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
   };
 
   const getDisplayName = (id: string) => {
-    const d = disciplines.find(x => x.id === id);
-    if (d) return strings[d.name] || d.name;
+    // Known disciplines route through the shared language-aware helper;
+    // custom / unknown ids (player-authored disciplines) fall back to
+    // the raw id so nothing is lost.
+    if (disciplines.some(d => d.id === id)) {
+      return getDisciplineDisplayName(id, activeLanguage);
+    }
     return id;
   };
 
@@ -258,7 +269,7 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
             >
               <option value="">{strings.add_discipline || "Add Discipline..."}</option>
               {availableDisciplines.map(d => (
-                <option key={d.id} value={d.id}>{strings[d.name] || d.name}</option>
+                <option key={d.id} value={d.id}>{getDisciplineDisplayName(d.id, activeLanguage)}</option>
               ))}
               <option value="custom">{strings.custom_discipline || "Custom..."}</option>
             </select>

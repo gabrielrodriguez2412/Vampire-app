@@ -305,18 +305,71 @@ export const clans: ClanEntry[] = [
       "Ruthless social Darwinists who manipulate shadows and dominate the church and state.",
       "Implacables darwinistas sociales que manipulan las sombras y dominan la iglesia y el estado.",
     ),
+    // Batch T follow-up: the previous flat weakness baked V5
+    // "modern recording devices glitching" wording into every
+    // edition. Classic Lasombra had only the mirror reflection
+    // weakness; the V5 distortion-on-cameras framing belongs in
+    // its own override.
     weakness: enEs(
-      "Defective Reflection: They cast no reflection in mirrors or modern recording devices, and modern technology actively glitches in their presence.",
-      "Reflejo Defectuoso: No proyectan reflejo en espejos ni en dispositivos modernos de grabación, y la tecnología falla activamente en su presencia.",
+      "Defective Reflection: They cast no reflection in mirrors or other reflective surfaces, and other Kindred recognise this as a clear Lasombra marker.",
+      "Reflejo Defectuoso: No proyectan reflejo en espejos ni en otras superficies reflectantes, y los demás Cainitas reconocen esto como una marca inequívoca Lasombra.",
     ),
+    weaknessByEdition: {
+      "1ST":     enEs(
+        "Defective Reflection: They cast no reflection in mirrors, still water, polished metal, or any other reflective surface — an absolute and unmistakable mark of the clan.",
+        "Reflejo Defectuoso: No proyectan reflejo en espejos, agua quieta, metal pulido ni en cualquier otra superficie reflectante: una marca absoluta e inconfundible del clan.",
+      ),
+      "2ND":     enEs(
+        "Defective Reflection: They cast no reflection in mirrors, still water, polished metal, or any other reflective surface — an absolute and unmistakable mark of the clan.",
+        "Reflejo Defectuoso: No proyectan reflejo en espejos, agua quieta, metal pulido ni en cualquier otra superficie reflectante: una marca absoluta e inconfundible del clan.",
+      ),
+      "REVISED": enEs(
+        "Defective Reflection: They cast no reflection in mirrors, still water, polished metal, or any other reflective surface — an absolute and unmistakable mark of the clan.",
+        "Reflejo Defectuoso: No proyectan reflejo en espejos, agua quieta, metal pulido ni en cualquier otra superficie reflectante: una marca absoluta e inconfundible del clan.",
+      ),
+      "V20":     enEs(
+        "Defective Reflection: They cast no reflection in mirrors, still water, polished metal, or any other reflective surface — an absolute and unmistakable mark of the clan.",
+        "Reflejo Defectuoso: No proyectan reflejo en espejos, agua quieta, metal pulido ni en cualquier otra superficie reflectante: una marca absoluta e inconfundible del clan.",
+      ),
+      "V5":      enEs(
+        "Distorted Image: They cast no reflection in mirrors or recording devices, and any video or audio captured of them comes through warped and unreadable.",
+        "Imagen Distorsionada: No proyectan reflejo en espejos ni en dispositivos de grabación, y todo vídeo o audio que los registre se transmite deformado e ilegible.",
+      ),
+    },
     disciplines: ["dominate", "oblivion", "potence", "obtenebration"],
     icon: "🌑",
     bannerImage: "/images/lasombra.png",
     colorTheme: "#1A1A1A",
     lore: enEs(
-      "Once the proud leaders of the Sabbat, the Lasombra are masters of manipulation who see the world purely in terms of power and control. They have historically controlled religious institutions and noble families, shaping them from the shadows. Following the Beckoning and internal schisms, a large portion of the clan defected to the Camarilla, seeking stability over the increasingly fanatical crusade of the Sabbat.",
-      "Antiguos líderes orgullosos del Sabbat, los Lasombra son maestros de la manipulación que entienden el mundo solo en términos de poder y control. Históricamente han controlado instituciones religiosas y familias nobles, moldeándolas desde las sombras. Tras el Llamado y los cismas internos, una gran parte del clan desertó a la Camarilla, prefiriendo la estabilidad a la cruzada cada vez más fanática del Sabbat.",
+      "Proud, ruthless, and supremely ambitious, the Lasombra read the world purely in terms of power and control, shaping religious institutions and noble houses from behind the throne.",
+      "Orgullosos, despiadados y supremamente ambiciosos, los Lasombra entienden el mundo solo en términos de poder y control, y moldean instituciones religiosas y casas nobles desde detrás del trono.",
     ),
+    // Batch T follow-up: classic Lasombra are the spine of the
+    // Sabbat — the prior shared lore baked the V5 Camarilla
+    // defection and the Beckoning into every edition. Each edition
+    // now gets its own paragraph.
+    loreByEdition: {
+      "1ST":     enEs(
+        "Proud, ruthless, and supremely ambitious, the Lasombra are the foremost leaders of the Sabbat. Masters of shadow, they have shaped the Church, royal courts, and trade dynasties from behind the scenes for centuries. To a Lasombra, power is the only honest goal — and the only acceptable inheritance.",
+        "Orgullosos, despiadados y supremamente ambiciosos, los Lasombra son los principales líderes del Sabbat. Maestros de las sombras, llevan siglos moldeando entre bastidores la Iglesia, las cortes reales y las dinastías mercantiles. Para un Lasombra, el poder es el único objetivo honesto: y la única herencia aceptable.",
+      ),
+      "2ND":     enEs(
+        "Proud, ruthless, and supremely ambitious, the Lasombra are the foremost leaders of the Sabbat. Masters of shadow, they have shaped the Church, royal courts, and trade dynasties from behind the scenes for centuries. To a Lasombra, power is the only honest goal — and the only acceptable inheritance.",
+        "Orgullosos, despiadados y supremamente ambiciosos, los Lasombra son los principales líderes del Sabbat. Maestros de las sombras, llevan siglos moldeando entre bastidores la Iglesia, las cortes reales y las dinastías mercantiles. Para un Lasombra, el poder es el único objetivo honesto: y la única herencia aceptable.",
+      ),
+      "REVISED": enEs(
+        "Proud, ruthless, and supremely ambitious, the Lasombra are the foremost leaders of the Sabbat. Masters of shadow, they have shaped the Church, royal courts, and trade dynasties from behind the scenes for centuries. To a Lasombra, power is the only honest goal — and the only acceptable inheritance.",
+        "Orgullosos, despiadados y supremamente ambiciosos, los Lasombra son los principales líderes del Sabbat. Maestros de las sombras, llevan siglos moldeando entre bastidores la Iglesia, las cortes reales y las dinastías mercantiles. Para un Lasombra, el poder es el único objetivo honesto: y la única herencia aceptable.",
+      ),
+      "V20":     enEs(
+        "Proud, ruthless, and supremely ambitious, the Lasombra are the foremost leaders of the Sabbat. Masters of shadow, they have shaped the Church, royal courts, and trade dynasties from behind the scenes for centuries. To a Lasombra, power is the only honest goal — and the only acceptable inheritance.",
+        "Orgullosos, despiadados y supremamente ambiciosos, los Lasombra son los principales líderes del Sabbat. Maestros de las sombras, llevan siglos moldeando entre bastidores la Iglesia, las cortes reales y las dinastías mercantiles. Para un Lasombra, el poder es el único objetivo honesto: y la única herencia aceptable.",
+      ),
+      "V5":      enEs(
+        "The mass desertion that brought a large faction of the Lasombra into the Camarilla left the clan split between defectors rebuilding their influence inside the towers, and old-blood loyalists who refuse to abandon the Sword. Both sides still command shadow and silence — they simply no longer agree on what to do with them.",
+        "La gran deserción que llevó a una facción importante de los Lasombra a la Camarilla dejó al clan dividido entre los desertores que reconstruyen su influencia dentro de las torres y los leales de sangre vieja que se niegan a abandonar la Espada. Ambos lados siguen dominando sombra y silencio — simplemente ya no se ponen de acuerdo sobre qué hacer con ellos.",
+      ),
+    },
     playableStatus: { "1ST": true, "2ND": true, "REVISED": true, "V20": true, "V5": true },
     sourceEdition: "1ST"
   },
@@ -751,22 +804,73 @@ export const clans: ClanEntry[] = [
       // default keeps the previous lean.
       V5: sectLabel("Unaligned", "Sin facción"),
     },
+    // Batch T follow-up: the previous flat fields baked the V5
+    // "Duskborn / 14th-15th-16th gen / Alchemy" framing into every
+    // edition. V20 thin-bloods are framed as heralds of Gehenna in
+    // the Final Nights, not the V5 Duskborn rebrand; each edition
+    // now gets its own neutral text.
     summary: enEs(
-      "Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath.",
-      "Vampiros de las generaciones 14, 15 y 16 cuya sangre es demasiado débil para sostener una no-muerte plena.",
+      "High-generation vampires whose vitae is too thin to fully sustain undeath.",
+      "Vampiros de alta generación cuya vitae es demasiado débil para sostener plenamente la no-muerte.",
     ),
+    summaryByEdition: {
+      "REVISED": enEs(
+        "High-generation vampires of the Final Nights whose vitae is so thin they barely qualify as Kindred.",
+        "Vampiros de alta generación de las Noches Finales cuya vitae es tan débil que apenas se consideran Cainitas.",
+      ),
+      "V20": enEs(
+        "High-generation vampires of the Final Nights whose vitae is so thin they barely qualify as Kindred.",
+        "Vampiros de alta generación de las Noches Finales cuya vitae es tan débil que apenas se consideran Cainitas.",
+      ),
+      "V5": enEs(
+        "Vampires of the 14th, 15th, and 16th generations whose blood is too weak to sustain full undeath.",
+        "Vampiros de las generaciones 14, 15 y 16 cuya sangre es demasiado débil para sostener una no-muerte plena.",
+      ),
+    },
     weakness: enEs(
-      "Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food.",
-      "Nacidos del Crepúsculo: No pueden crear vínculos de sangre, engendrar chiquillos con facilidad ni curarse como los vampiros normales. Sin embargo, pueden caminar a la luz del día y consumir alimentos humanos.",
+      "Thin Vitae: Their blood is barely vampiric, leaving them unable to use most of the powers and bonds taken for granted by full-blooded Kindred.",
+      "Vitae Débil: Su sangre apenas pasa por vampírica, lo que les impide usar la mayoría de los poderes y vínculos que dan por sentados los Cainitas de pleno derecho.",
     ),
+    weaknessByEdition: {
+      "REVISED": enEs(
+        "Thin Vitae: Their blood is too weak to form blood bonds, to Embrace reliably, or to fuel many traditional disciplines. Established Kindred read them as omens of Gehenna and tend to react with hostility.",
+        "Vitae Débil: Su sangre es demasiado débil para crear vínculos de sangre, para Abrazar de forma fiable o para alimentar muchas disciplinas tradicionales. Los Cainitas establecidos los interpretan como augurios de Gehenna y suelen reaccionar con hostilidad.",
+      ),
+      "V20": enEs(
+        "Thin Vitae: Their blood is too weak to form blood bonds, to Embrace reliably, or to fuel many traditional disciplines. Established Kindred read them as omens of Gehenna and tend to react with hostility.",
+        "Vitae Débil: Su sangre es demasiado débil para crear vínculos de sangre, para Abrazar de forma fiable o para alimentar muchas disciplinas tradicionales. Los Cainitas establecidos los interpretan como augurios de Gehenna y suelen reaccionar con hostilidad.",
+      ),
+      "V5": enEs(
+        "Duskborn: They cannot blood bond, sire childer easily, or heal like normal vampires. However, they can walk in the daylight and consume human food.",
+        "Nacidos del Crepúsculo: No pueden crear vínculos de sangre, engendrar chiquillos con facilidad ni curarse como los vampiros normales. Sin embargo, pueden caminar a la luz del día y consumir alimentos humanos.",
+      ),
+    },
     disciplines: ["thin_blood_alchemy"],
     icon: "🩸💧",
     bannerImage: "/opengraph.jpg",
     colorTheme: "#5C5C5C",
     lore: enEs(
-      "The Thin-Bloods are the ultimate heralds of Gehenna. Born of generations so far removed from Caine that they are barely vampires, they exist in a twilight state between life and undeath. They are hunted mercilessly by the Camarilla and the Sabbat, forcing them to hide in the fringes of society. In modern nights, they have developed Thin-Blood Alchemy, using their mixed blood to replicate powers they cannot naturally learn.",
-      "Los Sangre Débil son los heraldos definitivos del Gehenna. Nacidos de generaciones tan alejadas de Caín que apenas son vampiros, existen en un estado de penumbra entre la vida y la no-muerte. Son cazados sin piedad por la Camarilla y el Sabbat, lo que los obliga a esconderse en los márgenes de la sociedad. En las noches modernas han desarrollado la Alquimia de Sangre Débil, usando su sangre mezclada para replicar poderes que no pueden aprender de forma natural.",
+      "Born so far down the Caine line that the Curse barely catches in them, the thin-blooded survive at the edges of the Kindred world — distrusted, marginal, and useful only when no one else is watching.",
+      "Nacidos tan abajo en la línea de Caín que la Maldición apenas los alcanza, los de sangre débil sobreviven en los márgenes del mundo Cainita: desconfiados, marginales y útiles solo cuando nadie más mira.",
     ),
+    // Batch T follow-up: V20 framing treats them as Gehenna heralds
+    // and rumours of the Final Nights. V5 picks up the Duskborn /
+    // Alchemy rebrand. Each edition reads without the other's
+    // vocabulary.
+    loreByEdition: {
+      "REVISED": enEs(
+        "Heralds of Gehenna whispered about in late-Revised chronicles, the thin-blooded are vampires so distant from Caine that the Curse barely catches in them. They struggle to feed, can scarcely Embrace, and most established Kindred — Camarilla and Sabbat alike — hunt them on sight as proof that the End Times are at hand.",
+        "Heraldos de Gehenna susurrados en las crónicas de finales de Revisada, los de sangre débil son vampiros tan lejanos de Caín que la Maldición apenas los alcanza. Les cuesta alimentarse, apenas pueden Abrazar y la mayoría de los Cainitas establecidos — tanto Camarilla como Sabbat — los cazan en cuanto los identifican como prueba de que se acercan los Tiempos Finales.",
+      ),
+      "V20": enEs(
+        "Heralds of Gehenna in the Final Nights, the thin-blooded are vampires so distant from Caine that the Curse barely catches in them. They struggle to feed, can scarcely Embrace, and most established Kindred — Camarilla and Sabbat alike — hunt them on sight as proof that the End Times are at hand.",
+        "Heraldos de Gehenna en las Noches Finales, los de sangre débil son vampiros tan lejanos de Caín que la Maldición apenas los alcanza. Les cuesta alimentarse, apenas pueden Abrazar y la mayoría de los Cainitas establecidos — tanto Camarilla como Sabbat — los cazan en cuanto los identifican como prueba de que se acercan los Tiempos Finales.",
+      ),
+      "V5": enEs(
+        "Born of generations so far removed from Caine that they are barely vampires, the Duskborn exist in a twilight state between life and undeath. The Camarilla and surviving Sabbat hunt them as omens; in modern nights they have developed Thin-Blood Alchemy, using their mixed blood to brew temporary substitutes for the powers they cannot naturally learn.",
+        "Nacidos de generaciones tan alejadas de Caín que apenas son vampiros, los Nacidos del Crepúsculo existen en un estado de penumbra entre la vida y la no-muerte. La Camarilla y los restos del Sabbat los cazan como augurios; en las noches modernas han desarrollado la Alquimia de Sangre Débil, usando su sangre mezclada para preparar sustitutos efímeros de los poderes que no pueden aprender de forma natural.",
+      ),
+    },
     playableStatus: { "REVISED": false, "V20": true, "V5": true },
     sourceEdition: "REVISED"
   }

@@ -13,6 +13,7 @@ import {
   getLocalizedClanSummary,
   getLocalizedClanLore,
   getLocalizedClanWeakness,
+  getClanDisciplinesForEdition,
 } from '../../utils/content';
 import type { ClanEntry, EditionId, LangCode } from '../../types';
 
@@ -301,6 +302,23 @@ describe('edition-aware clan body resolution (Batch T)', () => {
       // V5-only events / terms.
       'Week of Nightmares',
       'Semana de Pesadillas',
+      // Batch T follow-up: the Beckoning and the Lasombra mass
+      // defection to the Camarilla are V5-era plot beats that must
+      // not appear in any classic Lasombra paragraph.
+      'Beckoning',
+      'Llamado',
+      // Batch T follow-up: V5 thin-blood vocabulary that must not
+      // leak into classic editions where the framing is "high-
+      // generation heralds of Gehenna" instead.
+      'Duskborn',
+      'Nacidos del Crepúsculo',
+      'Thin-Blood Alchemy',
+      'Alquimia de Sangre Débil',
+      // V20 caps generation at 15th; "16th generation" / "16 gen"
+      // wording is V5-specific.
+      '16th generation',
+      'generación 16',
+      'generaciones 14, 15 y 16',
     ];
     const classicEditions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20'];
     for (const clan of clans) {
@@ -362,7 +380,11 @@ describe('edition-aware clan body resolution (Batch T)', () => {
    * future helper bug that accidentally requires the override map.
    */
   it('clans without overrides fall back to the flat field for both editions', () => {
-    const flatOnlyClans = ['brujah', 'gangrel', 'malkavian', 'caitiff', 'lasombra'];
+    // Lasombra and thin_blood got per-edition splits in the Batch T
+    // follow-up; they're no longer flat-only. The clans below have
+    // no overrides on any of the three fields and must still resolve
+    // correctly via fallback.
+    const flatOnlyClans = ['brujah', 'gangrel', 'malkavian', 'caitiff'];
     for (const id of flatOnlyClans) {
       const c = find(id);
       // Both helpers should return the same string as the flat field
@@ -420,5 +442,99 @@ describe('edition-aware clan body resolution (Batch T)', () => {
     expect(v20En).not.toContain('Hecata');
     expect(v5En).toContain('Hecata');
     expect(v5En).not.toContain('Giovanni'); // V5 paragraph drops the old name entirely
+  });
+
+  /**
+   * Batch T follow-up: Lasombra V20 must not include V5-era plot
+   * beats (the Beckoning, the Camarilla defection, Oblivion, the
+   * V5-only modern-recording-devices weakness), and disciplines must
+   * stay on the classic Obtenebration list — not the V5 Oblivion.
+   */
+  it('Lasombra V20 lore is classic Sabbat-leader framing without V5 plot beats', () => {
+    const lasombra = find('lasombra');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(lasombra, 'V20', lang).text ?? '';
+      expect(lore).toBeTruthy();
+      // V5 plot vocabulary — must not appear.
+      expect(lore).not.toMatch(/\bBeckoning\b/i);
+      expect(lore).not.toMatch(/\bLlamado\b/i);
+      expect(lore).not.toMatch(/\bOblivion\b/i);
+      expect(lore).not.toMatch(/\bOlvido\b/i);
+      // V5 "joined the Camarilla / defection" framing.
+      expect(lore.toLowerCase()).not.toContain('joined the camarilla');
+      expect(lore.toLowerCase()).not.toContain('unirse a la camarilla');
+      expect(lore.toLowerCase()).not.toContain('desertó a la camarilla');
+      expect(lore.toLowerCase()).not.toContain('defected to the camarilla');
+      // V20 framing positive checks (case-insensitive so we don't
+      // get bitten by punctuation/capitalisation noise).
+      expect(lore.toLowerCase()).toContain('sabbat');
+    }
+  });
+
+  it('Lasombra V20 weakness is classic reflection-only, no modern-tech glitch wording', () => {
+    const lasombra = find('lasombra');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const weakness = getLocalizedClanWeakness(lasombra, 'V20', lang).text ?? '';
+      expect(weakness).toBeTruthy();
+      // V5 modern-tech / recording-device leakage — must not appear.
+      expect(weakness.toLowerCase()).not.toContain('recording device');
+      expect(weakness.toLowerCase()).not.toContain('dispositivo');
+      expect(weakness.toLowerCase()).not.toContain('glitch');
+      expect(weakness.toLowerCase()).not.toContain('falla');
+      expect(weakness.toLowerCase()).not.toContain('distorted');
+      expect(weakness.toLowerCase()).not.toContain('distorsionada');
+      // Classic reflection wording positive check.
+      expect(weakness.toLowerCase()).toMatch(/reflection|reflejo/);
+    }
+  });
+
+  it('Lasombra V20 disciplines include Obtenebration and not Oblivion', () => {
+    const lasombra = find('lasombra');
+    const v20 = getClanDisciplinesForEdition(lasombra, 'V20');
+    expect(v20).toContain('obtenebration');
+    expect(v20).not.toContain('oblivion');
+    const v5 = getClanDisciplinesForEdition(lasombra, 'V5');
+    expect(v5).toContain('oblivion');
+    expect(v5).not.toContain('obtenebration');
+  });
+
+  it('Lasombra V5 content remains V5-appropriate after the V20 cleanup', () => {
+    // Sanity check: the V20 cleanup must not have overwritten the
+    // V5 paragraphs. V5 Lasombra still get the Camarilla-defection
+    // framing in their lore and the distortion weakness.
+    const lasombra = find('lasombra');
+    const v5LoreEn = getLocalizedClanLore(lasombra, 'V5', 'en').text ?? '';
+    const v5WeaknessEn = getLocalizedClanWeakness(lasombra, 'V5', 'en').text ?? '';
+    expect(v5LoreEn.toLowerCase()).toContain('camarilla');
+    expect(v5WeaknessEn.toLowerCase()).toMatch(/distorted|recording/);
+  });
+
+  /**
+   * Batch T follow-up: Thin-Blood V20 must not include V5-only
+   * Duskborn / Alchemy / 16th-generation framing.
+   */
+  it('Thin-Blood V20 lore avoids V5 Duskborn + Alchemy + 16th-gen framing', () => {
+    const tb = find('thin_blood');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(tb, 'V20', lang).text ?? '';
+      const weakness = getLocalizedClanWeakness(tb, 'V20', lang).text ?? '';
+      const summary = getLocalizedClanSummary(tb, 'V20', lang).text ?? '';
+      for (const term of ['Duskborn', 'Nacidos del Crepúsculo', 'Thin-Blood Alchemy', 'Alquimia de Sangre Débil', '16th generation', 'generación 16', 'generaciones 14, 15 y 16']) {
+        expect(lore, `V20 ${lang} lore must not contain "${term}"`).not.toContain(term);
+        expect(weakness, `V20 ${lang} weakness must not contain "${term}"`).not.toContain(term);
+        expect(summary, `V20 ${lang} summary must not contain "${term}"`).not.toContain(term);
+      }
+      // Positive V20 framing: Gehenna / Final Nights vocabulary.
+      expect(lore.toLowerCase()).toMatch(/gehenna|final nights|noches finales/);
+    }
+  });
+
+  it('Thin-Blood V5 still contains the Duskborn / Alchemy framing intentionally', () => {
+    const tb = find('thin_blood');
+    const v5LoreEn = getLocalizedClanLore(tb, 'V5', 'en').text ?? '';
+    const v5WeaknessEn = getLocalizedClanWeakness(tb, 'V5', 'en').text ?? '';
+    expect(v5LoreEn).toContain('Duskborn');
+    expect(v5LoreEn).toContain('Thin-Blood Alchemy');
+    expect(v5WeaknessEn).toContain('Duskborn');
   });
 });

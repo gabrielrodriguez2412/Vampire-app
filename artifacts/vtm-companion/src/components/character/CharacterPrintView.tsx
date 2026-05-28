@@ -412,6 +412,14 @@ interface CharacterPrintModalProps {
 }
 
 export function CharacterPrintModal({ character, onClose }: CharacterPrintModalProps) {
+  // Batch V: localize the on-screen print-preview toolbar chrome
+  // ("Print preview" heading, Print + Close buttons, and their
+  // aria-labels). These live in the `vtm-print-hide` bar that is
+  // removed from the actual printed page, but they ARE visible in the
+  // preview modal, so they must respect the selected language.
+  const { activeLanguage } = useAppContext();
+  const strings = UI_STRINGS[activeLanguage] || UI_STRINGS["en"];
+
   // Mount the modal in a portal attached directly to <body> so it lives
   // outside the app's React root container. The print CSS then uses
   // `body > *:not(.vtm-print-root) { display: none }` to remove the entire
@@ -468,7 +476,7 @@ export function CharacterPrintModal({ character, onClose }: CharacterPrintModalP
         onClick={onClose}
         role="dialog"
         aria-modal="true"
-        aria-label="Print character sheet"
+        aria-label={strings.print_preview || "Print preview"}
       >
         {/* Print-specific CSS:
             - body > *:not(.vtm-print-root) { display: none } actually removes
@@ -538,7 +546,7 @@ export function CharacterPrintModal({ character, onClose }: CharacterPrintModalP
               the printed page. */}
           <div className="vtm-print-hide relative z-10 flex items-center justify-between gap-3 px-5 py-3.5 bg-zinc-900 text-zinc-100 border-b border-zinc-800 shrink-0">
             <span className="text-sm font-semibold uppercase tracking-wider">
-              Print preview
+              {strings.print_preview || "Print preview"}
             </span>
             <div className="flex gap-2">
               <Button
@@ -547,17 +555,17 @@ export function CharacterPrintModal({ character, onClose }: CharacterPrintModalP
                 onClick={printNow}
                 className="gap-1.5 bg-red-800 text-white font-medium border border-red-700 hover:bg-red-700"
               >
-                <Printer className="w-4 h-4" /> Print
+                <Printer className="w-4 h-4" /> {strings.char_print || "Print"}
               </Button>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 onClick={onClose}
-                aria-label="Close print preview"
+                aria-label={strings.close || "Close"}
                 className="gap-1 bg-zinc-800 text-zinc-100 border-zinc-600 font-medium hover:bg-zinc-700 hover:text-zinc-50"
               >
-                <X className="w-4 h-4" /> Close
+                <X className="w-4 h-4" /> {strings.close || "Close"}
               </Button>
             </div>
           </div>

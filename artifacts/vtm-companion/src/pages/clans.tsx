@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 import { motion } from "framer-motion";
 import { clans } from "@/data/clans";
-import { disciplines } from "@/data/disciplines";
 import { ClanEntry, EditionId } from "@/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FavoriteButton } from "@/components/favorite-button";
@@ -16,6 +15,7 @@ import {
   getLocalizedText,
   getClanDisplayName,
   getClanSect,
+  getClanDisciplinesForEdition,
 } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 import { getClanImageSrc, getClanHeroObjectPosition } from "@/utils/clanImage";
@@ -309,10 +309,17 @@ export default function Clans() {
 
                   <div className="p-5 short-landscape:p-3 flex-1 flex flex-col">
                     <div className="flex flex-wrap gap-2 mb-4 short-landscape:mb-2">
-                      {clan.disciplines.filter(d => {
-                        const discData = disciplines.find(disc => disc.id === d);
-                        return discData ? discData.editions.includes(activeEdition) : false;
-                      }).map(d => (
+                      {/* Batch S: switched from inline filter over the flat
+                          `clan.disciplines` union to the edition-aware helper.
+                          For clans with a `disciplinesByEdition` override
+                          (Giovanni/Hecata, Ravnos, Tzimisce, Salubri, Ministry)
+                          the helper returns the authoritative per-edition list;
+                          for every other clan the helper falls back to the flat
+                          list with the same `discipline.editions` filter the
+                          old inline code applied. The UI output is identical
+                          for unaffected clans and corrected for the five
+                          edition-divergent ones. */}
+                      {getClanDisciplinesForEdition(clan, activeEdition).map(d => (
                         // Discipline chip now uses the language-aware
                         // display-name helper instead of rendering the
                         // raw lowercase id (`celerity` → `Celeridad` in
@@ -546,10 +553,13 @@ export default function Clans() {
                           {strings.disciplinesLabel}
                         </h4>
                         <div className="flex flex-col gap-2">
-                          {selectedClan.disciplines.filter(d => {
-                            const discData = disciplines.find(disc => disc.id === d);
-                            return discData ? discData.editions.includes(activeEdition) : false;
-                          }).map(d => (
+                          {/* Batch S: same edition-aware helper as the card
+                              grid above. Routes clans with a divergent
+                              per-edition trio (Giovanni/Hecata, Ravnos,
+                              Tzimisce, Salubri, Ministry) through their
+                              `disciplinesByEdition` override; every other
+                              clan keeps its previous behaviour. */}
+                          {getClanDisciplinesForEdition(selectedClan, activeEdition).map(d => (
                             // Same display-name treatment as the card
                             // grid above — `{d}` was the raw id.
                             <div

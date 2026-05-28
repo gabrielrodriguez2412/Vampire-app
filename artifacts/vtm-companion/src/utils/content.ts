@@ -1,6 +1,7 @@
 import { LangCode, EditionId, ClanEntry } from '../types';
 import type { EditionScope } from '../types';
 import { clans } from '../data/clans';
+import { disciplines as ALL_DISCIPLINES } from '../data/disciplines';
 
 // Returns text in lang. If not available, falls back to 'en'. If still not available, returns null.
 export function getText(record: Record<LangCode, string> | undefined, lang: LangCode): string | null {
@@ -165,4 +166,39 @@ export function getClanDisplayNameById(clanId: string, edition: EditionId, lang:
   const clan = clans.find(c => c.id === clanId);
   if (!clan) return clanId;
   return getClanDisplayName(clan, edition, lang);
+}
+
+/**
+ * Resolve the visible discipline list for a clan in a given edition (Batch S).
+ *
+ * Resolution order:
+ *   1. `clan.disciplinesByEdition[edition]` if defined — this is the
+ *      authoritative per-edition list and replaces the default outright.
+ *      Use this when a clan's discipline trio CHANGES between editions
+ *      in ways the natural `discipline.editions` filter cannot express
+ *      (e.g., Giovanni V20 has Dominate/Necromancy/Potence; V5 Hecata
+ *      has Auspex/Fortitude/Oblivion — completely different lists made
+ *      of disciplines that are themselves universal or cross-edition).
+ *   2. Otherwise the union flat list `clan.disciplines`, filtered by
+ *      each discipline's own `editions` field. This covers the simple
+ *      "Tremere has Blood Sorcery in V5 and Thaumaturgy in V20"
+ *      pattern, where the swapped disciplines are themselves edition-
+ *      scoped.
+ *
+ * Always returns the list intersected with the active edition's
+ * discipline availability, so a stale entry in either source can't
+ * leak a wrong-edition discipline into the UI.
+ *
+ * Pure, side-effect-free; safe to call from `useMemo`/tests.
+ */
+export function getClanDisciplinesForEdition(
+  clan: ClanEntry,
+  edition: EditionId,
+): string[] {
+  const override = clan.disciplinesByEdition?.[edition];
+  const source = override ?? clan.disciplines;
+  return source.filter(id => {
+    const d = ALL_DISCIPLINES.find(x => x.id === id);
+    return d ? d.editions.includes(edition) : false;
+  });
 }

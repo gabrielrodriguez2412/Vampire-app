@@ -39,7 +39,35 @@ export interface ClanEntry {
   sectByEdition?: Partial<Record<EditionId, Record<LangCode, string>>>;
   summary: Record<LangCode, string>;
   weakness: Record<LangCode, string>;
+  /**
+   * Union of every discipline this clan can have across all editions.
+   * Used as the default list when no edition-specific override exists,
+   * and as the source for cross-references (search index, validation,
+   * discipline-page `clansWhoUse` consistency).
+   *
+   * The visible per-edition list is resolved through
+   * `getClanDisciplinesForEdition(clan, edition)` in `utils/content.ts`,
+   * which prefers `disciplinesByEdition[edition]` when populated and
+   * otherwise falls back to this flat list (filtered by each
+   * discipline's own `editions`).
+   */
   disciplines: string[];
+  /**
+   * Optional per-edition discipline overrides (Batch S).
+   *
+   * Use this when a clan's discipline trio actually CHANGES between
+   * editions in ways the natural discipline.editions filter can't
+   * express — e.g., Giovanni → Hecata swapping Dominate / Potence (V20)
+   * for Auspex / Fortitude (V5); Tzimisce swapping Auspex (V20) for
+   * Dominate (V5); Ravnos losing Fortitude in V5; Salubri carrying
+   * Dominate in V5 and Valeren in V20; Ministry losing Protean in V20.
+   *
+   * Each entry lists ONLY the discipline ids that should appear for
+   * that edition — replacing (not extending) the default `disciplines`
+   * list for that edition. Edition keys not present here fall back to
+   * the default. See `getClanDisciplinesForEdition` for resolution.
+   */
+  disciplinesByEdition?: Partial<Record<EditionId, string[]>>;
   icon: string;
   bannerImage: string;
   colorTheme: string;

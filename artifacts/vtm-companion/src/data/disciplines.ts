@@ -384,7 +384,11 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Absolute Command (Level 5)", level: 5, description: enEs("Issue a single command no target can resist.", "Emite una orden única que ningún objetivo puede resistir."), tacticalUse: enEs("Force a target to act against their own nature.", "Forzar a un objetivo a actuar contra su propia naturaleza.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["ventrue", "tremere", "lasombra", "malkavian"]
+    // Batch S: added giovanni (V20 trio), tzimisce (V5 trio), and
+    // salubri (V5 trio). The clan-side `disciplinesByEdition` maps
+    // confine each to the correct edition; the entries below keep the
+    // forward/reverse consistency test happy.
+    clansWhoUse: ["ventrue", "tremere", "lasombra", "malkavian", "giovanni", "tzimisce", "salubri"]
   },
   {
     id: "obfuscate",
@@ -403,7 +407,11 @@ export const disciplines: DisciplineEntry[] = [
       { name: "False Face (Level 5)", level: 5, description: enEs("Take on the appearance of someone else for a time.", "Adopta el aspecto de otra persona durante un tiempo."), tacticalUse: enEs("Slip into restricted places wearing another identity.", "Colarte en lugares restringidos con otra identidad.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["nosferatu", "malkavian", "assamite", "followers_of_set", "ravnos", "salubri"]
+    // Batch S: removed `salubri`. The prior list was paired with an
+    // incorrect `obfuscate` entry on Salubri's discipline trio; canon
+    // V5 Salubri have Auspex/Dominate/Fortitude and classic Salubri
+    // have Auspex/Fortitude/Valeren — never Obfuscate.
+    clansWhoUse: ["nosferatu", "malkavian", "assamite", "followers_of_set", "ravnos"]
   },
   {
     id: "presence",
@@ -467,7 +475,9 @@ export const disciplines: DisciplineEntry[] = [
       { name: "Quake Strike (Level 5)", level: 5, description: enEs("Strike the ground hard enough to topple everything nearby.", "Golpea el suelo con fuerza suficiente para derribar todo a tu alrededor."), tacticalUse: enEs("Knock down opponents and shatter terrain.", "Derribar a los oponentes y romper el terreno.") }
     ],
     narrativeUses: fallbackArr([]),
-    clansWhoUse: ["brujah", "nosferatu", "lasombra"]
+    // Batch S: added `giovanni` for the V20 Dominate/Necromancy/Potence
+    // trio (V5 Hecata drop Potence in favour of Auspex/Fortitude/Oblivion).
+    clansWhoUse: ["brujah", "nosferatu", "lasombra", "giovanni"]
   },
   {
     id: "oblivion",

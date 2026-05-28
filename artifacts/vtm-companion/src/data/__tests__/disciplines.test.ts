@@ -3,6 +3,8 @@ import { disciplines } from '../disciplines';
 import { clans } from '../clans';
 import { EDITION_LIST } from '../editions';
 import { UI_STRINGS } from '../../i18n/ui';
+import { getClanDisciplinesForEdition } from '../../utils/content';
+import type { ClanEntry, EditionId } from '../../types';
 
 const editionIds = new Set(EDITION_LIST.map(e => e.id));
 const disciplineIds = new Set(disciplines.map(d => d.id));
@@ -510,6 +512,136 @@ describe('clan -> discipline consistency', () => {
         new Set(d.clansWhoUse).size,
         `${d.id}.clansWhoUse has duplicates`
       ).toBe(d.clansWhoUse.length);
+    }
+  });
+});
+
+/**
+ * Batch S — edition-aware clan discipline trios.
+ *
+ * Pins the visible per-edition discipline list for each clan whose
+ * canonical trio differs between V20 (or earlier classic editions) and
+ * V5 in a way the natural `discipline.editions` filter alone cannot
+ * route correctly. Resolution goes through
+ * `getClanDisciplinesForEdition`, the same helper the clans page and
+ * the character sheet's `getSuggestedDisciplineIds` call.
+ *
+ * What this catches:
+ *   - Per-edition trios drift on the five clans currently using
+ *     `disciplinesByEdition` (Giovanni / Ravnos / Tzimisce / Salubri /
+ *     Followers of Set).
+ *   - V5-only disciplines (Blood Sorcery, Oblivion, Thin-Blood Alchemy)
+ *     leaking into classic editions for ANY clan — universal
+ *     anti-leak guard.
+ *   - Classic-only disciplines (Thaumaturgy, Obtenebration, Necromancy,
+ *     Vicissitude, Chimerstry, Quietus, Serpentis, Valeren) leaking
+ *     into V5 — universal anti-leak guard.
+ *
+ * What this deliberately does NOT pin:
+ *   - Clans whose flat list + natural `discipline.editions` filter
+ *     already produces the right set (Brujah, Gangrel, Malkavian,
+ *     Nosferatu, Toreador, Ventrue, Tremere, Lasombra, Banu Haqim).
+ *     The universal anti-leak guard below would still flag any
+ *     regression there.
+ */
+describe('edition-aware clan discipline trios (Batch S)', () => {
+  const find = (id: string): ClanEntry => {
+    const c = clans.find(x => x.id === id);
+    if (!c) throw new Error(`fixture: missing clan ${id}`);
+    return c;
+  };
+
+  type Case = { clan: string; ed: EditionId; expected: string[] };
+  const cases: Case[] = [
+    // Ravnos: V20 trio is Animalism / Chimerstry / Fortitude; V5
+    // dropped Chimerstry and Fortitude for Animalism / Obfuscate /
+    // Presence.
+    { clan: 'ravnos', ed: 'V20', expected: ['animalism', 'chimerstry', 'fortitude'] },
+    { clan: 'ravnos', ed: 'V5',  expected: ['animalism', 'obfuscate', 'presence'] },
+
+    // Giovanni → Hecata. Completely different trios; this is the
+    // headline Batch S fix — the prior data had V5 Hecata's
+    // Auspex/Fortitude leaking into V20.
+    { clan: 'giovanni', ed: 'V20', expected: ['dominate', 'necromancy', 'potence'] },
+    { clan: 'giovanni', ed: 'V5',  expected: ['auspex', 'fortitude', 'oblivion'] },
+
+    // Tzimisce: V20 keeps Auspex/Vicissitude; V5 swaps in
+    // Dominate/Protean.
+    { clan: 'tzimisce', ed: 'V20', expected: ['animalism', 'auspex', 'vicissitude'] },
+    { clan: 'tzimisce', ed: 'V5',  expected: ['animalism', 'dominate', 'protean'] },
+
+    // Salubri: V20 Auspex/Fortitude/Valeren; V5 Auspex/Dominate/
+    // Fortitude. The prior data shipped Obfuscate for both, which is
+    // wrong in either edition.
+    { clan: 'salubri', ed: 'V20', expected: ['auspex', 'fortitude', 'valeren'] },
+    { clan: 'salubri', ed: 'V5',  expected: ['auspex', 'dominate', 'fortitude'] },
+
+    // Followers of Set → The Ministry. V20 keeps Serpentis; V5 swaps
+    // Serpentis for Protean.
+    { clan: 'followers_of_set', ed: 'V20', expected: ['obfuscate', 'presence', 'serpentis'] },
+    { clan: 'followers_of_set', ed: 'V5',  expected: ['obfuscate', 'presence', 'protean'] },
+
+    // Lasombra: V20 Dominate/Potence/Obtenebration; V5 Dominate/
+    // Potence/Oblivion. Already correct via the natural
+    // `discipline.editions` filter (Obtenebration is classic-only,
+    // Oblivion is V5-only) — pinned here as a regression guard since
+    // the user listed it as a manual-QA target.
+    { clan: 'lasombra', ed: 'V20', expected: ['dominate', 'potence', 'obtenebration'] },
+    { clan: 'lasombra', ed: 'V5',  expected: ['dominate', 'oblivion', 'potence'] },
+
+    // Banu Haqim / Assamite: V20 Celerity/Obfuscate/Quietus; V5
+    // Blood Sorcery/Celerity/Obfuscate. Already correct via
+    // `discipline.editions`; pinned for the same reason as Lasombra.
+    { clan: 'assamite', ed: 'V20', expected: ['celerity', 'obfuscate', 'quietus'] },
+    { clan: 'assamite', ed: 'V5',  expected: ['blood_sorcery', 'celerity', 'obfuscate'] },
+
+    // Thin-Blood: V5 only, single discipline (the alchemy itself).
+    { clan: 'thin_blood', ed: 'V5', expected: ['thin_blood_alchemy'] },
+  ];
+
+  for (const c of cases) {
+    it(`${c.clan} @ ${c.ed} → [${c.expected.join(', ')}]`, () => {
+      const actual = getClanDisciplinesForEdition(find(c.clan), c.ed).slice().sort();
+      const expected = c.expected.slice().sort();
+      expect(actual).toEqual(expected);
+    });
+  }
+
+  // Universal anti-leak guard. Catches the next regression class:
+  // a V5-only discipline (or vice versa) accidentally appearing for
+  // the wrong edition for ANY clan — even ones we haven't enumerated
+  // above. Pure consistency between `discipline.editions` and what
+  // the helper returns.
+  it('V5-only disciplines never leak into classic editions for any clan', () => {
+    const V5_ONLY = disciplines
+      .filter(d => d.editions.length === 1 && d.editions[0] === 'V5')
+      .map(d => d.id);
+    const classicEditions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20'];
+    for (const clan of clans) {
+      for (const ed of classicEditions) {
+        const got = getClanDisciplinesForEdition(clan, ed);
+        for (const id of V5_ONLY) {
+          expect(
+            got.includes(id),
+            `${clan.id} @ ${ed} should not include V5-only discipline ${id}`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('classic-only disciplines never leak into V5 for any clan', () => {
+    const classicOnly = disciplines
+      .filter(d => d.editions.length > 0 && !d.editions.includes('V5'))
+      .map(d => d.id);
+    for (const clan of clans) {
+      const got = getClanDisciplinesForEdition(clan, 'V5');
+      for (const id of classicOnly) {
+        expect(
+          got.includes(id),
+          `${clan.id} @ V5 should not include classic-only discipline ${id}`,
+        ).toBe(false);
+      }
     }
   });
 });

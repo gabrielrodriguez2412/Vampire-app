@@ -15,6 +15,7 @@ import { UI_STRINGS } from "@/i18n/ui";
 import { useAppContext } from "@/context/AppContext";
 import { disciplines } from "@/data/disciplines";
 import { clans } from "@/data/clans";
+import { getClanDisciplinesForEdition } from "@/utils/content";
 
 /**
  * Normalize a stored discipline value into `{ rating, powers }`.
@@ -65,12 +66,18 @@ export function getSuggestedDisciplineIds(
   if (!clanId) return [];
   const clan = clans.find(c => c.id === clanId);
   if (!clan) return [];
-  return clan.disciplines.filter(disciplineId => {
-    const d = disciplines.find(x => x.id === disciplineId);
-    if (!d) return false;
-    if (!d.editions.includes(edition)) return false;
-    return currentMap[disciplineId] === undefined;
-  });
+  // Batch S: route through the edition-aware helper instead of
+  // iterating the flat `clan.disciplines` union and filtering by
+  // each discipline's `editions`. The helper picks
+  // `clan.disciplinesByEdition[edition]` when present (e.g., Giovanni
+  // V20 → Dominate/Necromancy/Potence, distinct from V5 Hecata's
+  // Auspex/Fortitude/Oblivion) and otherwise falls back to the flat
+  // list with the same `editions` filter the old inline code applied,
+  // so clans without an override (Brujah, Tremere, Lasombra, …) keep
+  // their previous behaviour byte-for-byte.
+  return getClanDisciplinesForEdition(clan, edition).filter(
+    disciplineId => currentMap[disciplineId] === undefined,
+  );
 }
 
 interface DynamicSheetProps {

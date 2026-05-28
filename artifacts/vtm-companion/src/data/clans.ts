@@ -311,7 +311,18 @@ export const clans: ClanEntry[] = [
       "Territorial Dependance: A Tzimisce must rest near earth from their birthplace or their domain. Failing to do so halves their dice pools.",
       "Dependencia Territorial: Un Tzimisce debe descansar cerca de tierra de su lugar de nacimiento o de su dominio. De no hacerlo, sus reservas de dados se reducen a la mitad.",
     ),
-    disciplines: ["animalism", "auspex", "protean", "vicissitude"],
+    // Batch S: V20 Tzimisce have Animalism / Auspex / Vicissitude;
+    // V5 swapped Auspex out for Dominate and replaced Vicissitude with
+    // a Protean variant. Protean was already on the union list;
+    // Dominate was missing for V5.
+    disciplines: ["animalism", "auspex", "dominate", "protean", "vicissitude"],
+    disciplinesByEdition: {
+      "1ST":     ["animalism", "auspex", "vicissitude"],
+      "2ND":     ["animalism", "auspex", "vicissitude"],
+      "REVISED": ["animalism", "auspex", "vicissitude"],
+      "V20":     ["animalism", "auspex", "vicissitude"],
+      "V5":      ["animalism", "dominate", "protean"],
+    },
     icon: "🐉",
     bannerImage: "/opengraph.jpg",
     colorTheme: "#3E000F",
@@ -390,7 +401,19 @@ export const clans: ClanEntry[] = [
       "Light Sensitivity: They suffer far greater damage from sunlight than other vampires, and bright lights cause physical pain and subtract from dice pools.",
       "Sensibilidad a la Luz: Sufren un daño mucho mayor por la luz solar que otros vampiros, y las luces brillantes les provocan dolor físico y restan dados a sus reservas.",
     ),
+    // Batch S: V20 Followers of Set have Obfuscate / Presence /
+    // Serpentis (no Protean); the V5 rebrand to The Ministry replaced
+    // Serpentis with Protean. Serpentis is already classic-only via
+    // its `editions`, but Protean is universal and was leaking into
+    // V20 — `disciplinesByEdition` scopes both correctly.
     disciplines: ["obfuscate", "presence", "protean", "serpentis"],
+    disciplinesByEdition: {
+      "1ST":     ["obfuscate", "presence", "serpentis"],
+      "2ND":     ["obfuscate", "presence", "serpentis"],
+      "REVISED": ["obfuscate", "presence", "serpentis"],
+      "V20":     ["obfuscate", "presence", "serpentis"],
+      "V5":      ["obfuscate", "presence", "protean"],
+    },
     icon: "🐍",
     bannerImage: "/images/ministry.png",
     colorTheme: "#B8860B",
@@ -417,7 +440,22 @@ export const clans: ClanEntry[] = [
       "Painful Kiss: Their bite is excruciatingly painful, causing damage rather than the ecstatic pleasure associated with the vampiric Kiss.",
       "Beso Doloroso: Su mordisco es atrozmente doloroso y causa daño en lugar del placer extático asociado al Beso vampírico.",
     ),
-    disciplines: ["auspex", "fortitude", "oblivion", "necromancy"],
+    // Batch S: V20 Giovanni and V5 Hecata have completely different
+    // discipline trios (Dominate/Necromancy/Potence vs.
+    // Auspex/Fortitude/Oblivion) — none of the swapped disciplines are
+    // themselves edition-scoped, so the natural `discipline.editions`
+    // filter alone cannot route them correctly. `disciplinesByEdition`
+    // gives each edition its own authoritative list, and the union flat
+    // `disciplines` array below carries every entry for cross-references
+    // (search index, validation, and the `clansWhoUse` consistency test).
+    disciplines: ["auspex", "dominate", "fortitude", "necromancy", "oblivion", "potence"],
+    disciplinesByEdition: {
+      "1ST":     ["dominate", "necromancy", "potence"],
+      "2ND":     ["dominate", "necromancy", "potence"],
+      "REVISED": ["dominate", "necromancy", "potence"],
+      "V20":     ["dominate", "necromancy", "potence"],
+      "V5":      ["auspex", "fortitude", "oblivion"],
+    },
     icon: "💀",
     bannerImage: "/images/hecata.png",
     colorTheme: "#4A4A4A",
@@ -441,7 +479,19 @@ export const clans: ClanEntry[] = [
       "Doomed to Wander / Vice: If they sleep in the same place more than once, they risk burning. They also suffer from a specific criminal vice they must indulge.",
       "Condenados a Vagar / Vicio: Si duermen más de una vez en el mismo lugar se exponen a arder. Además padecen un vicio criminal específico que deben satisfacer.",
     ),
-    disciplines: ["animalism", "obfuscate", "presence", "chimerstry", "fortitude"],
+    // Batch S: Ravnos V20 has Animalism / Chimerstry / Fortitude;
+    // V5 dropped Chimerstry (as a discipline) and Fortitude in favour
+    // of Animalism / Obfuscate / Presence. Chimerstry is already
+    // classic-only via its own `editions`, but Fortitude is universal
+    // and was leaking into V5 — `disciplinesByEdition` resolves it.
+    disciplines: ["animalism", "chimerstry", "fortitude", "obfuscate", "presence"],
+    disciplinesByEdition: {
+      "1ST":     ["animalism", "chimerstry", "fortitude"],
+      "2ND":     ["animalism", "chimerstry", "fortitude"],
+      "REVISED": ["animalism", "chimerstry", "fortitude"],
+      "V20":     ["animalism", "chimerstry", "fortitude"],
+      "V5":      ["animalism", "obfuscate", "presence"],
+    },
     icon: "🃏",
     bannerImage: "/images/ravnos.png",
     colorTheme: "#CD5C5C",
@@ -465,7 +515,19 @@ export const clans: ClanEntry[] = [
       "Prey Exclusion: They can only feed from mortals who offer their blood willingly. Forcing the Kiss causes severe spiritual and physical backlash.",
       "Restricción de Presa: Solo pueden alimentarse de mortales que ofrezcan su sangre de buen grado. Forzar el Beso provoca una grave reacción espiritual y física.",
     ),
-    disciplines: ["auspex", "fortitude", "obfuscate"],
+    // Batch S: V20 Salubri have Auspex / Fortitude / Valeren;
+    // V5 Salubri have Auspex / Dominate / Fortitude. Obfuscate was
+    // incorrectly listed for both editions in the prior data and is
+    // removed here; the matching `salubri` reference in
+    // `obfuscate.clansWhoUse` is also removed in `data/disciplines.ts`.
+    disciplines: ["auspex", "dominate", "fortitude", "valeren"],
+    disciplinesByEdition: {
+      "1ST":     ["auspex", "fortitude", "valeren"],
+      "2ND":     ["auspex", "fortitude", "valeren"],
+      "REVISED": ["auspex", "fortitude", "valeren"],
+      "V20":     ["auspex", "fortitude", "valeren"],
+      "V5":      ["auspex", "dominate", "fortitude"],
+    },
     icon: "👁️‍🗨️",
     bannerImage: "/images/salubri.png",
     colorTheme: "#F0E68C",

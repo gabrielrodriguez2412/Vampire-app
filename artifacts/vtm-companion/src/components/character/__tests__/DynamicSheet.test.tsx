@@ -4,7 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { DynamicSheet, getProperty, setProperty, getSuggestedDisciplineIds, readDisciplineEntry, writeDisciplineValue } from '../DynamicSheet';
+import { DynamicSheet, getProperty, setProperty, getSuggestedDisciplineIds, readDisciplineEntry, writeDisciplineValue, resolveChronicleFieldValue } from '../DynamicSheet';
 import { AppContextProvider } from '@/context/AppContext';
 import { Character, EditionId, V5Character, ClassicCharacter } from '@/types';
 import { SheetSchema } from '@/data/characterSheets/schemas';
@@ -150,6 +150,40 @@ describe('DynamicSheet Utilities', () => {
         .toEqual({ rating: 2, powers: ['A', 'B'] });
     });
   });
+
+  describe('resolveChronicleFieldValue', () => {
+    it('auto-fills an empty field with the linked chronicle name', () => {
+      expect(resolveChronicleFieldValue('', 'Camarilla Nights')).toBe('Camarilla Nights');
+    });
+
+    it('treats a whitespace-only stored value as empty and auto-fills', () => {
+      expect(resolveChronicleFieldValue('   ', 'Camarilla Nights')).toBe('Camarilla Nights');
+    });
+
+    it('preserves a manual value over the linked chronicle name', () => {
+      expect(resolveChronicleFieldValue('My Side Story', 'Camarilla Nights')).toBe('My Side Story');
+    });
+
+    it('tracks a changed link only while the field is still empty (auto-filled state)', () => {
+      // Empty field follows whatever chronicle is currently linked.
+      expect(resolveChronicleFieldValue('', 'Chronicle A')).toBe('Chronicle A');
+      expect(resolveChronicleFieldValue('', 'Chronicle B')).toBe('Chronicle B');
+      // A stored (manual) value is never replaced when the link changes.
+      expect(resolveChronicleFieldValue('Chronicle A', 'Chronicle B')).toBe('Chronicle A');
+    });
+
+    it('keeps existing behavior when the character is not linked', () => {
+      expect(resolveChronicleFieldValue('', undefined)).toBe('');
+      expect(resolveChronicleFieldValue('', '')).toBe('');
+      expect(resolveChronicleFieldValue('   ', undefined)).toBe('   ');
+      expect(resolveChronicleFieldValue('Manual Only', undefined)).toBe('Manual Only');
+    });
+
+    it('handles null/undefined stored values', () => {
+      expect(resolveChronicleFieldValue(null, 'Linked')).toBe('Linked');
+      expect(resolveChronicleFieldValue(undefined, undefined)).toBe('');
+    });
+  });
 });
 
 describe('DynamicSheet Rendering', () => {
@@ -289,6 +323,63 @@ describe('DynamicSheet Rendering', () => {
     );
     // Legacy number is read as bashing damage → 3 filled boxes, 7 total, no crash.
     expect(container.querySelectorAll('.w-5.h-5').length).toBe(7);
+  });
+
+  it.each([
+    ['V5', { id: '1', name: 'V5', clan: 'brujah', edition: 'V5', health: { damage: 0, aggravated: 0, max: 5 }, willpower: { damage: 0, aggravated: 0, max: 5 }, attributes: {}, skills: {}, disciplines: {}, bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0, chronicleId: 'chr1' } as Character],
+    ['Classic', { id: '1', name: 'Classic', clan: 'brujah', edition: 'V20', bloodPool: { current: 10, max: 10 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 }, attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 }, willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0, chronicleId: 'chr1' } as Character],
+  ])('prefills an empty Chronicle field from the linked chronicle (%s)', (_label, char) => {
+    const schema: SheetSchema = {
+      sections: [{ id: 'info', labelKey: 'info', fields: [{ id: 'chronicle', type: 'text', labelKey: 'chronicle' }] }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={char} schema={schema} onChange={mockOnChange} linkedChronicleName="Camarilla Nights" />
+    );
+
+    const input = container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('Camarilla Nights');
+  });
+
+  it('shows a manual Chronicle value instead of the linked name', () => {
+    const char = {
+      id: '1', name: 'Classic', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0,
+      chronicleId: 'chr1', chronicle: 'My Side Story',
+    } as Character;
+
+    const schema: SheetSchema = {
+      sections: [{ id: 'info', labelKey: 'info', fields: [{ id: 'chronicle', type: 'text', labelKey: 'chronicle' }] }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={char} schema={schema} onChange={mockOnChange} linkedChronicleName="Camarilla Nights" />
+    );
+
+    const input = container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('My Side Story');
+  });
+
+  it('leaves the Chronicle field empty when the character is not linked', () => {
+    const char = {
+      id: '1', name: 'Classic', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0,
+    } as Character;
+
+    const schema: SheetSchema = {
+      sections: [{ id: 'info', labelKey: 'info', fields: [{ id: 'chronicle', type: 'text', labelKey: 'chronicle' }] }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={char} schema={schema} onChange={mockOnChange} />
+    );
+
+    const input = container.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('');
   });
 
   it('renders dynamic-dots-5 and allows adding custom entry', () => {

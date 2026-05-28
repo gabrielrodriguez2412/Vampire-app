@@ -87,6 +87,27 @@ interface DynamicSheetProps {
   schema: SheetSchema;
   onChange: (char: Character) => void;
   readonly?: boolean;
+  /**
+   * Display name of the chronicle this character is linked to (via
+   * `chronicleId`), if any. Used to prefill the free-text "Chronicle" field
+   * when it is empty. Purely a render-layer fallback — it never mutates the
+   * stored value, so a manual entry is always preserved.
+   */
+  linkedChronicleName?: string;
+}
+
+/**
+ * Resolve the value shown in the free-text "Chronicle" field. When the stored
+ * value is blank and the character is linked to a chronicle, fall back to the
+ * linked chronicle's name; otherwise show the stored value verbatim. A manual
+ * (non-blank) entry always wins, so user edits are never overwritten.
+ */
+export function resolveChronicleFieldValue(stored: unknown, linkedChronicleName?: string): string {
+  const current = stored != null ? String(stored) : '';
+  if (current.trim() === '' && linkedChronicleName && linkedChronicleName.trim() !== '') {
+    return linkedChronicleName;
+  }
+  return current;
 }
 
 // Simple object path getter/setter
@@ -953,7 +974,7 @@ function JournalList({ value, label, fieldId, isReadOnly, handleUpdate, strings 
   );
 }
 
-export function DynamicSheet({ character, schema, onChange, readonly = false }: DynamicSheetProps) {
+export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
@@ -996,9 +1017,9 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
         return (
           <div key={field.id} className="flex flex-col gap-1">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
-            <Input 
-              value={value != null ? String(value) : ''} 
-              onChange={e => handleUpdate(field.id, e.target.value, field)} 
+            <Input
+              value={field.id === 'chronicle' ? resolveChronicleFieldValue(value, linkedChronicleName) : (value != null ? String(value) : '')}
+              onChange={e => handleUpdate(field.id, e.target.value, field)}
               readOnly={isFieldReadOnly(field)}
               className="bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary-container"
             />

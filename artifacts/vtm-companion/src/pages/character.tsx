@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart, Archive, ArchiveRestore } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart, HeartOff, Archive, ArchiveRestore, ListChecks, CheckSquare, Square } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { Character, EditionId, CharacterType, CharacterStatus, Chronicle } from "@/types";
@@ -28,6 +28,8 @@ import { DynamicSheet } from "@/components/character/DynamicSheet";
 import { CharacterPrintModal } from "@/components/character/CharacterPrintView";
 import { FavoriteButton } from "@/components/favorite-button";
 import { ModalPortal } from "@/components/ui/modal-portal";
+import { BulkActionBar } from "@/components/ui/bulk-action-bar";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { getSchemaForEdition } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
@@ -183,6 +185,58 @@ export default function CharacterPage() {
     setFilterChronicle('all');
     setFilterStatus('active');
   };
+
+  // --- Bulk selection (Batch AB) ---
+  const selection = useBulkSelection();
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  // Bulk handlers all loop over the selected ids, reusing the same per-item
+  // storage helpers the single-item menu uses, then refresh + exit selection
+  // mode. They never touch unselected characters.
+  const bulkArchive = (status: CharacterStatus) => {
+    selection.selectedIds.forEach(id => setCharacterArchived(id, status));
+    setCharacters(getCharacters());
+    selection.exit();
+    toast({
+      title: status === 'archived'
+        ? (strings.bulk_archived_toast || "Archived selected")
+        : (strings.bulk_unarchived_toast || "Restored selected"),
+    });
+  };
+
+  const bulkSetType = (type: CharacterType) => {
+    selection.selectedIds.forEach(id => setCharacterType(id, type));
+    setCharacters(getCharacters());
+    selection.exit();
+    toast({ title: strings.bulk_updated_toast || "Selection updated" });
+  };
+
+  const bulkFavorite = (fav: boolean) => {
+    // Only flip items that aren't already in the desired state, so the result
+    // is deterministic regardless of each item's starting favorite status.
+    selection.selectedIds.forEach(id => {
+      if (isFavoriteTyped('character', id) !== fav) toggleFavoriteTyped('character', id);
+    });
+    selection.exit();
+    toast({
+      title: fav
+        ? (strings.bulk_favorited_toast || "Added to favorites")
+        : (strings.bulk_unfavorited_toast || "Removed from favorites"),
+    });
+  };
+
+  const confirmBulkDelete = () => {
+    const ids = Array.from(selection.selectedIds);
+    ids.forEach(id => deleteCharacter(id));
+    if (activeChar && ids.includes(activeChar.id)) setActiveChar(null);
+    setCharacters(getCharacters());
+    setBulkDeleteOpen(false);
+    selection.exit();
+    toast({ title: strings.bulk_deleted_toast || "Deleted selected" });
+  };
+
+  /** Select every character in the current filtered list. */
+  const selectAllDisplayed = () => selection.setSelection(displayedCharacters.map(c => c.id));
 
   // Refresh chronicles from storage; used after mount and when modals open
   // so the dropdowns always show the latest list.
@@ -511,6 +565,85 @@ export default function CharacterPage() {
         })()}
       </AnimatePresence>
 
+      {/* Bulk action bar (Batch AB) — floating, portaled above the bottom nav.
+          Hidden while the bulk-delete confirm is open so it doesn't paint over
+          the dialog. */}
+      {selection.active && !bulkDeleteOpen && (
+        <BulkActionBar
+          count={selection.count}
+          selectedLabel={`${selection.count} ${strings.bulk_selected || "selected"}`}
+          onCancel={selection.exit}
+          cancelLabel={strings.cancel || "Cancel"}
+          onSelectAll={selectAllDisplayed}
+          selectAllLabel={strings.bulk_select_all || "Select all"}
+        >
+          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(true)} className="h-8 gap-1.5 text-xs">
+            <Heart className="w-3.5 h-3.5" /> {strings.bulk_favorite || "Favorite"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(false)} className="h-8 gap-1.5 text-xs">
+            <HeartOff className="w-3.5 h-3.5" /> {strings.bulk_unfavorite || "Unfavorite"}
+          </Button>
+          {filterStatus === 'archived' ? (
+            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('active')} className="h-8 gap-1.5 text-xs">
+              <ArchiveRestore className="w-3.5 h-3.5" /> {strings.char_unarchive || "Unarchive"}
+            </Button>
+          ) : (
+            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('archived')} className="h-8 gap-1.5 text-xs">
+              <Archive className="w-3.5 h-3.5" /> {strings.char_archive || "Archive"}
+            </Button>
+          )}
+          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkSetType('npc')} className="h-8 gap-1.5 text-xs">
+            <User className="w-3.5 h-3.5" /> {strings.char_mark_as_npc || "Mark as NPC"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkSetType('player')} className="h-8 gap-1.5 text-xs">
+            <User className="w-3.5 h-3.5" /> {strings.char_mark_as_player || "Mark as Player Character"}
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => setBulkDeleteOpen(true)} className="h-8 gap-1.5 text-xs text-red-400 hover:text-red-300 border-red-900/40">
+            <Trash2 className="w-3.5 h-3.5" /> {strings.delete}
+          </Button>
+        </BulkActionBar>
+      )}
+
+      {/* Bulk delete confirmation (Batch AB) — portaled above everything. */}
+      <AnimatePresence>
+        {bulkDeleteOpen && (
+          <ModalPortal key="bulk-delete-characters">
+          <motion.div
+            key="bulk-delete-characters"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setBulkDeleteOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-2">
+                {strings.bulk_delete_title || "Delete selected characters?"}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {strings.bulk_delete_desc || "This permanently deletes the selected characters and cannot be undone."}{' '}
+                <span className="text-foreground font-medium">{`(${selection.count})`}</span>
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)} className="text-muted-foreground">
+                  {strings.cancel}
+                </Button>
+                <Button size="sm" onClick={confirmBulkDelete} className="bg-red-600 hover:bg-red-700 text-white">
+                  <Trash2 className="w-4 h-4 mr-1" /> {strings.delete}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+          </ModalPortal>
+        )}
+      </AnimatePresence>
+
       {/* Delete confirmation overlay */}
       <AnimatePresence>
         {deletingId && (
@@ -698,6 +831,19 @@ export default function CharacterPage() {
                     </select>
                   </label>
                 )}
+
+                {!selection.active && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={selection.enter}
+                    className="h-8 gap-1.5 text-xs ml-auto"
+                  >
+                    <ListChecks className="w-3.5 h-3.5" />
+                    {strings.bulk_select || "Select"}
+                  </Button>
+                )}
               </div>
             )}
 
@@ -762,11 +908,15 @@ export default function CharacterPage() {
                   const clanData = clans.find(c => c.id === char.clan);
                   const clanColor = clanData?.colorTheme || '#8B0000';
                   const isV5 = char.edition === 'V5';
+                  const isSelected = selection.isSelected(char.id);
                   return (
                   <Card
                     key={char.id}
-                    onClick={() => handleOpenSheet(char)}
-                    className="relative overflow-hidden bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-all group focus-within:ring-1 focus-within:ring-primary/40"
+                    onClick={() => selection.active ? selection.toggle(char.id) : handleOpenSheet(char)}
+                    aria-pressed={selection.active ? isSelected : undefined}
+                    className={`relative overflow-hidden bg-card hover:bg-white/[0.02] border-border cursor-pointer transition-all group focus-within:ring-1 focus-within:ring-primary/40 ${
+                      selection.active && isSelected ? "ring-2 ring-primary" : ""
+                    }`}
                     style={{
                       // Left accent + top-right radial glow, both keyed
                       // off the clan color. Kept very low-opacity so
@@ -777,6 +927,14 @@ export default function CharacterPage() {
                   >
                     <CardHeader className="pb-3 pl-5">
                       <div className="flex justify-between items-start gap-2">
+                        {selection.active && (
+                          <span
+                            aria-hidden
+                            className={`mt-0.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                          >
+                            {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                          </span>
+                        )}
                         <div className="min-w-0 flex-1">
                           {renamingId === char.id ? (
                             /* Inline rename editor */
@@ -888,7 +1046,7 @@ export default function CharacterPage() {
                             hover:hover) keep the original reveal-on-hover
                             behaviour. The `focus:opacity-100` line still covers
                             keyboard users on desktop. */}
-                        <div onClick={e => e.stopPropagation()}>
+                        <div onClick={e => e.stopPropagation()} className={selection.active ? "hidden" : ""}>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

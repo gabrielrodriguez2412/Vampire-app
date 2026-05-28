@@ -5,8 +5,17 @@ import { dirname, resolve } from 'node:path';
 import { clans } from '../clans';
 import { disciplines } from '../disciplines';
 import { EDITION_LIST } from '../editions';
-import { getClanSect } from '../../utils/content';
-import type { ClanEntry, EditionId } from '../../types';
+import {
+  getClanSect,
+  getClanSummaryRecord,
+  getClanLoreRecord,
+  getClanWeaknessRecord,
+  getLocalizedClanSummary,
+  getLocalizedClanLore,
+  getLocalizedClanWeakness,
+  getClanDisciplinesForEdition,
+} from '../../utils/content';
+import type { ClanEntry, EditionId, LangCode } from '../../types';
 
 function clanById(id: string): ClanEntry {
   const c = clans.find(x => x.id === id);
@@ -192,4 +201,439 @@ describe('Spanish clan body translation coverage', () => {
       });
     }
   }
+});
+
+/**
+ * Edition-aware clan body resolution (Batch T).
+ *
+ * The clan detail page previously rendered the flat `summary`, `lore`,
+ * and `weakness` records as-is — and several of those records baked
+ * "in earlier editions X, in V5 Y" prose into a single paragraph, so
+ * the user saw mixed-era text under what was supposed to be an
+ * edition-specific page. Batch T introduces three optional override
+ * maps (`summaryByEdition`, `loreByEdition`, `weaknessByEdition`) and
+ * three resolvers (`getClanSummaryRecord`, `getClanLoreRecord`,
+ * `getClanWeaknessRecord`) so each edition shows its own clean text.
+ *
+ * These tests pin:
+ *   - Affected clans (Tremere, Assamite, Followers of Set, Giovanni,
+ *     Ravnos) have *different* visible text between V20 and V5 in
+ *     both EN and ES.
+ *   - Anti-leak: V20 weakness / lore does NOT contain V5-specific
+ *     keywords (Banu Haqim, Hecata, The Ministry, El Ministerio,
+ *     Anarch alliance, Week of Nightmares, Camarilla joining …),
+ *     and V5 weakness / lore does NOT contain classic-era keywords
+ *     (Assamite / Asamita, Giovanni — except where it's still a
+ *     legitimate ancestor mention, etc.).
+ *   - Clans we deliberately left flat (e.g. Brujah, Lasombra, Caitiff,
+ *     Thin-Blood) still resolve correctly through the helper.
+ *
+ * Catches the next regression class: someone re-flattens a clan's
+ * lore/weakness into "X in earlier editions, Y in V5" prose, or adds a
+ * V5 rebrand back into a V20-edition string.
+ */
+describe('edition-aware clan body resolution (Batch T)', () => {
+  const find = (id: string): ClanEntry => {
+    const c = clans.find(x => x.id === id);
+    if (!c) throw new Error(`fixture: missing clan ${id}`);
+    return c;
+  };
+
+  /**
+   * For each clan with an override, the visible V20 paragraph must be
+   * a different string from the visible V5 paragraph. Caught the
+   * Tremere / Assamite "in earlier editions, in V5" double-baked
+   * paragraph.
+   */
+  it('weakness differs between V20 and V5 for clans with overrides', () => {
+    const clansWithWeaknessOverride = ['tremere', 'assamite'];
+    for (const id of clansWithWeaknessOverride) {
+      const c = find(id);
+      for (const lang of ['en', 'es'] as LangCode[]) {
+        const v20 = getLocalizedClanWeakness(c, 'V20', lang).text;
+        const v5  = getLocalizedClanWeakness(c, 'V5',  lang).text;
+        expect(v20, `${id} V20 ${lang} weakness should resolve`).toBeTruthy();
+        expect(v5,  `${id} V5  ${lang} weakness should resolve`).toBeTruthy();
+        expect(v20, `${id} weakness in V20 ${lang} must differ from V5`).not.toBe(v5);
+      }
+    }
+  });
+
+  it('lore differs between V20 and V5 for clans with overrides', () => {
+    const clansWithLoreOverride = [
+      'tremere',
+      'assamite',
+      'followers_of_set',
+      'giovanni',
+      'ravnos',
+    ];
+    for (const id of clansWithLoreOverride) {
+      const c = find(id);
+      for (const lang of ['en', 'es'] as LangCode[]) {
+        const v20 = getLocalizedClanLore(c, 'V20', lang).text;
+        const v5  = getLocalizedClanLore(c, 'V5',  lang).text;
+        expect(v20, `${id} V20 ${lang} lore should resolve`).toBeTruthy();
+        expect(v5,  `${id} V5  ${lang} lore should resolve`).toBeTruthy();
+        expect(v20, `${id} lore in V20 ${lang} must differ from V5`).not.toBe(v5);
+      }
+    }
+  });
+
+  /**
+   * Anti-leak guard. The user-facing copy on a V20 page must not
+   * contain V5-only naming or framing, and vice versa. The test runs
+   * against every clan + every (edition × lang) combination so a
+   * future copy edit that drops a V5 keyword into a classic paragraph
+   * fails loudly.
+   *
+   * Keywords are conservative on purpose: they match phrases that are
+   * unambiguously edition-specific (a rebrand name or a V5-only
+   * event). Things like "Camarilla" or "Anarch" can legitimately
+   * appear in any edition and are NOT flagged.
+   */
+  it('V20 lore + weakness do not leak V5-specific naming for any clan', () => {
+    const V5_ONLY_TERMS = [
+      // V5 clan rebrands. These are also the V5 alternateNames; they
+      // must never appear in a V20 paragraph.
+      'Banu Haqim',
+      'Hecata',
+      'The Ministry',
+      'El Ministerio',
+      // V5-only events / terms.
+      'Week of Nightmares',
+      'Semana de Pesadillas',
+      // Batch T follow-up: the Beckoning and the Lasombra mass
+      // defection to the Camarilla are V5-era plot beats that must
+      // not appear in any classic Lasombra paragraph.
+      'Beckoning',
+      'Llamado',
+      // Batch T follow-up: V5 thin-blood vocabulary that must not
+      // leak into classic editions where the framing is "high-
+      // generation heralds of Gehenna" instead.
+      'Duskborn',
+      'Nacidos del Crepúsculo',
+      'Thin-Blood Alchemy',
+      'Alquimia de Sangre Débil',
+      // V20 caps generation at 15th; "16th generation" / "16 gen"
+      // wording is V5-specific.
+      '16th generation',
+      'generación 16',
+      'generaciones 14, 15 y 16',
+      // Batch T audit: additional V5-only system vocabulary that
+      // shouldn't appear in classic-edition prose.
+      'Second Inquisition',
+      'Segunda Inquisición',
+      'Gehenna War',
+      'Guerra de Gehena',
+      'blood resonance',
+      'resonancia de sangre',
+      'predator type',
+      'tipo de depredador',
+      'hunger dice',
+      'dados de hambre',
+    ];
+    const classicEditions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20'];
+    for (const clan of clans) {
+      for (const ed of classicEditions) {
+        for (const lang of ['en', 'es'] as LangCode[]) {
+          const lore = getLocalizedClanLore(clan, ed, lang).text ?? '';
+          const weakness = getLocalizedClanWeakness(clan, ed, lang).text ?? '';
+          const summary = getLocalizedClanSummary(clan, ed, lang).text ?? '';
+          for (const term of V5_ONLY_TERMS) {
+            expect(
+              lore.includes(term),
+              `${clan.id} ${ed} ${lang} lore leaks V5 term "${term}"`,
+            ).toBe(false);
+            expect(
+              weakness.includes(term),
+              `${clan.id} ${ed} ${lang} weakness leaks V5 term "${term}"`,
+            ).toBe(false);
+            expect(
+              summary.includes(term),
+              `${clan.id} ${ed} ${lang} summary leaks V5 term "${term}"`,
+            ).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it('V5 lore + weakness do not leak classic-era naming for the renamed clans', () => {
+    // V5 rebrands the clan name — V5 paragraphs for these clans must
+    // not refer back to the old name (which is what the V20 entries
+    // use). Other clans whose name didn't change (Brujah, Lasombra…)
+    // can use their name freely in V5 paragraphs.
+    const renamedClans: Array<{ id: string; classicTerms: string[] }> = [
+      { id: 'assamite',         classicTerms: ['Assamite', 'Assamita', 'Asamita'] },
+      { id: 'giovanni',         classicTerms: ['Giovanni'] },
+      { id: 'followers_of_set', classicTerms: ['Followers of Set', 'Seguidores de Set'] },
+    ];
+    for (const { id, classicTerms } of renamedClans) {
+      const c = find(id);
+      for (const lang of ['en', 'es'] as LangCode[]) {
+        const lore = getLocalizedClanLore(c, 'V5', lang).text ?? '';
+        const weakness = getLocalizedClanWeakness(c, 'V5', lang).text ?? '';
+        for (const term of classicTerms) {
+          expect(
+            lore.includes(term),
+            `${id} V5 ${lang} lore leaks classic-era term "${term}"`,
+          ).toBe(false);
+          expect(
+            weakness.includes(term),
+            `${id} V5 ${lang} weakness leaks classic-era term "${term}"`,
+          ).toBe(false);
+        }
+      }
+    }
+  });
+
+  /**
+   * Clans without overrides must still resolve. This catches a
+   * future helper bug that accidentally requires the override map.
+   */
+  it('clans without overrides fall back to the flat field for both editions', () => {
+    // Lasombra, thin_blood, gangrel and tzimisce got per-edition
+    // splits in the Batch T audit pass; they're no longer flat-only.
+    // The clans below have no overrides on any of the three fields
+    // and must still resolve correctly via fallback.
+    const flatOnlyClans = ['brujah', 'malkavian', 'caitiff'];
+    for (const id of flatOnlyClans) {
+      const c = find(id);
+      // Both helpers should return the same string as the flat field
+      // when no override is defined.
+      expect(getClanSummaryRecord(c, 'V20')).toBe(c.summary);
+      expect(getClanSummaryRecord(c, 'V5')).toBe(c.summary);
+      expect(getClanLoreRecord(c, 'V20')).toBe(c.lore);
+      expect(getClanLoreRecord(c, 'V5')).toBe(c.lore);
+      expect(getClanWeaknessRecord(c, 'V20')).toBe(c.weakness);
+      expect(getClanWeaknessRecord(c, 'V5')).toBe(c.weakness);
+    }
+  });
+
+  /**
+   * Specific manual-QA cases the user listed. Pinned as direct
+   * value assertions so the test failure message tells you exactly
+   * which clan × edition × language regressed.
+   */
+  it('Assamite weakness is curse-only in V20 and addiction-only in V5 (EN+ES)', () => {
+    const assamite = find('assamite');
+    // V20 EN: must contain "Curse" but not "addiction" / "Addiction"
+    const v20En = getLocalizedClanWeakness(assamite, 'V20', 'en').text ?? '';
+    expect(v20En.toLowerCase()).toContain('curse');
+    expect(v20En.toLowerCase()).not.toContain('addiction');
+    // V5 EN: must contain "Addiction" but not "curse"
+    const v5En = getLocalizedClanWeakness(assamite, 'V5', 'en').text ?? '';
+    expect(v5En.toLowerCase()).toContain('addiction');
+    expect(v5En.toLowerCase()).not.toContain('curse');
+    // V20 ES: maldición no adicción
+    const v20Es = getLocalizedClanWeakness(assamite, 'V20', 'es').text ?? '';
+    expect(v20Es.toLowerCase()).toContain('maldición');
+    expect(v20Es.toLowerCase()).not.toContain('adicción');
+    // V5 ES: adicción no maldición
+    const v5Es = getLocalizedClanWeakness(assamite, 'V5', 'es').text ?? '';
+    expect(v5Es.toLowerCase()).toContain('adicción');
+    expect(v5Es.toLowerCase()).not.toContain('maldición');
+  });
+
+  it('Tremere weakness is elder-bond in V20 and thin-blood in V5 (EN+ES)', () => {
+    const tremere = find('tremere');
+    const v20En = getLocalizedClanWeakness(tremere, 'V20', 'en').text ?? '';
+    const v5En  = getLocalizedClanWeakness(tremere, 'V5',  'en').text ?? '';
+    expect(v20En.toLowerCase()).toContain('elder');
+    expect(v5En.toLowerCase()).toContain('thin');
+    // Neither paragraph should mention the other edition's flavour.
+    expect(v20En.toLowerCase()).not.toContain('thin');
+    expect(v5En.toLowerCase()).not.toContain('elder');
+  });
+
+  it('Giovanni lore is family-merchant in V20 and Hecata-fusion in V5', () => {
+    const giovanni = find('giovanni');
+    const v20En = getLocalizedClanLore(giovanni, 'V20', 'en').text ?? '';
+    const v5En  = getLocalizedClanLore(giovanni, 'V5',  'en').text ?? '';
+    expect(v20En).toContain('Giovanni');
+    expect(v20En).not.toContain('Hecata');
+    expect(v5En).toContain('Hecata');
+    expect(v5En).not.toContain('Giovanni'); // V5 paragraph drops the old name entirely
+  });
+
+  /**
+   * Batch T follow-up: Lasombra V20 must not include V5-era plot
+   * beats (the Beckoning, the Camarilla defection, Oblivion, the
+   * V5-only modern-recording-devices weakness), and disciplines must
+   * stay on the classic Obtenebration list — not the V5 Oblivion.
+   */
+  it('Lasombra V20 lore is classic Sabbat-leader framing without V5 plot beats', () => {
+    const lasombra = find('lasombra');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(lasombra, 'V20', lang).text ?? '';
+      expect(lore).toBeTruthy();
+      // V5 plot vocabulary — must not appear.
+      expect(lore).not.toMatch(/\bBeckoning\b/i);
+      expect(lore).not.toMatch(/\bLlamado\b/i);
+      expect(lore).not.toMatch(/\bOblivion\b/i);
+      expect(lore).not.toMatch(/\bOlvido\b/i);
+      // V5 "joined the Camarilla / defection" framing.
+      expect(lore.toLowerCase()).not.toContain('joined the camarilla');
+      expect(lore.toLowerCase()).not.toContain('unirse a la camarilla');
+      expect(lore.toLowerCase()).not.toContain('desertó a la camarilla');
+      expect(lore.toLowerCase()).not.toContain('defected to the camarilla');
+      // V20 framing positive checks (case-insensitive so we don't
+      // get bitten by punctuation/capitalisation noise).
+      expect(lore.toLowerCase()).toContain('sabbat');
+    }
+  });
+
+  it('Lasombra V20 weakness is classic reflection-only, no modern-tech glitch wording', () => {
+    const lasombra = find('lasombra');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const weakness = getLocalizedClanWeakness(lasombra, 'V20', lang).text ?? '';
+      expect(weakness).toBeTruthy();
+      // V5 modern-tech / recording-device leakage — must not appear.
+      expect(weakness.toLowerCase()).not.toContain('recording device');
+      expect(weakness.toLowerCase()).not.toContain('dispositivo');
+      expect(weakness.toLowerCase()).not.toContain('glitch');
+      expect(weakness.toLowerCase()).not.toContain('falla');
+      expect(weakness.toLowerCase()).not.toContain('distorted');
+      expect(weakness.toLowerCase()).not.toContain('distorsionada');
+      // Classic reflection wording positive check.
+      expect(weakness.toLowerCase()).toMatch(/reflection|reflejo/);
+    }
+  });
+
+  it('Lasombra V20 disciplines include Obtenebration and not Oblivion', () => {
+    const lasombra = find('lasombra');
+    const v20 = getClanDisciplinesForEdition(lasombra, 'V20');
+    expect(v20).toContain('obtenebration');
+    expect(v20).not.toContain('oblivion');
+    const v5 = getClanDisciplinesForEdition(lasombra, 'V5');
+    expect(v5).toContain('oblivion');
+    expect(v5).not.toContain('obtenebration');
+  });
+
+  it('Lasombra V5 content remains V5-appropriate after the V20 cleanup', () => {
+    // Sanity check: the V20 cleanup must not have overwritten the
+    // V5 paragraphs. V5 Lasombra still get the Camarilla-defection
+    // framing in their lore and the distortion weakness.
+    const lasombra = find('lasombra');
+    const v5LoreEn = getLocalizedClanLore(lasombra, 'V5', 'en').text ?? '';
+    const v5WeaknessEn = getLocalizedClanWeakness(lasombra, 'V5', 'en').text ?? '';
+    expect(v5LoreEn.toLowerCase()).toContain('camarilla');
+    expect(v5WeaknessEn.toLowerCase()).toMatch(/distorted|recording/);
+  });
+
+  /**
+   * Batch T follow-up: Thin-Blood V20 must not include V5-only
+   * Duskborn / Alchemy / 16th-generation framing.
+   */
+  it('Thin-Blood V20 lore avoids V5 Duskborn + Alchemy + 16th-gen framing', () => {
+    const tb = find('thin_blood');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(tb, 'V20', lang).text ?? '';
+      const weakness = getLocalizedClanWeakness(tb, 'V20', lang).text ?? '';
+      const summary = getLocalizedClanSummary(tb, 'V20', lang).text ?? '';
+      for (const term of ['Duskborn', 'Nacidos del Crepúsculo', 'Thin-Blood Alchemy', 'Alquimia de Sangre Débil', '16th generation', 'generación 16', 'generaciones 14, 15 y 16']) {
+        expect(lore, `V20 ${lang} lore must not contain "${term}"`).not.toContain(term);
+        expect(weakness, `V20 ${lang} weakness must not contain "${term}"`).not.toContain(term);
+        expect(summary, `V20 ${lang} summary must not contain "${term}"`).not.toContain(term);
+      }
+      // Positive V20 framing: Gehenna / Final Nights vocabulary.
+      expect(lore.toLowerCase()).toMatch(/gehenna|final nights|noches finales/);
+    }
+  });
+
+  it('Thin-Blood V5 still contains the Duskborn / Alchemy framing intentionally', () => {
+    const tb = find('thin_blood');
+    const v5LoreEn = getLocalizedClanLore(tb, 'V5', 'en').text ?? '';
+    const v5WeaknessEn = getLocalizedClanWeakness(tb, 'V5', 'en').text ?? '';
+    expect(v5LoreEn).toContain('Duskborn');
+    expect(v5LoreEn).toContain('Thin-Blood Alchemy');
+    expect(v5WeaknessEn).toContain('Duskborn');
+  });
+
+  /**
+   * Batch T audit: live clan detail pages must not contain
+   * cross-edition comparison commentary. Phrases like "in earlier
+   * editions, X. In V5, Y." were the original sin Batch T set out
+   * to remove; this guard prevents a future content edit from
+   * re-introducing the pattern by accident.
+   *
+   * Runs against every clan × every edition × both languages × all
+   * three textual fields (summary, lore, weakness). Scans for
+   * comparison phrases in EN and ES.
+   */
+  it('no resolved clan detail text contains cross-edition comparison language', () => {
+    const FORBIDDEN_COMPARISON_PHRASES: Array<{ pattern: RegExp; label: string }> = [
+      { pattern: /\bin v5\b/i,                       label: '"in V5"' },
+      { pattern: /\ben v5\b/i,                       label: '"en V5"' },
+      { pattern: /\bin v20\b/i,                      label: '"in V20"' },
+      { pattern: /\ben v20\b/i,                      label: '"en V20"' },
+      { pattern: /\bin earlier editions\b/i,         label: '"in earlier editions"' },
+      { pattern: /\bin previous editions\b/i,        label: '"in previous editions"' },
+      { pattern: /\bin classic editions\b/i,         label: '"in classic editions"' },
+      { pattern: /\ben ediciones anteriores\b/i,     label: '"en ediciones anteriores"' },
+      { pattern: /\ben ediciones cl[áa]sicas\b/i,    label: '"en ediciones clásicas"' },
+      { pattern: /\ben ediciones previas\b/i,        label: '"en ediciones previas"' },
+    ];
+    const editions: EditionId[] = ['1ST', '2ND', 'REVISED', 'V20', 'V5'];
+    for (const clan of clans) {
+      for (const ed of editions) {
+        for (const lang of ['en', 'es'] as LangCode[]) {
+          const fields: Array<{ name: string; text: string }> = [
+            { name: 'summary',  text: getLocalizedClanSummary(clan, ed, lang).text ?? '' },
+            { name: 'lore',     text: getLocalizedClanLore(clan, ed, lang).text ?? '' },
+            { name: 'weakness', text: getLocalizedClanWeakness(clan, ed, lang).text ?? '' },
+          ];
+          for (const { name, text } of fields) {
+            for (const { pattern, label } of FORBIDDEN_COMPARISON_PHRASES) {
+              expect(
+                pattern.test(text),
+                `${clan.id} ${ed} ${lang} ${name} contains comparison phrase ${label} — clan detail pages should be edition-pure, not encyclopaedic`,
+              ).toBe(false);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  /**
+   * Batch T audit: Gangrel must not say "left the Camarilla" on
+   * 1ST or 2ND edition (they were still Camarilla then). The
+   * Revised-onward overrides keep the original departure framing.
+   */
+  it('Gangrel 1ST/2ND lore does not contradict the Camarilla sect override', () => {
+    const gangrel = find('gangrel');
+    for (const ed of ['1ST', '2ND'] as EditionId[]) {
+      for (const lang of ['en', 'es'] as LangCode[]) {
+        const lore = getLocalizedClanLore(gangrel, ed, lang).text ?? '';
+        expect(lore.toLowerCase()).not.toContain('left the camarilla');
+        expect(lore.toLowerCase()).not.toContain('abandonaron formalmente la camarilla');
+      }
+    }
+  });
+
+  /**
+   * Batch T audit: Tzimisce V5 paragraphs must not lean on the
+   * pre-V5 Sabbat / Vicissitude framing. (Vicissitude in V5 was
+   * folded into a Protean variant; Sabbat dissolved in V5.) Each
+   * V5 page should describe the clan with V5 vocabulary only.
+   */
+  it('Tzimisce V5 lore does not lean on classic Sabbat + Vicissitude framing', () => {
+    const tzimisce = find('tzimisce');
+    for (const lang of ['en', 'es'] as LangCode[]) {
+      const lore = getLocalizedClanLore(tzimisce, 'V5', lang).text ?? '';
+      // V5 Tzimisce are no longer "spiritual heart of the Sabbat"
+      expect(lore.toLowerCase()).not.toContain('spiritual heart of the sabbat');
+      expect(lore.toLowerCase()).not.toContain('corazón espiritual del sabbat');
+      // V5 doesn't use "Vicissitude" as a clan discipline name.
+      expect(lore).not.toContain('Vicissitude');
+      expect(lore).not.toContain('Vicisitud');
+    }
+    // V5 disciplines must also stay free of Vicissitude.
+    const v5Disc = getClanDisciplinesForEdition(tzimisce, 'V5');
+    expect(v5Disc).not.toContain('vicissitude');
+    // Classic-era Tzimisce keep Vicissitude — guard the inverse.
+    const v20Disc = getClanDisciplinesForEdition(tzimisce, 'V20');
+    expect(v20Disc).toContain('vicissitude');
+  });
 });

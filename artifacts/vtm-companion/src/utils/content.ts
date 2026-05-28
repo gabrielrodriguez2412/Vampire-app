@@ -169,6 +169,84 @@ export function getClanDisplayNameById(clanId: string, edition: EditionId, lang:
 }
 
 /**
+ * Edition-aware clan body field resolvers (Batch T).
+ *
+ * Mirror the existing `sectByEdition` pattern for the three textual
+ * fields the clan detail page renders as long-form paragraphs:
+ *
+ *   - `summary` — short pitch shown on the card and at the top of the
+ *     clan detail dialog.
+ *   - `lore` — multi-sentence narrative shown below the summary.
+ *   - `weakness` — clan bane / weakness paragraph in the bane card.
+ *
+ * Most clans don't need overrides — their summary, lore, and weakness
+ * are the same across editions and the flat fields suffice. The
+ * resolvers prefer `*ByEdition[edition]` when populated and otherwise
+ * return the flat field, so unaffected clans keep their current
+ * behaviour byte-for-byte.
+ *
+ * The flat fields remain populated for:
+ *   - search indexing (`utils/search.ts` joins `summary` + `lore`),
+ *   - validation and i18n-parity tests in `data/__tests__/clans.test.ts`,
+ *   - editions that don't have a specific override.
+ *
+ * Pure / side-effect-free; safe in `useMemo` and tests.
+ */
+export function getClanSummaryRecord(
+  clan: ClanEntry,
+  edition: EditionId,
+): Record<LangCode, string> {
+  return clan.summaryByEdition?.[edition] ?? clan.summary;
+}
+
+export function getClanLoreRecord(
+  clan: ClanEntry,
+  edition: EditionId,
+): Record<LangCode, string> {
+  return clan.loreByEdition?.[edition] ?? clan.lore;
+}
+
+export function getClanWeaknessRecord(
+  clan: ClanEntry,
+  edition: EditionId,
+): Record<LangCode, string> {
+  return clan.weaknessByEdition?.[edition] ?? clan.weakness;
+}
+
+/**
+ * Locale-resolved + fallback-aware wrappers that consumers can drop
+ * directly into JSX where the existing code called
+ * `getLocalizedText(clan.summary, lang)`.
+ *
+ * Returns the same `LocalizedTextResult` shape as `getLocalizedText`
+ * (so the EN-fallback chip rendering on the detail page stays
+ * unchanged).
+ */
+export function getLocalizedClanSummary(
+  clan: ClanEntry,
+  edition: EditionId,
+  lang: LangCode,
+): LocalizedTextResult {
+  return getLocalizedText(getClanSummaryRecord(clan, edition), lang);
+}
+
+export function getLocalizedClanLore(
+  clan: ClanEntry,
+  edition: EditionId,
+  lang: LangCode,
+): LocalizedTextResult {
+  return getLocalizedText(getClanLoreRecord(clan, edition), lang);
+}
+
+export function getLocalizedClanWeakness(
+  clan: ClanEntry,
+  edition: EditionId,
+  lang: LangCode,
+): LocalizedTextResult {
+  return getLocalizedText(getClanWeaknessRecord(clan, edition), lang);
+}
+
+/**
  * Resolve the visible discipline list for a clan in a given edition (Batch S).
  *
  * Resolution order:

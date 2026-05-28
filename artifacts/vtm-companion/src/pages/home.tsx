@@ -4,7 +4,7 @@ import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
 import { clans } from "@/data/clans";
 import { FEATURED_CLAN_IDS } from "@/data/featuredClans";
-import { getClanDisplayName, getClanDisplayNameById, getText } from "@/utils/content";
+import { getClanDisplayName, getClanDisplayNameById, getText, getClanSummaryRecord } from "@/utils/content";
 import { getCharacters } from "@/services/characterStorage";
 import { getChronicles } from "@/services/chronicleStorage";
 import { getAllChronicleSessions } from "@/services/chronicleSessionStorage";
@@ -349,7 +349,13 @@ export default function Home() {
           >
             {featuredClans.map(clan => {
             const clanName = getClanDisplayName(clan, activeEdition, activeLanguage);
-            const clanDesc = getText(clan.summary, activeLanguage) || '';
+            // Batch T: featured-tile description uses the edition-aware
+            // summary record, so future per-edition pitch overrides
+            // (when added) flow through here as well. No current clan
+            // overrides `summary`, so this is a no-op today but keeps
+            // the featured strip aligned with the card grid and clan
+            // detail dialog.
+            const clanDesc = getText(getClanSummaryRecord(clan, activeEdition), activeLanguage) || '';
             return (
               <Link key={clan.id} href={`/compendium/clanes/${clan.id}`}>
                 <div className="flex-none w-52 sm:w-64 snap-start bg-zinc-950 border border-zinc-900 group relative overflow-hidden cursor-pointer">

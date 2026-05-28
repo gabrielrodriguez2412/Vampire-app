@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory, normalizeCharacterNotes } from '../characterStorage';
+import { getCharacters, saveCharacter, clearCharacterStorage, createEmptyCharacter, deleteCharacter, renameCharacter, duplicateCharacter, buildCharacterExport, validateCharacterExport, importCharacter, EXPORT_VERSION, buildCharacterBackup, validateCharacterBackup, importCharacterBackup, BACKUP_VERSION, setCharacterType, setCharacterChronicle, normalizeInventory, normalizeCharacterNotes, normalizeClassicHealth } from '../characterStorage';
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -66,7 +66,58 @@ describe('characterStorage', () => {
       const char = chars[0] as any;
       expect(char.bloodPool).toEqual({ current: 10, max: 10 });
       expect(char.generation).toBe(13);
-      expect(char.health).toBe(0);
+      expect(char.health).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
+    });
+
+    it('migrates a legacy numeric classic health into the box track (as bashing)', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', edition: 'V20', health: 3 }
+      ]));
+
+      const char = getCharacters()[0] as any;
+      // Legacy untyped damage maps to bashing (least severe) — never escalated.
+      expect(char.health).toEqual({ bashing: 3, lethal: 0, aggravated: 0, max: 7 });
+    });
+
+    it('preserves a structured classic health track on load', () => {
+      localStorageMock.setItem('vtm-characters', JSON.stringify([
+        { id: '1', edition: 'V20', health: { bashing: 1, lethal: 2, aggravated: 1, max: 7 } }
+      ]));
+
+      const char = getCharacters()[0] as any;
+      expect(char.health).toEqual({ bashing: 1, lethal: 2, aggravated: 1, max: 7 });
+    });
+  });
+
+  describe('normalizeClassicHealth', () => {
+    it('maps a legacy numeric count to bashing, defaulting the track to 7', () => {
+      expect(normalizeClassicHealth(2)).toEqual({ bashing: 2, lethal: 0, aggravated: 0, max: 7 });
+    });
+
+    it('clamps a legacy number above the track length', () => {
+      expect(normalizeClassicHealth(99)).toEqual({ bashing: 7, lethal: 0, aggravated: 0, max: 7 });
+    });
+
+    it('floors fractional and zeroes negative legacy numbers', () => {
+      expect(normalizeClassicHealth(2.9)).toEqual({ bashing: 2, lethal: 0, aggravated: 0, max: 7 });
+      expect(normalizeClassicHealth(-4)).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
+    });
+
+    it('reads a well-formed structured track unchanged', () => {
+      expect(normalizeClassicHealth({ bashing: 1, lethal: 2, aggravated: 1, max: 7 }))
+        .toEqual({ bashing: 1, lethal: 2, aggravated: 1, max: 7 });
+    });
+
+    it('trims total overflow least-severe-first', () => {
+      // 5 + 3 + 1 = 9 on a 7-track → drop 2 bashing first.
+      expect(normalizeClassicHealth({ bashing: 5, lethal: 3, aggravated: 1, max: 7 }))
+        .toEqual({ bashing: 3, lethal: 3, aggravated: 1, max: 7 });
+    });
+
+    it('falls back to an empty 7-box track for garbage input', () => {
+      expect(normalizeClassicHealth(null)).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
+      expect(normalizeClassicHealth('nope')).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
+      expect(normalizeClassicHealth(undefined)).toEqual({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
     });
   });
 

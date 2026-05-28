@@ -325,6 +325,19 @@ export interface V5Character extends BaseCharacter {
   experience: number;
 }
 
+/**
+ * Classic / World-of-Darkness health track. Unlike V5 (superficial/aggravated),
+ * classic editions distinguish three damage types across a fixed 7-level track.
+ * Replaces the legacy `health: number` shape; `normalizeClassicHealth` migrates
+ * old saved characters (a plain damage count becomes `bashing`).
+ */
+export interface ClassicHealth {
+  bashing: number;
+  lethal: number;
+  aggravated: number;
+  max: number;
+}
+
 export interface ClassicCharacter extends BaseCharacter {
   edition: Exclude<EditionId, 'V5'>;
   generation: number;
@@ -342,7 +355,7 @@ export interface ClassicCharacter extends BaseCharacter {
   humanity: number;
   bloodPool: { current: number, max: number };
   willpower: { current: number, max: number };
-  health: number;
+  health: ClassicHealth;
   merits?: string;
   flaws?: string;
   experience: number;

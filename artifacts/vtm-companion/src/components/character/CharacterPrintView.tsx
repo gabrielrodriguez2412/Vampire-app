@@ -160,9 +160,18 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       value: `${v5.health.damage || 0} sup · ${v5.health.aggravated || 0} agg / ${v5.health.max || 5}`,
     });
   } else if (!isV5) {
+    // Classic health may be the new structured track or (legacy) a plain number.
+    const ch: unknown = cl?.health;
+    let healthValue = "—";
+    if (ch && typeof ch === "object") {
+      const h = ch as { bashing?: number; lethal?: number; aggravated?: number; max?: number };
+      healthValue = `${h.bashing || 0} bash · ${h.lethal || 0} leth · ${h.aggravated || 0} agg / ${h.max || 7}`;
+    } else if (typeof ch === "number") {
+      healthValue = `${ch} dmg`;
+    }
     trackerRows.push({
       label: strings.sheet_health || "Health",
-      value: typeof cl?.health === "number" ? `${cl.health} dmg` : "—",
+      value: healthValue,
     });
   }
   if (isV5 && v5?.willpower) {

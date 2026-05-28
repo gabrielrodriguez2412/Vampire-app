@@ -845,7 +845,8 @@ export default function CharacterPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                aria-label="Character actions"
+                                aria-label={strings.more_actions || "More actions"}
+                                title={strings.more_actions || "More actions"}
                                 className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 pointer-coarse:opacity-100 transition-opacity -mt-1 -mr-2"
                               >
                                 <MoreHorizontal className="w-4 h-4" />

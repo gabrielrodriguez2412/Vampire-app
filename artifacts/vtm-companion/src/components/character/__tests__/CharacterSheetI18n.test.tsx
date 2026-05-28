@@ -198,6 +198,20 @@ describe('discipline-section helper labels are localized (Batch V)', () => {
   });
 });
 
+describe('character action-menu trigger label is localized (Batch X)', () => {
+  it('Spanish "More actions" menu label is translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    // Both the character-card "⋯" trigger and the sheet-header "⋯" trigger
+    // use `more_actions` for their aria-label/title; the card trigger used to
+    // carry a hardcoded English "Character actions" (Batch X fix).
+    expect(es.more_actions).toBe('Más acciones');
+    expect(es.more_actions).not.toBe(en.more_actions);
+    expect(en.more_actions).toBe('More actions');
+  });
+});
+
 describe('discipline-section "Add all" / "Suggested" render in the active language (Batch V)', () => {
   beforeEach(() => {
     window.localStorage.clear();

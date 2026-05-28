@@ -60,6 +60,23 @@ function FieldRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
+/**
+ * A labelled free-text block for print (Batch W). Used by the V5
+ * Social & Moral section (Touchstones / Convictions / Advantages /
+ * Flaws) and the classic Merits & Flaws section — all of which are
+ * multi-line textarea fields on the normal sheet. Each block is an
+ * atomic print unit so a label never strands itself at the bottom of
+ * a page away from its body.
+ */
+function TextBlock({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="vtm-print-atom py-px">
+      <span className="font-medium">{label}</span>
+      <p className="whitespace-pre-wrap text-zinc-800 leading-snug">{value}</p>
+    </div>
+  );
+}
+
 function SectionHeading({ children }: { children: React.ReactNode }) {
   // Subtle VTM-themed accent: dark crimson, thin bottom border, small caps.
   return (
@@ -128,6 +145,9 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   if (isV5 && v5?.ambition) identityRows.push({ label: strings.sheet_ambition || "Ambition", value: v5.ambition });
   if (isV5 && v5?.desire) identityRows.push({ label: strings.sheet_desire || "Desire", value: v5.desire });
   if (isV5 && v5?.predatorType) identityRows.push({ label: strings.sheet_predator_type || "Predator Type", value: v5.predatorType });
+  // Batch W: resonance is a short V5-specific Vampire Trait that was
+  // missing from print. Rendered as an identity row (single short value).
+  if (isV5 && v5?.resonance) identityRows.push({ label: strings.sheet_resonance || "Resonance", value: v5.resonance });
   if (!isV5 && cl?.nature) identityRows.push({ label: strings.sheet_nature || "Nature", value: cl.nature });
   if (!isV5 && cl?.demeanor) identityRows.push({ label: strings.sheet_demeanor || "Demeanor", value: cl.demeanor });
   if (!isV5 && typeof cl?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(cl.generation) });
@@ -187,6 +207,25 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   const hasIdentity = identityRows.length > 0;
   const hasBackgrounds = backgroundEntries.length > 0;
   const hasVirtues = !isV5 && !!cl?.virtues;
+
+  // Batch W: free-text "Social & Moral" (V5) and "Merits & Flaws"
+  // (classic) blocks were modelled on the normal sheet but never
+  // rendered in print. Collect only the populated ones so empty
+  // sections stay hidden (matching the rest of the print design).
+  const nonEmpty = (v: string | undefined): v is string => !!v && v.trim() !== '';
+  type TextRow = { label: string; value: string };
+  const socialMoralRows: TextRow[] = [];
+  if (isV5) {
+    if (nonEmpty(v5?.touchstones)) socialMoralRows.push({ label: strings.sheet_touchstones || "Touchstones", value: v5!.touchstones! });
+    if (nonEmpty(v5?.convictions)) socialMoralRows.push({ label: strings.sheet_convictions || "Convictions", value: v5!.convictions! });
+    if (nonEmpty(v5?.advantages))  socialMoralRows.push({ label: strings.sheet_advantages || "Advantages", value: v5!.advantages! });
+    if (nonEmpty(v5?.flaws))       socialMoralRows.push({ label: strings.sheet_flaws || "Flaws", value: v5!.flaws! });
+  }
+  const meritsFlawsRows: TextRow[] = [];
+  if (!isV5) {
+    if (nonEmpty(cl?.merits)) meritsFlawsRows.push({ label: strings.sheet_merits || "Merits", value: cl!.merits! });
+    if (nonEmpty(cl?.flaws))  meritsFlawsRows.push({ label: strings.sheet_flaws || "Flaws", value: cl!.flaws! });
+  }
 
   return (
     <article className="text-black font-serif leading-snug text-[10px]">
@@ -294,6 +333,34 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
             </section>
           )}
         </div>
+      )}
+
+      {/* Social & Moral (V5) — Touchstones / Convictions / Advantages /
+          Flaws. Free-text blocks; only the populated ones render. Added
+          in Batch W (was previously missing from print entirely). */}
+      {isV5 && socialMoralRows.length > 0 && (
+        <section>
+          <SectionHeading>{strings.sheet_section_social_moral || "Social & Moral"}</SectionHeading>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-0">
+            {socialMoralRows.map(r => (
+              <TextBlock key={r.label} label={r.label} value={r.value} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Merits & Flaws (Classic) — free-text blocks; only the populated
+          ones render. Added in Batch W (was previously missing from
+          print entirely). */}
+      {!isV5 && meritsFlawsRows.length > 0 && (
+        <section>
+          <SectionHeading>{strings.sheet_section_merits_flaws || "Merits & Flaws"}</SectionHeading>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-0">
+            {meritsFlawsRows.map(r => (
+              <TextBlock key={r.label} label={r.label} value={r.value} />
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Inventory — only when populated. Each item is an atomic unit. */}

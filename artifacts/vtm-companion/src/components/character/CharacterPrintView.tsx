@@ -165,7 +165,10 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
     let healthValue = "—";
     if (ch && typeof ch === "object") {
       const h = ch as { bashing?: number; lethal?: number; aggravated?: number; max?: number };
-      healthValue = `${h.bashing || 0} bash · ${h.lethal || 0} leth · ${h.aggravated || 0} agg / ${h.max || 7}`;
+      const bashAbbr = strings.dmg_bashing_abbr || "bash";
+      const lethAbbr = strings.dmg_lethal_abbr || "leth";
+      const aggAbbr = strings.dmg_aggravated_abbr || "agg";
+      healthValue = `${h.bashing || 0} ${bashAbbr} · ${h.lethal || 0} ${lethAbbr} · ${h.aggravated || 0} ${aggAbbr} / ${h.max || 7}`;
     } else if (typeof ch === "number") {
       healthValue = `${ch} dmg`;
     }

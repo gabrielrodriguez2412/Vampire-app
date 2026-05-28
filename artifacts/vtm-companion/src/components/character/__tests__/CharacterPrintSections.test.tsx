@@ -138,10 +138,18 @@ describe('print/PDF classic health track (Batch Y)', () => {
   beforeEach(() => { window.localStorage.clear(); });
   afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
 
-  it('renders the structured bashing/lethal/aggravated summary', () => {
-    const char = makeClassic({ health: { bashing: 2, lethal: 1, aggravated: 0, max: 7 } });
+  it('renders the structured summary with English abbreviations', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
     const text = renderPrint(char, 'en');
-    expect(text).toContain('2 bash · 1 leth · 0 agg / 7');
+    expect(text).toContain('2 bash · 2 leth · 1 agg / 7');
+  });
+
+  it('localizes the summary abbreviations in Spanish', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
+    const text = renderPrint(char, 'es');
+    expect(text).toContain('2 cont. · 2 let. · 1 agr. / 7');
+    expect(text).not.toContain('bash');
+    expect(text).not.toContain('leth');
   });
 
   it('still renders a legacy numeric health value without crashing', () => {

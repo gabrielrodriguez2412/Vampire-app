@@ -4,6 +4,7 @@ import { Character, EditionId, DisciplineValue, InventoryItem, InventoryCategory
 import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
+import { ClassicHealthTracker } from "./ClassicHealthTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -1067,8 +1068,38 @@ export function DynamicSheet({ character, schema, onChange, readonly = false }: 
               />
             </div>
           );
+        } else if (!isV5 && field.special === 'health') {
+          // Classic / WoD box-based health track (bashing / lethal / aggravated).
+          const h = (typeof value === 'object' && value !== null)
+            ? value as { bashing?: number; lethal?: number; aggravated?: number; max?: number }
+            : { bashing: typeof value === 'number' ? value : 0, lethal: 0, aggravated: 0, max: 7 };
+          const safe = {
+            bashing: h.bashing || 0,
+            lethal: h.lethal || 0,
+            aggravated: h.aggravated || 0,
+            max: h.max || 7,
+          };
+
+          return (
+            <div key={field.id} className="flex flex-col gap-2 py-2">
+              <label className="text-sm text-foreground font-serif">{label}</label>
+              <ClassicHealthTracker
+                bashing={safe.bashing}
+                lethal={safe.lethal}
+                aggravated={safe.aggravated}
+                max={safe.max}
+                onChange={v => handleUpdate(field.id, { ...safe, ...v }, field)}
+                readonly={isFieldReadOnly(field)}
+                labels={{
+                  bashing: strings.dmg_bashing,
+                  lethal: strings.dmg_lethal,
+                  aggravated: strings.dmg_aggravated,
+                }}
+              />
+            </div>
+          );
         } else {
-          // Classic style (blood pool, health index, or willpower pool)
+          // Classic style (blood pool or willpower pool)
           const isObject = typeof value === 'object' && value !== null;
           const currentValue = isObject ? (value.current ?? 0) : (typeof value === 'number' ? value : 0);
           const classicMax = isObject ? (value.max || 10) : (field.special === 'bloodPool' ? 20 : 7); 

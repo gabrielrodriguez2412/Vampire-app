@@ -1,5 +1,8 @@
-import { Character, EditionId, V5Character, ClassicCharacter, CharacterType, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, ClassicHealth, CharacterType, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
 import { normalizeEditionId } from '../utils/content';
+
+/** Standard classic / WoD health track length (Bruised … Incapacitated). */
+export const CLASSIC_HEALTH_MAX = 7;
 
 const STORAGE_KEY = 'vtm-characters';
 
@@ -127,6 +130,53 @@ export function normalizeInventory(raw: unknown): InventoryItem[] {
   return [];
 }
 
+/**
+ * Coerce any value into a valid `ClassicHealth` ({bashing, lethal, aggravated, max}).
+ *
+ * - Number → legacy shape: a plain, untyped damage count. We treat it as
+ *            `bashing` (the least-severe type) so an automatic migration never
+ *            escalates a saved character's wound severity. Fully reversible —
+ *            the player can re-mark boxes to the correct type with a click.
+ * - Object → read numeric fields, clamp to non-negative integers, default the
+ *            track length to 7, and trim any total overflow least-severe-first.
+ * - Other  → an empty 7-box track.
+ *
+ * Pure transformation; safe to call on untrusted storage on read.
+ */
+export function normalizeClassicHealth(raw: unknown): ClassicHealth {
+  const toInt = (v: unknown) =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0;
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    const n = Math.max(0, Math.floor(raw));
+    return {
+      bashing: Math.min(n, CLASSIC_HEALTH_MAX),
+      lethal: 0,
+      aggravated: 0,
+      max: CLASSIC_HEALTH_MAX,
+    };
+  }
+
+  if (raw && typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    const max = toInt(o.max) || CLASSIC_HEALTH_MAX;
+    let bashing = toInt(o.bashing);
+    let lethal = toInt(o.lethal);
+    let aggravated = toInt(o.aggravated);
+
+    // Constrain total to the track length, dropping least-severe damage first.
+    let overflow = bashing + lethal + aggravated - max;
+    if (overflow > 0) {
+      const cutB = Math.min(bashing, overflow); bashing -= cutB; overflow -= cutB;
+      const cutL = Math.min(lethal, overflow); lethal -= cutL; overflow -= cutL;
+      const cutA = Math.min(aggravated, overflow); aggravated -= cutA;
+    }
+    return { bashing, lethal, aggravated, max };
+  }
+
+  return { bashing: 0, lethal: 0, aggravated: 0, max: CLASSIC_HEALTH_MAX };
+}
+
 export function getCharacters(): Character[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
@@ -193,7 +243,7 @@ export function getCharacters(): Character[] {
           virtues: typeof base.virtues === 'object' && base.virtues !== null ? base.virtues : { conscience: 1, selfControl: 1, courage: 1 },
           bloodPool: typeof base.bloodPool === 'object' && base.bloodPool !== null ? base.bloodPool : { current: 10, max: 10 },
           willpower: typeof base.willpower === 'object' && base.willpower !== null ? base.willpower : { current: 5, max: 5 },
-          health: typeof base.health === 'number' ? base.health : 0,
+          health: normalizeClassicHealth(base.health),
           generation: typeof base.generation === 'number' ? base.generation : 13,
           humanity: typeof base.humanity === 'number' ? base.humanity : 7,
         } as ClassicCharacter;
@@ -268,7 +318,7 @@ export function createEmptyCharacter(edition: EditionId, clan: string, name: str
       edition: edition as Exclude<EditionId, 'V5'>,
       generation: 13,
       humanity: 7,
-      health: 0,
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: CLASSIC_HEALTH_MAX },
       bloodPool: { current: 10, max: 10 },
       willpower: { current: 5, max: 5 },
       virtues: { conscience: 1, selfControl: 1, courage: 1 },

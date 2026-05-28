@@ -222,7 +222,7 @@ describe('DynamicSheet Rendering', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       bloodPool: { current: 15, max: 20 },
-      health: 0,
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
       willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
     };
@@ -242,12 +242,61 @@ describe('DynamicSheet Rendering', () => {
     expect(inputs.length).toBeGreaterThan(0);
   });
 
+  it('renders a box tracker (not a number input) for classic health', () => {
+    const classicChar: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 },
+      health: { bashing: 2, lethal: 1, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'test', labelKey: 'test', fields: [
+          { id: 'health', type: 'special-health', special: 'health', labelKey: 'sheet_health' }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} />
+    );
+
+    expect(container.querySelectorAll('input[type="number"]').length).toBe(0);
+    expect(container.querySelectorAll('.w-5.h-5').length).toBe(7);
+  });
+
+  it('does not crash when a classic character still has a legacy numeric health', () => {
+    const legacyChar = {
+      id: '1', name: 'Legacy', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 },
+      health: 3, // legacy un-migrated shape
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    } as unknown as Character;
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'test', labelKey: 'test', fields: [
+          { id: 'health', type: 'special-health', special: 'health', labelKey: 'sheet_health' }
+        ]
+      }]
+    };
+
+    const { container } = renderWithContext(
+      <DynamicSheet character={legacyChar} schema={schema} onChange={mockOnChange} />
+    );
+    // Legacy number is read as bashing damage → 3 filled boxes, 7 total, no crash.
+    expect(container.querySelectorAll('.w-5.h-5').length).toBe(7);
+  });
+
   it('renders dynamic-dots-5 and allows adding custom entry', () => {
     const v20Char: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
       virtues: { conscience: 1, selfControl: 1, courage: 1 },
-      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: 0,
+      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       createdAt: '', updatedAt: '', experience: 0, generation: 13
     };
 
@@ -276,7 +325,7 @@ describe('DynamicSheet Rendering', () => {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
       virtues: { conscience: 1, selfControl: 1, courage: 1 },
-      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: 0,
+      humanity: 7, bloodPool: { current: 10, max: 10 }, willpower: { current: 5, max: 5 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       createdAt: '', updatedAt: '', experience: 0, generation: 13
     };
 
@@ -401,11 +450,11 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
     expect(mockOnChange).toHaveBeenCalled();
   });
 
-  it('View Mode allows classic Health updates (flat number)', () => {
+  it('View Mode allows classic Health updates (box tracker)', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       bloodPool: { current: 15, max: 20 },
-      health: 0,
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
       willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
     };
@@ -422,22 +471,20 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
       <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} readonly={true} />
     );
 
-    // The classic health renders as a number input — it should NOT be readOnly for gameplay fields
-    const inputs = container.querySelectorAll('input[type="number"]');
-    expect(inputs.length).toBeGreaterThan(0);
-    const healthInput = inputs[0] as HTMLInputElement;
-    expect(healthInput.readOnly).toBe(false);
-
-    // Changing the value should trigger onChange
-    fireEvent.change(healthInput, { target: { value: '3' } });
+    // Classic health is now a box tracker; gameplay fields stay clickable in View Mode.
+    const boxes = container.querySelectorAll('.w-5.h-5');
+    expect(boxes.length).toBe(7);
+    fireEvent.click(boxes[0]);
     expect(mockOnChange).toHaveBeenCalled();
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    expect(updated.health).toEqual({ bashing: 1, lethal: 0, aggravated: 0, max: 7 });
   });
 
   it('View Mode allows classic Blood Pool updates', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       bloodPool: { current: 15, max: 20 },
-      health: 0,
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {}, virtues: { conscience: 1, selfControl: 1, courage: 1 },
       willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
     };
@@ -466,7 +513,7 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
   it('Humanity stays locked in View Mode (not a gameplay field)', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
-      bloodPool: { current: 10, max: 10 }, health: 0,
+      bloodPool: { current: 10, max: 10 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
       attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
       virtues: { conscience: 1, selfControl: 1, courage: 1 },
       willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0

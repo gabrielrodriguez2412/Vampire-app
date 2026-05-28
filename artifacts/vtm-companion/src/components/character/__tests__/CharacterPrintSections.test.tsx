@@ -52,7 +52,7 @@ function makeClassic(overrides: Partial<ClassicCharacter> = {}): ClassicCharacte
     attributes: {}, abilities: {}, disciplines: { dominate: 2 } as Record<string, number>,
     backgrounds: {}, virtues: { conscience: 3, selfControl: 3, courage: 4 },
     humanity: 7, bloodPool: { current: 10, max: 10 },
-    willpower: { current: 5, max: 5 }, health: 0, experience: 0,
+    willpower: { current: 5, max: 5 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 }, experience: 0,
     createdAt: '', updatedAt: '',
     ...overrides,
   };
@@ -131,6 +131,38 @@ describe('print/PDF includes V5 Social & Moral (Batch W)', () => {
     const text = renderPrint(char, 'es');
     expect(text).toContain(UI_STRINGS.es.sheet_section_social_moral); // "Social y Moral"
     expect(text).toContain('No matar inocentes');
+  });
+});
+
+describe('print/PDF classic health track (Batch Y)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders the structured summary with English abbreviations', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
+    const text = renderPrint(char, 'en');
+    expect(text).toContain('2 bash · 2 leth · 1 agg / 7');
+  });
+
+  it('localizes the summary abbreviations in Spanish', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
+    const text = renderPrint(char, 'es');
+    expect(text).toContain('2 cont. · 2 let. · 1 agr. / 7');
+    expect(text).not.toContain('bash');
+    expect(text).not.toContain('leth');
+  });
+
+  it('still renders a legacy numeric health value without crashing', () => {
+    // Older saved characters may reach print before normalization with a plain number.
+    const char = makeClassic({ health: 3 as unknown as ClassicCharacter['health'] });
+    const text = renderPrint(char, 'en');
+    expect(text).toContain('3 dmg');
+  });
+
+  it('leaves the V5 superficial/aggravated health summary unchanged', () => {
+    const char = makeV5({ health: { damage: 1, aggravated: 2, max: 5 } });
+    const text = renderPrint(char, 'en');
+    expect(text).toContain('1 sup · 2 agg / 5');
   });
 });
 

@@ -195,6 +195,17 @@ describe('character archive labels are localized (Batch AA)', () => {
   });
 });
 
+describe('bulk character import toast is localized (Batch AG)', () => {
+  it('Spanish bulk-import success toast is translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    expect(es.bulk_imported_toast).toBe('Personajes seleccionados importados');
+    expect(es.bulk_imported_toast).not.toBe(en.bulk_imported_toast);
+    expect(en.bulk_imported_toast).toBe('Imported selected characters');
+  });
+});
+
 describe('bulk character export labels are localized (Batch AF)', () => {
   it('Spanish bulk export labels and toasts are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

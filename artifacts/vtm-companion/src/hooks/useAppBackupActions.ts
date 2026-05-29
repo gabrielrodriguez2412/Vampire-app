@@ -11,6 +11,10 @@ import {
   getCharacters,
   importCharacterBackup,
 } from "@/services/characterStorage";
+import {
+  isCharacterBulkExport,
+  importCharacterBulkExport,
+} from "@/services/characterBulkExport";
 
 interface Options {
   /**
@@ -115,6 +119,30 @@ export function useAppBackupActions(options: Options = {}) {
                 ? parts.join(", ")
                 : strings.full_backup_empty_note || "Empty backup.") +
               renamedNote,
+          });
+          options.onAfterImport?.();
+        } else if (isCharacterBulkExport(parsed)) {
+          // Batch AG — a `_vtmCharacterBulkExport` envelope produced by the
+          // bulk character export action. Routes to its dedicated importer
+          // (fresh UUID per row → never overwrites; name de-collision).
+          const result = importCharacterBulkExport(parsed);
+          if (typeof result === "string") {
+            toast({
+              title:
+                strings.full_backup_import_failed || "Backup import failed",
+              description: result,
+              variant: "destructive",
+            });
+            return;
+          }
+          const renamedNote =
+            result.renamed > 0
+              ? ` (${result.renamed} ${strings.char_backup_renamed || "renamed"})`
+              : "";
+          toast({
+            title:
+              strings.bulk_imported_toast || "Imported selected characters",
+            description: `${result.imported} ${result.imported === 1 ? "character" : "characters"}${renamedNote}`,
           });
           options.onAfterImport?.();
         } else {

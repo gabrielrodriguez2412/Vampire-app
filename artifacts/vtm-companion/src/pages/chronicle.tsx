@@ -44,6 +44,7 @@ import {
   deleteChronicle,
 } from "@/services/chronicleStorage";
 import { getCharacters, setCharacterChronicle } from "@/services/characterStorage";
+import { downloadChronicleExport } from "@/services/chronicleExport";
 import {
   getChronicleSessions,
   getAllChronicleSessions,
@@ -447,6 +448,17 @@ export default function ChroniclePage() {
     refresh();
     closeEdit();
     toast({ title: strings.chr_updated || "Chronicle updated" });
+  };
+
+  // --- Single-chronicle JSON export ---
+  const handleExportChronicle = (chr: Chronicle) => {
+    const filename = downloadChronicleExport(chr.id);
+    toast({
+      title: filename
+        ? (strings.chr_exported || "Chronicle exported")
+        : (strings.chr_export_failed || "Export failed"),
+      ...(filename ? {} : { variant: "destructive" as const }),
+    });
   };
 
   // --- Archive / Unarchive ---
@@ -1271,6 +1283,12 @@ export default function ChroniclePage() {
                             className="gap-2 cursor-pointer"
                           >
                             <Heart className="w-4 h-4" /> {strings.chr_relationships || "Relationships"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleExportChronicle(chr)}
+                            className="gap-2 cursor-pointer"
+                          >
+                            <Download className="w-4 h-4" /> {strings.chr_export || "Export"}
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => toggleArchive(chr)}

@@ -195,6 +195,22 @@ describe('character archive labels are localized (Batch AA)', () => {
   });
 });
 
+describe('single-chronicle export labels are localized (Batch AE)', () => {
+  it('Spanish export action / toast labels are translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    expect(es.chr_export).toBe('Exportar');
+    expect(es.chr_export).not.toBe(en.chr_export);
+    expect(es.chr_exported).toBe('Crónica exportada');
+    expect(es.chr_export_failed).toBe('Error al exportar');
+
+    expect(en.chr_export).toBe('Export');
+    expect(en.chr_exported).toBe('Chronicle exported');
+    expect(en.chr_export_failed).toBe('Export failed');
+  });
+});
+
 describe('previously-hardcoded labels are localized (Batch AD)', () => {
   it('Spanish "Optional details" and "Unnamed Character" are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

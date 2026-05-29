@@ -15,6 +15,10 @@ import {
   isCharacterBulkExport,
   importCharacterBulkExport,
 } from "@/services/characterBulkExport";
+import {
+  isChronicleExport,
+  importChronicleExport,
+} from "@/services/chronicleExport";
 
 interface Options {
   /**
@@ -119,6 +123,35 @@ export function useAppBackupActions(options: Options = {}) {
                 ? parts.join(", ")
                 : strings.full_backup_empty_note || "Empty backup.") +
               renamedNote,
+          });
+          options.onAfterImport?.();
+        } else if (isChronicleExport(parsed)) {
+          // Batch AH — `_vtmChronicleExport` envelope produced by the single
+          // chronicle export. Routes to its dedicated importer (chronicle id
+          // remapped; sessions/locations/relationships re-anchored; broken
+          // character links filtered; no character auto-creation).
+          const result = importChronicleExport(parsed);
+          if (typeof result === "string") {
+            toast({
+              title: strings.chr_import_failed || "Chronicle import failed",
+              description: result,
+              variant: "destructive",
+            });
+            return;
+          }
+          const descParts: string[] = [];
+          if (result.sessions)
+            descParts.push(`${result.sessions} ${result.sessions === 1 ? "session" : "sessions"}`);
+          if (result.locations)
+            descParts.push(`${result.locations} ${result.locations === 1 ? "location" : "locations"}`);
+          if (result.relationships)
+            descParts.push(`${result.relationships} ${result.relationships === 1 ? "relationship" : "relationships"}`);
+          const droppedNote = result.relationshipsDropped > 0
+            ? ` (${result.relationshipsDropped} ${strings.chr_imported_dropped_refs || "dropped: broken character refs"})`
+            : "";
+          toast({
+            title: strings.chr_imported || "Chronicle imported",
+            description: (descParts.length > 0 ? descParts.join(", ") : (strings.chr_imported_no_extras || "no dependent data")) + droppedNote,
           });
           options.onAfterImport?.();
         } else if (isCharacterBulkExport(parsed)) {

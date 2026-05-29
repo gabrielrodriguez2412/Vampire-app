@@ -195,6 +195,22 @@ describe('character archive labels are localized (Batch AA)', () => {
   });
 });
 
+describe('single chronicle import toasts are localized (Batch AH)', () => {
+  it('Spanish chronicle-import labels are translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    expect(es.chr_imported).toBe('Crónica importada');
+    expect(es.chr_imported).not.toBe(en.chr_imported);
+    expect(es.chr_import_failed).toBe('Error al importar la crónica');
+    expect(es.chr_imported_dropped_refs).toBe('descartadas: referencias rotas');
+    expect(es.chr_imported_no_extras).toBe('sin datos dependientes');
+
+    expect(en.chr_imported).toBe('Chronicle imported');
+    expect(en.chr_import_failed).toBe('Chronicle import failed');
+  });
+});
+
 describe('bulk character import toast is localized (Batch AG)', () => {
   it('Spanish bulk-import success toast is translated and distinct from English', () => {
     const en = UI_STRINGS.en;

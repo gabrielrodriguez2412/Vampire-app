@@ -37,6 +37,7 @@ describe('Chronicle list — bulk selection (Batch AB)', () => {
     cleanup();
     document.body.innerHTML = '';
     window.localStorage.clear();
+    delete (window as unknown as { matchMedia?: unknown }).matchMedia;
   });
 
   it('enters selection mode and reports the selected count', async () => {
@@ -44,10 +45,30 @@ describe('Chronicle list — bulk selection (Batch AB)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));
     expect(within(bulkBar()).getByText('0 selected')).toBeInTheDocument();
     expect(within(bulkBar()).getByRole('button', { name: 'Delete' })).toBeDisabled();
-    expect(within(bulkBar()).getByRole('button', { name: 'Actions' })).toBeInTheDocument();
 
     fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Select all' }));
     expect(within(bulkBar()).getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('uses the compact "Actions" dropdown on phone-width viewports', async () => {
+    (window as unknown as { matchMedia: (q: string) => MediaQueryList }).matchMedia = (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    const bar = bulkBar();
+
+    expect(within(bar).getByRole('button', { name: 'Actions' })).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Archive' })).toBeNull();
+    expect(within(bar).getByRole('button', { name: 'Select all' })).toBeInTheDocument();
   });
 
   it('bulk deletes selected chronicles only after confirmation', async () => {

@@ -883,7 +883,7 @@ export default function CharacterPage() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${selection.active ? "pb-28" : ""}`}>
                 {displayedCharacters.map(char => {
                   // Visual polish (Batch D): give each character card a
                   // subtle identity drawn from its clan's color theme.

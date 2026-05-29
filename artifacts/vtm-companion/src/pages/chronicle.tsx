@@ -1047,7 +1047,7 @@ export default function ChroniclePage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${selection.active ? "pb-28" : ""}`}>
           {displayed.map(chr => {
             const isArchived = chr.status === 'archived';
             const linked = linkedByChronicle.get(chr.id);

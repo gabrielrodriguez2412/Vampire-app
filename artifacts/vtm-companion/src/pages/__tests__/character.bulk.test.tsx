@@ -38,6 +38,9 @@ describe('Character list — bulk selection (Batch AB)', () => {
     cleanup();
     document.body.innerHTML = '';
     window.localStorage.clear();
+    // Some tests stub matchMedia to force the compact layout; reset it so the
+    // default (full-layout) tests see it absent again.
+    delete (window as unknown as { matchMedia?: unknown }).matchMedia;
   });
 
   it('enters selection mode and shows a bar with zero selected and disabled actions', async () => {
@@ -49,9 +52,33 @@ describe('Character list — bulk selection (Batch AB)', () => {
     // Nothing selected → destructive + other actions are disabled.
     expect(within(bar).getByRole('button', { name: 'Delete' })).toBeDisabled();
     expect(within(bar).getByRole('button', { name: 'Archive' })).toBeDisabled();
-    // Compact-mode "Actions" dropdown trigger is wired (shown via CSS in
-    // short-landscape; always present in the DOM).
+  });
+
+  it('uses the compact "Actions" dropdown on phone-width viewports', async () => {
+    // Force the compact media query to match.
+    (window as unknown as { matchMedia: (q: string) => MediaQueryList }).matchMedia = (query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as unknown as MediaQueryList;
+
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    const bar = bulkBar();
+
+    // Compact: a single "Actions" trigger replaces the individual buttons.
     expect(within(bar).getByRole('button', { name: 'Actions' })).toBeInTheDocument();
+    // The standalone action buttons are NOT rendered inline in compact mode.
+    expect(within(bar).queryByRole('button', { name: 'Archive' })).toBeNull();
+    expect(within(bar).queryByRole('button', { name: 'Mark as NPC' })).toBeNull();
+    // Count + Select all + Cancel remain visible.
+    expect(within(bar).getByText('0 selected')).toBeInTheDocument();
+    expect(within(bar).getByRole('button', { name: 'Select all' })).toBeInTheDocument();
   });
 
   it('tracks the selected count when cards are clicked', async () => {

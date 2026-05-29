@@ -22,7 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/hooks/useFavorites";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle, setCharacterArchived } from "@/services/characterStorage";
-import { downloadCharacterBulkExport } from "@/services/characterBulkExport";
+import { downloadCharacterBulkExport, isCharacterBulkExport, importCharacterBulkExport } from "@/services/characterBulkExport";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
@@ -426,6 +426,28 @@ export default function CharacterPage() {
         if (typeof text !== 'string') throw new Error('Failed to read file');
 
         const parsed = JSON.parse(text);
+
+        // Batch AG post-fix: the normal Character Import button also accepts
+        // the bulk export envelope (_vtmCharacterBulkExport) — same character
+        // import, just multi-row. Route by shape so users do not have to pick
+        // a different button.
+        if (isCharacterBulkExport(parsed)) {
+          const bulkResult = importCharacterBulkExport(parsed);
+          if (typeof bulkResult === 'string') {
+            toast({ title: strings.char_import_failed || "Import failed", description: bulkResult, variant: "destructive" });
+          } else {
+            setCharacters(getCharacters());
+            const renamedNote = bulkResult.renamed > 0
+              ? ` (${bulkResult.renamed} ${strings.char_backup_renamed || "renamed"})`
+              : "";
+            toast({
+              title: strings.bulk_imported_toast || "Imported selected characters",
+              description: `${bulkResult.imported} ${bulkResult.imported === 1 ? "character" : "characters"}${renamedNote}`,
+            });
+          }
+          return;
+        }
+
         const result = importCharacter(parsed);
 
         if (typeof result === 'string') {

@@ -22,6 +22,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useFavorites } from "@/hooks/useFavorites";
 import { getCharacters, saveCharacter, deleteCharacter, createEmptyCharacter, clearCharacterStorage, renameCharacter, duplicateCharacter, downloadCharacterExport, importCharacter, getCharacterById, setCharacterType, setCharacterChronicle, setCharacterArchived } from "@/services/characterStorage";
+import { downloadCharacterBulkExport } from "@/services/characterBulkExport";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { getChronicles } from "@/services/chronicleStorage";
 import { DynamicSheet } from "@/components/character/DynamicSheet";
@@ -223,6 +224,19 @@ export default function CharacterPage() {
         ? (strings.bulk_favorited_toast || "Added to favorites")
         : (strings.bulk_unfavorited_toast || "Removed from favorites"),
     });
+  };
+
+  /** Bulk JSON export of the currently-selected characters. Always one file. */
+  const bulkExportSelected = () => {
+    const ids = Array.from(selection.selectedIds);
+    const filename = downloadCharacterBulkExport(ids);
+    toast({
+      title: filename
+        ? (strings.bulk_exported_toast || "Exported selected characters")
+        : (strings.bulk_export_failed_toast || "Bulk export failed"),
+      ...(filename ? {} : { variant: "destructive" as const }),
+    });
+    if (filename) selection.exit();
   };
 
   const confirmBulkDelete = () => {
@@ -585,6 +599,7 @@ export default function CharacterPage() {
               : { id: 'archive', label: strings.char_archive || "Archive", icon: <Archive className="w-3.5 h-3.5" />, onClick: () => bulkArchive('archived'), disabled: selection.count === 0 },
             { id: 'npc', label: strings.char_mark_as_npc || "Mark as NPC", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('npc'), disabled: selection.count === 0 },
             { id: 'pc', label: strings.char_mark_as_player || "Mark as Player Character", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('player'), disabled: selection.count === 0 },
+            { id: 'export', label: strings.bulk_export || "Export", icon: <Download className="w-3.5 h-3.5" />, onClick: bulkExportSelected, disabled: selection.count === 0 },
             { id: 'delete', label: strings.delete, icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setBulkDeleteOpen(true), disabled: selection.count === 0, destructive: true },
           ]}
         />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { glossary } from "@/data/glossary";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { BackLink } from "@/components/ui/back-link";
 import { Input } from "@/components/ui/input";
 import { Search, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ export default function Glossary() {
   return (
     <div className="p-6 md:p-10 short-landscape:p-3 max-w-4xl mx-auto w-full">
       <div className="mb-8 short-landscape:mb-3">
+        <BackLink to="/compendium" label={strings.back_to_compendium || "Back to Compendium"} className="mb-4 short-landscape:mb-2" />
         <h1 className="text-3xl short-landscape:text-xl font-serif font-bold text-primary mb-2 short-landscape:mb-1 flex items-center gap-2">
           <BookOpen className="w-8 h-8 short-landscape:w-5 short-landscape:h-5" />
           {strings.glossaryTitle}

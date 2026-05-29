@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { FavoriteButton } from "@/components/favorite-button";
+import { BackLink } from "@/components/ui/back-link";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -140,6 +141,7 @@ export default function Rules() {
       <ScrollArea className="flex-1">
         <div className="p-6 md:p-10 max-w-4xl mx-auto w-full">
           <div className="mb-8">
+            <BackLink to="/compendium" label={strings.back_to_compendium || "Back to Compendium"} className="mb-4" />
             <h1 className="text-3xl font-serif font-bold text-foreground mb-2">{strings.rulesTitle}</h1>
             <p className="text-muted-foreground mb-6">{strings.rulesSubtitle}</p>
             

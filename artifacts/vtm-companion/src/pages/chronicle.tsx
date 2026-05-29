@@ -17,9 +17,12 @@ import {
   MoreHorizontal, X, User, Users, Link2, Link2Off, BookOpen, CalendarDays,
   MapPin, Heart, ArrowRight, Database, Download, Upload,
   ChevronDown, ListChecks, HelpCircle, Gift, Sparkles,
+  HeartOff, CheckSquare, Square,
 } from "lucide-react";
 import { useAppBackupActions } from "@/hooks/useAppBackupActions";
 import { FavoriteButton } from "@/components/favorite-button";
+import { BulkActionBar } from "@/components/ui/bulk-action-bar";
+import { useBulkSelection } from "@/hooks/useBulkSelection";
 import { ModalPortal } from "@/components/ui/modal-portal";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -474,6 +477,51 @@ export default function ChroniclePage() {
     toast({ title: strings.chr_deleted || "Chronicle deleted" });
   };
 
+  // --- Bulk selection (Batch AB) ---
+  const selection = useBulkSelection();
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const bulkArchive = (status: ChronicleStatus) => {
+    selection.selectedIds.forEach(id => setChronicleStatus(id, status));
+    refresh();
+    selection.exit();
+    toast({
+      title: status === 'archived'
+        ? (strings.bulk_archived_toast || "Archived selected")
+        : (strings.bulk_unarchived_toast || "Restored selected"),
+    });
+  };
+
+  const bulkFavorite = (fav: boolean) => {
+    selection.selectedIds.forEach(id => {
+      if (isFavoriteTyped('chronicle', id) !== fav) toggleFavoriteTyped('chronicle', id);
+    });
+    selection.exit();
+    toast({
+      title: fav
+        ? (strings.bulk_favorited_toast || "Added to favorites")
+        : (strings.bulk_unfavorited_toast || "Removed from favorites"),
+    });
+  };
+
+  const confirmBulkDelete = () => {
+    // Mirror the single-delete cascade for every selected chronicle so no
+    // orphan sessions/locations/relationships are left in storage.
+    selection.selectedIds.forEach(id => {
+      deleteChronicleSessionsForChronicle(id);
+      deleteChronicleLocationsForChronicle(id);
+      deleteChronicleRelationshipsForChronicle(id);
+      deleteChronicle(id);
+    });
+    setBulkDeleteOpen(false);
+    refresh();
+    selection.exit();
+    toast({ title: strings.bulk_deleted_toast || "Deleted selected" });
+  };
+
+  /** Select every chronicle in the current filtered list. */
+  const selectAllDisplayed = () => selection.setSelection(displayed.map(c => c.id));
+
   // --- Session handlers (all scoped to `managingId`) ---
 
   /**
@@ -924,7 +972,7 @@ export default function ChroniclePage() {
 
       {/* Status filter tabs */}
       {chronicles.length > 0 && (
-        <div className="flex gap-1 mb-6 border-b border-border">
+        <div className="flex items-center gap-1 mb-6 border-b border-border">
           {(['active', 'archived', 'all'] as StatusFilter[]).map(opt => {
             const isActive = statusFilter === opt;
             const count =
@@ -951,6 +999,18 @@ export default function ChroniclePage() {
               </button>
             );
           })}
+          {!selection.active && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={selection.enter}
+              className="h-8 gap-1.5 text-xs ml-auto mb-1"
+            >
+              <ListChecks className="w-3.5 h-3.5" />
+              {strings.bulk_select || "Select"}
+            </Button>
+          )}
         </div>
       )}
 
@@ -987,7 +1047,7 @@ export default function ChroniclePage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ${selection.active ? "pb-28" : ""}`}>
           {displayed.map(chr => {
             const isArchived = chr.status === 'archived';
             const linked = linkedByChronicle.get(chr.id);
@@ -1001,11 +1061,15 @@ export default function ChroniclePage() {
             // watermark in the right edge. All CSS-only.
             const accentColor = isArchived ? '#3f3f46' /* zinc-700 */ : '#8b0000' /* primary */;
             const isV5 = chr.edition === 'V5';
+            const isSelected = selection.isSelected(chr.id);
             return (
               <Card
                 key={chr.id}
-                onClick={() => openManage(chr, 'overview')}
+                onClick={() => selection.active ? selection.toggle(chr.id) : openManage(chr, 'overview')}
+                aria-pressed={selection.active ? isSelected : undefined}
                 className={`relative overflow-hidden group cursor-pointer transition-all focus-within:ring-1 focus-within:ring-primary/40 ${
+                  selection.active && isSelected ? "ring-2 ring-primary" : ""
+                } ${
                   isArchived
                     ? "bg-zinc-900/30 border-zinc-800/60 opacity-70 hover:opacity-90 hover:border-zinc-700"
                     : "bg-card border-border hover:border-primary/40 hover:bg-white/[0.02]"
@@ -1031,6 +1095,14 @@ export default function ChroniclePage() {
 
                 <CardHeader className="pb-2 pt-4 pl-5 pr-4 relative">
                   <div className="flex items-start gap-2">
+                    {selection.active && (
+                      <span
+                        aria-hidden
+                        className={`mt-0.5 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`}
+                      >
+                        {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2 mb-1.5">
                         <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0 tracking-tight group-hover:text-on-surface transition-colors">
@@ -1080,14 +1152,14 @@ export default function ChroniclePage() {
                         `pointer-coarse:opacity-100` forces the button visible
                         on any touch / coarse-pointer device, preserving the
                         original reveal-on-hover behaviour on desktop mice. */}
-                    <div onClick={e => e.stopPropagation()} className="shrink-0 -mt-1 -mr-2">
+                    <div onClick={e => e.stopPropagation()} className={`shrink-0 -mt-1 -mr-2 ${selection.active ? "hidden" : ""}`}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 pointer-coarse:opacity-100 transition-opacity"
-                            aria-label="Chronicle actions"
+                            aria-label={strings.chr_actions || "Chronicle actions"}
                           >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
@@ -3214,6 +3286,68 @@ export default function ChroniclePage() {
             </motion.div>
           );
         })()}
+      </AnimatePresence>
+
+      {/* Bulk action bar (Batch AB) — floating, portaled above the bottom nav.
+          Hidden while the bulk-delete confirm is open. */}
+      {selection.active && !bulkDeleteOpen && (
+        <BulkActionBar
+          count={selection.count}
+          selectedLabel={`${selection.count} ${strings.bulk_selected || "selected"}`}
+          onCancel={selection.exit}
+          cancelLabel={strings.cancel || "Cancel"}
+          onSelectAll={selectAllDisplayed}
+          selectAllLabel={strings.bulk_select_all || "Select all"}
+          actionsMenuLabel={strings.bulk_actions || "Actions"}
+          actions={[
+            { id: 'favorite', label: strings.bulk_favorite || "Favorite", icon: <Heart className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(true), disabled: selection.count === 0 },
+            { id: 'unfavorite', label: strings.bulk_unfavorite || "Unfavorite", icon: <HeartOff className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(false), disabled: selection.count === 0 },
+            statusFilter === 'archived'
+              ? { id: 'unarchive', label: strings.chr_unarchive || "Unarchive", icon: <ArchiveRestore className="w-3.5 h-3.5" />, onClick: () => bulkArchive('active'), disabled: selection.count === 0 }
+              : { id: 'archive', label: strings.chr_archive || "Archive", icon: <Archive className="w-3.5 h-3.5" />, onClick: () => bulkArchive('archived'), disabled: selection.count === 0 },
+            { id: 'delete', label: strings.delete || "Delete", icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setBulkDeleteOpen(true), disabled: selection.count === 0, destructive: true },
+          ]}
+        />
+      )}
+
+      {/* Bulk delete confirmation (Batch AB) — portaled above everything. */}
+      <AnimatePresence>
+        {bulkDeleteOpen && (
+          <ModalPortal key="bulk-delete-chronicles">
+          <motion.div
+            key="bulk-delete-chronicles"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setBulkDeleteOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full shadow-xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-serif text-foreground mb-2">
+                {strings.bulk_delete_chr_title || "Delete selected chronicles?"}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {strings.bulk_delete_chr_desc || "This permanently deletes the selected chronicles and their sessions, locations, and relationships. This cannot be undone."}{' '}
+                <span className="text-foreground font-medium">{`(${selection.count})`}</span>
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" size="sm" onClick={() => setBulkDeleteOpen(false)} className="text-muted-foreground">
+                  {strings.cancel || "Cancel"}
+                </Button>
+                <Button size="sm" onClick={confirmBulkDelete} className="bg-red-600 hover:bg-red-700 text-white">
+                  <Trash2 className="w-4 h-4 mr-1" /> {strings.delete || "Delete"}
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+          </ModalPortal>
+        )}
       </AnimatePresence>
 
       {/* Delete confirm */}

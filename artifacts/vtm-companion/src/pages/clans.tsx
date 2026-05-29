@@ -5,6 +5,7 @@ import { clans } from "@/data/clans";
 import { ClanEntry, EditionId } from "@/types";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { FavoriteButton } from "@/components/favorite-button";
+import { BackLink } from "@/components/ui/back-link";
 import { ChevronLeft, Search as SearchIcon, X, ArrowUpDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
@@ -118,6 +119,7 @@ export default function Clans() {
 
   return (
     <div className="p-6 md:p-10 short-landscape:p-3 max-w-[1200px] mx-auto w-full">
+      <BackLink to="/compendium" label={strings.back_to_compendium || "Back to Compendium"} className="mb-4 short-landscape:mb-2" />
       <div className="mb-6 short-landscape:mb-3 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
         <div>
           <h1 className="text-4xl short-landscape:text-2xl font-serif uppercase tracking-tight text-on-surface mb-2 short-landscape:mb-1">{strings.clansTitle}</h1>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/ui/back-link";
 import { Droplet, Dices, AlertTriangle, ShieldAlert, Swords, Sparkles, RotateCcw, X } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -55,6 +56,7 @@ export default function Tools() {
   return (
     <div className="p-4 sm:p-6 md:p-10 max-w-5xl mx-auto w-full space-y-6 sm:space-y-8">
       <div className="mb-2 sm:mb-8">
+        <BackLink to="/compendium" label={strings.back_to_compendium || "Back to Compendium"} className="mb-4" />
         <h1 className="text-2xl sm:text-3xl font-serif font-bold text-primary mb-2 flex items-center gap-3">
           <Swords className="w-7 h-7 sm:w-8 sm:h-8" />
           {strings.toolsTitle}

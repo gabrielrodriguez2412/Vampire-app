@@ -195,6 +195,24 @@ describe('character archive labels are localized (Batch AA)', () => {
   });
 });
 
+describe('previously-hardcoded labels are localized (Batch AD)', () => {
+  it('Spanish "Optional details" and "Unnamed Character" are translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    // These keys were referenced in code with an English `|| "..."` fallback
+    // but had no entries, so Spanish rendered the English literal.
+    expect(es.sheet_optional_details).toBe('Detalles opcionales');
+    expect(es.sheet_optional_details).not.toBe(en.sheet_optional_details);
+    expect(es.unnamed_character).toBe('Personaje sin nombre');
+    expect(es.unnamed_character).not.toBe(en.unnamed_character);
+
+    // English values present.
+    expect(en.sheet_optional_details).toBe('Optional details');
+    expect(en.unnamed_character).toBe('Unnamed Character');
+  });
+});
+
 describe('bulk-selection labels are localized (Batch AB)', () => {
   it('Spanish bulk-action labels are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

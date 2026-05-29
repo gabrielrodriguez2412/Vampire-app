@@ -155,6 +155,8 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     chr_archived_toast: "Crónica archivada", chr_unarchived_toast: "Crónica desarchivada",
     chr_deleted: "Crónica eliminada",
     chr_export: "Exportar", chr_exported: "Crónica exportada", chr_export_failed: "Error al exportar",
+    chr_imported: "Crónica importada", chr_import_failed: "Error al importar la crónica",
+    chr_imported_dropped_refs: "descartadas: referencias rotas", chr_imported_no_extras: "sin datos dependientes",
     chr_name_required: "El nombre es obligatorio",
     chr_updated_at: "Actualizada",
     // Character ↔ Chronicle linking
@@ -596,6 +598,8 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     chr_archived_toast: "Chronicle archived", chr_unarchived_toast: "Chronicle unarchived",
     chr_deleted: "Chronicle deleted",
     chr_export: "Export", chr_exported: "Chronicle exported", chr_export_failed: "Export failed",
+    chr_imported: "Chronicle imported", chr_import_failed: "Chronicle import failed",
+    chr_imported_dropped_refs: "dropped: broken character refs", chr_imported_no_extras: "no dependent data",
     chr_name_required: "Name is required",
     chr_updated_at: "Updated",
     // Character ↔ Chronicle linking

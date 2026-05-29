@@ -49,6 +49,9 @@ describe('Character list — bulk selection (Batch AB)', () => {
     // Nothing selected → destructive + other actions are disabled.
     expect(within(bar).getByRole('button', { name: 'Delete' })).toBeDisabled();
     expect(within(bar).getByRole('button', { name: 'Archive' })).toBeDisabled();
+    // Compact-mode "Actions" dropdown trigger is wired (shown via CSS in
+    // short-landscape; always present in the DOM).
+    expect(within(bar).getByRole('button', { name: 'Actions' })).toBeInTheDocument();
   });
 
   it('tracks the selected count when cards are clicked', async () => {

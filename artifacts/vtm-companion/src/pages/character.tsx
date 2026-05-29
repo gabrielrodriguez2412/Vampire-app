@@ -576,32 +576,18 @@ export default function CharacterPage() {
           cancelLabel={strings.cancel || "Cancel"}
           onSelectAll={selectAllDisplayed}
           selectAllLabel={strings.bulk_select_all || "Select all"}
-        >
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(true)} className="h-8 gap-1.5 text-xs">
-            <Heart className="w-3.5 h-3.5" /> {strings.bulk_favorite || "Favorite"}
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(false)} className="h-8 gap-1.5 text-xs">
-            <HeartOff className="w-3.5 h-3.5" /> {strings.bulk_unfavorite || "Unfavorite"}
-          </Button>
-          {filterStatus === 'archived' ? (
-            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('active')} className="h-8 gap-1.5 text-xs">
-              <ArchiveRestore className="w-3.5 h-3.5" /> {strings.char_unarchive || "Unarchive"}
-            </Button>
-          ) : (
-            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('archived')} className="h-8 gap-1.5 text-xs">
-              <Archive className="w-3.5 h-3.5" /> {strings.char_archive || "Archive"}
-            </Button>
-          )}
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkSetType('npc')} className="h-8 gap-1.5 text-xs">
-            <User className="w-3.5 h-3.5" /> {strings.char_mark_as_npc || "Mark as NPC"}
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkSetType('player')} className="h-8 gap-1.5 text-xs">
-            <User className="w-3.5 h-3.5" /> {strings.char_mark_as_player || "Mark as Player Character"}
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => setBulkDeleteOpen(true)} className="h-8 gap-1.5 text-xs text-red-400 hover:text-red-300 border-red-900/40">
-            <Trash2 className="w-3.5 h-3.5" /> {strings.delete}
-          </Button>
-        </BulkActionBar>
+          actionsMenuLabel={strings.bulk_actions || "Actions"}
+          actions={[
+            { id: 'favorite', label: strings.bulk_favorite || "Favorite", icon: <Heart className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(true), disabled: selection.count === 0 },
+            { id: 'unfavorite', label: strings.bulk_unfavorite || "Unfavorite", icon: <HeartOff className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(false), disabled: selection.count === 0 },
+            filterStatus === 'archived'
+              ? { id: 'unarchive', label: strings.char_unarchive || "Unarchive", icon: <ArchiveRestore className="w-3.5 h-3.5" />, onClick: () => bulkArchive('active'), disabled: selection.count === 0 }
+              : { id: 'archive', label: strings.char_archive || "Archive", icon: <Archive className="w-3.5 h-3.5" />, onClick: () => bulkArchive('archived'), disabled: selection.count === 0 },
+            { id: 'npc', label: strings.char_mark_as_npc || "Mark as NPC", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('npc'), disabled: selection.count === 0 },
+            { id: 'pc', label: strings.char_mark_as_player || "Mark as Player Character", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('player'), disabled: selection.count === 0 },
+            { id: 'delete', label: strings.delete, icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setBulkDeleteOpen(true), disabled: selection.count === 0, destructive: true },
+          ]}
+        />
       )}
 
       {/* Bulk delete confirmation (Batch AB) — portaled above everything. */}

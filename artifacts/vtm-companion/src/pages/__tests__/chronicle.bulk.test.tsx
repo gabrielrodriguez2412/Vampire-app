@@ -44,6 +44,7 @@ describe('Chronicle list — bulk selection (Batch AB)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Select' }));
     expect(within(bulkBar()).getByText('0 selected')).toBeInTheDocument();
     expect(within(bulkBar()).getByRole('button', { name: 'Delete' })).toBeDisabled();
+    expect(within(bulkBar()).getByRole('button', { name: 'Actions' })).toBeInTheDocument();
 
     fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Select all' }));
     expect(within(bulkBar()).getByText('2 selected')).toBeInTheDocument();

@@ -204,6 +204,10 @@ describe('bulk-selection labels are localized (Batch AB)', () => {
     expect(es.bulk_select).not.toBe(en.bulk_select);
     expect(es.bulk_selected).toBe('seleccionados');
     expect(es.bulk_select_all).toBe('Seleccionar todo');
+    // Compact-mode "Actions" dropdown label (Batch AB responsive pass).
+    expect(es.bulk_actions).toBe('Acciones');
+    expect(es.bulk_actions).not.toBe(en.bulk_actions);
+    expect(en.bulk_actions).toBe('Actions');
     expect(es.bulk_favorite).toBe('Favorito');
     expect(es.bulk_unfavorite).toBe('Quitar favorito');
     expect(es.bulk_delete_title).toBe('¿Eliminar personajes seleccionados?');

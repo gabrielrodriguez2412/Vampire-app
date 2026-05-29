@@ -3298,26 +3298,16 @@ export default function ChroniclePage() {
           cancelLabel={strings.cancel || "Cancel"}
           onSelectAll={selectAllDisplayed}
           selectAllLabel={strings.bulk_select_all || "Select all"}
-        >
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(true)} className="h-8 gap-1.5 text-xs">
-            <Heart className="w-3.5 h-3.5" /> {strings.bulk_favorite || "Favorite"}
-          </Button>
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkFavorite(false)} className="h-8 gap-1.5 text-xs">
-            <HeartOff className="w-3.5 h-3.5" /> {strings.bulk_unfavorite || "Unfavorite"}
-          </Button>
-          {statusFilter === 'archived' ? (
-            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('active')} className="h-8 gap-1.5 text-xs">
-              <ArchiveRestore className="w-3.5 h-3.5" /> {strings.chr_unarchive || "Unarchive"}
-            </Button>
-          ) : (
-            <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => bulkArchive('archived')} className="h-8 gap-1.5 text-xs">
-              <Archive className="w-3.5 h-3.5" /> {strings.chr_archive || "Archive"}
-            </Button>
-          )}
-          <Button type="button" variant="outline" size="sm" disabled={selection.count === 0} onClick={() => setBulkDeleteOpen(true)} className="h-8 gap-1.5 text-xs text-red-400 hover:text-red-300 border-red-900/40">
-            <Trash2 className="w-3.5 h-3.5" /> {strings.delete || "Delete"}
-          </Button>
-        </BulkActionBar>
+          actionsMenuLabel={strings.bulk_actions || "Actions"}
+          actions={[
+            { id: 'favorite', label: strings.bulk_favorite || "Favorite", icon: <Heart className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(true), disabled: selection.count === 0 },
+            { id: 'unfavorite', label: strings.bulk_unfavorite || "Unfavorite", icon: <HeartOff className="w-3.5 h-3.5" />, onClick: () => bulkFavorite(false), disabled: selection.count === 0 },
+            statusFilter === 'archived'
+              ? { id: 'unarchive', label: strings.chr_unarchive || "Unarchive", icon: <ArchiveRestore className="w-3.5 h-3.5" />, onClick: () => bulkArchive('active'), disabled: selection.count === 0 }
+              : { id: 'archive', label: strings.chr_archive || "Archive", icon: <Archive className="w-3.5 h-3.5" />, onClick: () => bulkArchive('archived'), disabled: selection.count === 0 },
+            { id: 'delete', label: strings.delete || "Delete", icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setBulkDeleteOpen(true), disabled: selection.count === 0, destructive: true },
+          ]}
+        />
       )}
 
       {/* Bulk delete confirmation (Batch AB) — portaled above everything. */}

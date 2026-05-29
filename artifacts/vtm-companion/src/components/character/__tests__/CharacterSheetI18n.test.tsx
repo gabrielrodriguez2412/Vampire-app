@@ -195,6 +195,22 @@ describe('character archive labels are localized (Batch AA)', () => {
   });
 });
 
+describe('bulk character export labels are localized (Batch AF)', () => {
+  it('Spanish bulk export labels and toasts are translated and distinct from English', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    expect(es.bulk_export).toBe('Exportar');
+    expect(es.bulk_export).not.toBe(en.bulk_export);
+    expect(es.bulk_exported_toast).toBe('Personajes seleccionados exportados');
+    expect(es.bulk_export_failed_toast).toBe('Error al exportar la selección');
+
+    expect(en.bulk_export).toBe('Export');
+    expect(en.bulk_exported_toast).toBe('Exported selected characters');
+    expect(en.bulk_export_failed_toast).toBe('Bulk export failed');
+  });
+});
+
 describe('single-chronicle export labels are localized (Batch AE)', () => {
   it('Spanish export action / toast labels are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

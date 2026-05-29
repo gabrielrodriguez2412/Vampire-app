@@ -52,6 +52,17 @@ describe('Character list — bulk selection (Batch AB)', () => {
     // Nothing selected → destructive + other actions are disabled.
     expect(within(bar).getByRole('button', { name: 'Delete' })).toBeDisabled();
     expect(within(bar).getByRole('button', { name: 'Archive' })).toBeDisabled();
+    // Batch AF: bulk Export sits next to the other actions, disabled at 0 selected.
+    expect(within(bar).getByRole('button', { name: 'Export' })).toBeDisabled();
+  });
+
+  it('enables the Export action once at least one character is selected', () => {
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    expect(within(bulkBar()).getByRole('button', { name: 'Export' })).toBeDisabled();
+
+    fireEvent.click(screen.getByText('Alice'));
+    expect(within(bulkBar()).getByRole('button', { name: 'Export' })).toBeEnabled();
   });
 
   it('uses the compact "Actions" dropdown on phone-width viewports', async () => {

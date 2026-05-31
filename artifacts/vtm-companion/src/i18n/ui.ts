@@ -370,6 +370,11 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bulk_archived_toast: "Seleccionados archivados", bulk_unarchived_toast: "Seleccionados restaurados",
     bulk_deleted_toast: "Seleccionados eliminados", bulk_updated_toast: "Selección actualizada",
     bulk_favorited_toast: "Añadidos a favoritos", bulk_unfavorited_toast: "Quitados de favoritos",
+    bulk_assign_chronicle: "Asignar crónica",
+    bulk_assign_chronicle_title: "Asignar crónica a los seleccionados",
+    bulk_assign_chronicle_desc: "Los personajes seleccionados se vincularán a la crónica elegida. El texto de crónica escrito manualmente en la hoja no se modifica.",
+    bulk_assign_chronicle_reassign_note: "Algunos personajes ya están vinculados a otra crónica y serán reasignados.",
+    bulk_assigned_chronicle_toast: "Personajes asignados a la crónica",
     char_import_failed: "Error al importar", char_import_invalid_json: "El archivo no es un JSON válido.",
 
     combat_melee: 'Cuerpo a Cuerpo: Tirada enfrentada. Daño = (Éxitos propios − Éxitos del rival) + Modificador del Arma.',
@@ -813,6 +818,11 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bulk_archived_toast: "Archived selected", bulk_unarchived_toast: "Restored selected",
     bulk_deleted_toast: "Deleted selected", bulk_updated_toast: "Selection updated",
     bulk_favorited_toast: "Added to favorites", bulk_unfavorited_toast: "Removed from favorites",
+    bulk_assign_chronicle: "Assign chronicle",
+    bulk_assign_chronicle_title: "Assign chronicle to selected",
+    bulk_assign_chronicle_desc: "The selected characters will be linked to the chosen chronicle. The manually-typed chronicle text on each sheet is left alone.",
+    bulk_assign_chronicle_reassign_note: "Some selected characters are already linked to another chronicle and will be reassigned.",
+    bulk_assigned_chronicle_toast: "Characters assigned to chronicle",
     char_import_failed: "Import failed", char_import_invalid_json: "The file is not valid JSON.",
 
     combat_melee: 'Melee: Contested roll. Damage = (Own successes − Opponent successes) + Weapon modifier.',

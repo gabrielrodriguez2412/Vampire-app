@@ -13,7 +13,8 @@ import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-li
 import '@testing-library/jest-dom/vitest';
 import CharacterPage from '../character';
 import { AppContextProvider } from '@/context/AppContext';
-import { createEmptyCharacter, saveCharacter, getCharacters } from '@/services/characterStorage';
+import { createEmptyCharacter, saveCharacter, getCharacters, setCharacterChronicle } from '@/services/characterStorage';
+import { createEmptyChronicle, saveChronicle } from '@/services/chronicleStorage';
 
 function seedAndRender() {
   saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
@@ -120,6 +121,115 @@ describe('Character list — bulk selection (Batch AB)', () => {
     expect(screen.queryByText('Alice')).toBeNull();
     expect(screen.queryByText('Bob')).toBeNull();
     expect(screen.queryByRole('toolbar')).toBeNull();
+  });
+
+  // --- Batch AI: bulk-assign-chronicle ---
+
+  it('exposes a bulk "Assign chronicle" action that is disabled at zero selected', () => {
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    const bar = bulkBar();
+    expect(within(bar).getByRole('button', { name: 'Assign chronicle' })).toBeDisabled();
+
+    fireEvent.click(screen.getByText('Alice'));
+    expect(within(bar).getByRole('button', { name: 'Assign chronicle' })).toBeEnabled();
+  });
+
+  it('opens the assign-chronicle modal with the selected count', async () => {
+    saveChronicle(createEmptyChronicle('Chicago by Night'));
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Select all' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Assign chronicle' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /assign chronicle to selected/i });
+    // "2 selected" appears as a styled count + label. The dialog's aria-label
+    // already matches /selected/i, so scope to the modal body paragraphs.
+    expect(within(dialog).getByText('2')).toBeInTheDocument();
+    expect(within(dialog).getAllByText(/selected/i).length).toBeGreaterThan(0);
+  });
+
+  it('shows the no-chronicles state and disables Save when there are no chronicles', async () => {
+    seedAndRender(); // no chronicles seeded
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Select all' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Assign chronicle' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /assign chronicle to selected/i });
+    expect(
+      within(dialog).getByText(/no chronicles yet\. create one in the chronicle tab\./i)
+    ).toBeInTheDocument();
+    // The chronicle <select> is not rendered when there are no chronicles.
+    expect(within(dialog).queryByRole('combobox')).toBeNull();
+    expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled();
+  });
+
+  it('assigns only the selected characters to the chosen chronicle', async () => {
+    const chr = saveChronicle(createEmptyChronicle('Chicago by Night'));
+    saveCharacter(createEmptyCharacter('V5', 'ventrue', 'Carol')); // unselected
+    seedAndRender();
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    // Select Alice + Bob only — leave Carol unselected.
+    fireEvent.click(screen.getByText('Alice'));
+    fireEvent.click(screen.getByText('Bob'));
+
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Assign chronicle' }));
+    const dialog = await screen.findByRole('dialog', { name: /assign chronicle to selected/i });
+    fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: chr.id } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const stored = getCharacters();
+      const alice = stored.find(c => c.name === 'Alice');
+      const bob = stored.find(c => c.name === 'Bob');
+      const carol = stored.find(c => c.name === 'Carol');
+      expect(alice?.chronicleId).toBe(chr.id);
+      expect(bob?.chronicleId).toBe(chr.id);
+      // Unselected character is untouched — never picks up a chronicle link.
+      expect(carol?.chronicleId).toBeUndefined();
+    });
+    // Selection mode exits after a successful assignment.
+    expect(screen.queryByRole('toolbar')).toBeNull();
+  });
+
+  it('reassigns characters already linked to a different chronicle and preserves the manual chronicle text', async () => {
+    const oldChr = saveChronicle(createEmptyChronicle('Old Chronicle'));
+    const newChr = saveChronicle(createEmptyChronicle('New Chronicle'));
+    // Pre-seed Alice with a manual chronicle note AND a link to oldChr before
+    // rendering, so the page picks her up in that state on mount.
+    const aliceSeed = createEmptyCharacter('V20', 'brujah', 'Alice');
+    aliceSeed.chronicle = 'My handwritten chronicle note';
+    saveCharacter(aliceSeed);
+    setCharacterChronicle(aliceSeed.id, oldChr.id);
+    saveCharacter(createEmptyCharacter('V5', 'tremere', 'Bob'));
+    window.localStorage.setItem('vtm-language', 'en');
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Select' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Select all' }));
+    fireEvent.click(within(bulkBar()).getByRole('button', { name: 'Assign chronicle' }));
+
+    const dialog = await screen.findByRole('dialog', { name: /assign chronicle to selected/i });
+    fireEvent.change(within(dialog).getByRole('combobox'), { target: { value: newChr.id } });
+    // The reassignment warning surfaces because Alice was already linked elsewhere.
+    expect(
+      within(dialog).getByText(/already linked to another chronicle and will be reassigned/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      const after = getCharacters();
+      const aliceAfter = after.find(c => c.name === 'Alice')!;
+      // Reassigned safely — no duplicate record, link updated.
+      expect(after.filter(c => c.name === 'Alice')).toHaveLength(1);
+      expect(aliceAfter.chronicleId).toBe(newChr.id);
+      // Manually-typed chronicle text was never touched.
+      expect(aliceAfter.chronicle).toBe('My handwritten chronicle note');
+    });
   });
 
   it('bulk deletes only after explicit confirmation', async () => {

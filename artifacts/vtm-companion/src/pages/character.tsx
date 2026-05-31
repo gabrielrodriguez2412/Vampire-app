@@ -190,6 +190,10 @@ export default function CharacterPage() {
   // --- Bulk selection (Batch AB) ---
   const selection = useBulkSelection();
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  // Batch AI: bulk-assign-chronicle modal state. Holds the chosen chronicle id
+  // ("" means "no chronicle / unlink") while the modal is open.
+  const [bulkAssignChronicleOpen, setBulkAssignChronicleOpen] = useState(false);
+  const [bulkAssignChronicleSelection, setBulkAssignChronicleSelection] = useState<string>("");
 
   // Bulk handlers all loop over the selected ids, reusing the same per-item
   // storage helpers the single-item menu uses, then refresh + exit selection
@@ -237,6 +241,44 @@ export default function CharacterPage() {
       ...(filename ? {} : { variant: "destructive" as const }),
     });
     if (filename) selection.exit();
+  };
+
+  /**
+   * Batch AI — bulk assign the selected characters to a chronicle.
+   *
+   * Reuses the single-character `setCharacterChronicle` storage helper. That
+   * helper updates only `chronicleId`; it never touches the free-text
+   * `character.chronicle` field, so any manually-typed chronicle note on a
+   * sheet is preserved. Stale ids (character no longer in storage) come back
+   * as `null` from the helper and are silently skipped — same safe behavior
+   * the per-card menu has.
+   */
+  const confirmBulkAssignChronicle = () => {
+    const chronicleId = bulkAssignChronicleSelection || null;
+    // Skip if the chosen chronicle has been deleted since the modal opened.
+    if (chronicleId && !validChronicleIds.has(chronicleId)) {
+      setBulkAssignChronicleOpen(false);
+      setBulkAssignChronicleSelection("");
+      toast({
+        title: strings.char_import_failed || "Import failed",
+        description: strings.chr_no_chronicles_to_link || "No chronicles yet. Create one in the Chronicle tab.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const ids = Array.from(selection.selectedIds);
+    ids.forEach(id => setCharacterChronicle(id, chronicleId));
+    setCharacters(getCharacters());
+    // If the currently-open sheet is one of the reassigned characters, refresh
+    // its activeChar reference so the chronicle pill repaints.
+    if (activeChar && ids.includes(activeChar.id)) {
+      const refreshed = getCharacterById(activeChar.id);
+      if (refreshed) setActiveChar(refreshed);
+    }
+    setBulkAssignChronicleOpen(false);
+    setBulkAssignChronicleSelection("");
+    selection.exit();
+    toast({ title: strings.bulk_assigned_chronicle_toast || "Characters assigned to chronicle" });
   };
 
   const confirmBulkDelete = () => {
@@ -604,7 +646,7 @@ export default function CharacterPage() {
       {/* Bulk action bar (Batch AB) — floating, portaled above the bottom nav.
           Hidden while the bulk-delete confirm is open so it doesn't paint over
           the dialog. */}
-      {selection.active && !bulkDeleteOpen && (
+      {selection.active && !bulkDeleteOpen && !bulkAssignChronicleOpen && (
         <BulkActionBar
           count={selection.count}
           selectedLabel={`${selection.count} ${strings.bulk_selected || "selected"}`}
@@ -621,11 +663,105 @@ export default function CharacterPage() {
               : { id: 'archive', label: strings.char_archive || "Archive", icon: <Archive className="w-3.5 h-3.5" />, onClick: () => bulkArchive('archived'), disabled: selection.count === 0 },
             { id: 'npc', label: strings.char_mark_as_npc || "Mark as NPC", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('npc'), disabled: selection.count === 0 },
             { id: 'pc', label: strings.char_mark_as_player || "Mark as Player Character", icon: <User className="w-3.5 h-3.5" />, onClick: () => bulkSetType('player'), disabled: selection.count === 0 },
+            { id: 'assign-chronicle', label: strings.bulk_assign_chronicle || "Assign chronicle", icon: <ScrollText className="w-3.5 h-3.5" />, onClick: () => { refreshChronicles(); setBulkAssignChronicleSelection(""); setBulkAssignChronicleOpen(true); }, disabled: selection.count === 0 },
             { id: 'export', label: strings.bulk_export || "Export", icon: <Download className="w-3.5 h-3.5" />, onClick: bulkExportSelected, disabled: selection.count === 0 },
             { id: 'delete', label: strings.delete, icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setBulkDeleteOpen(true), disabled: selection.count === 0, destructive: true },
           ]}
         />
       )}
+
+      {/* Bulk assign-chronicle modal (Batch AI) — portaled above everything.
+          Reuses the per-character `setCharacterChronicle` helper, so the
+          free-text chronicle note on each sheet is left alone. */}
+      <AnimatePresence>
+        {bulkAssignChronicleOpen && (() => {
+          const selectedChars = characters.filter(c => selection.selectedIds.has(c.id));
+          const reassignCount = selectedChars.filter(
+            c => c.chronicleId && c.chronicleId !== bulkAssignChronicleSelection
+          ).length;
+          const noChronicles = chronicles.length === 0;
+          const handleClose = () => {
+            setBulkAssignChronicleOpen(false);
+            setBulkAssignChronicleSelection("");
+          };
+          return (
+            <ModalPortal key="bulk-assign-chronicle">
+            <motion.div
+              key="bulk-assign-chronicle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 short-landscape:p-2"
+              onClick={handleClose}
+              role="dialog"
+              aria-modal="true"
+              aria-label={strings.bulk_assign_chronicle_title || "Assign chronicle to selected"}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 short-landscape:p-3 max-w-md w-full shadow-xl short-landscape:max-h-[calc(100dvh-1rem)] short-landscape:overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 className="text-lg font-serif text-foreground mb-2">
+                  {strings.bulk_assign_chronicle_title || "Assign chronicle to selected"}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                  <span className="text-foreground font-medium">{selection.count}</span>{' '}
+                  {strings.bulk_selected || "selected"}
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  {strings.bulk_assign_chronicle_desc || "The selected characters will be linked to the chosen chronicle. The manually-typed chronicle text on each sheet is left alone."}
+                </p>
+                {noChronicles ? (
+                  <p className="text-sm text-muted-foreground italic mb-4">
+                    {strings.chr_no_chronicles_to_link || "No chronicles yet. Create one in the Chronicle tab."}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 mb-2">
+                    <label className="text-sm font-medium" htmlFor="bulk-assign-chronicle-select">
+                      {strings.char_chronicle_label || "Chronicle"}
+                    </label>
+                    <select
+                      id="bulk-assign-chronicle-select"
+                      value={bulkAssignChronicleSelection}
+                      onChange={e => setBulkAssignChronicleSelection(e.target.value)}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                    >
+                      <option value="">{strings.char_chronicle_none || "No chronicle"}</option>
+                      {chronicles.map(chr => (
+                        <option key={chr.id} value={chr.id}>
+                          {chr.name}{chr.status === 'archived' ? ` (${strings.chr_status_archived || "Archived"})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                    {reassignCount > 0 && bulkAssignChronicleSelection && (
+                      <p className="text-[11px] text-amber-300/90 italic">
+                        {strings.bulk_assign_chronicle_reassign_note || "Some selected characters are already linked to another chronicle and will be reassigned."}
+                      </p>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-3 justify-end mt-6">
+                  <Button variant="outline" size="sm" onClick={handleClose} className="text-muted-foreground">
+                    {strings.cancel || "Cancel"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={confirmBulkAssignChronicle}
+                    disabled={noChronicles || selection.count === 0}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    {strings.save || "Save"}
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+            </ModalPortal>
+          );
+        })()}
+      </AnimatePresence>
 
       {/* Bulk delete confirmation (Batch AB) — portaled above everything. */}
       <AnimatePresence>

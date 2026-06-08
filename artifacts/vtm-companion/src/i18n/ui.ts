@@ -379,6 +379,8 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bulk_assign_chronicle_desc: "Los personajes seleccionados se vincularán a la crónica elegida. El texto de crónica escrito manualmente en la hoja no se modifica.",
     bulk_assign_chronicle_reassign_note: "Algunos personajes ya están vinculados a otra crónica y serán reasignados.",
     bulk_assigned_chronicle_toast: "Personajes asignados a la crónica",
+    // Batch AK — read-only label for the favorite indicator pip on cards.
+    favorite_indicator: "Favorito",
     char_import_failed: "Error al importar", char_import_invalid_json: "El archivo no es un JSON válido.",
 
     combat_melee: 'Cuerpo a Cuerpo: Tirada enfrentada. Daño = (Éxitos propios − Éxitos del rival) + Modificador del Arma.',
@@ -827,6 +829,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     bulk_assign_chronicle_desc: "The selected characters will be linked to the chosen chronicle. The manually-typed chronicle text on each sheet is left alone.",
     bulk_assign_chronicle_reassign_note: "Some selected characters are already linked to another chronicle and will be reassigned.",
     bulk_assigned_chronicle_toast: "Characters assigned to chronicle",
+    favorite_indicator: "Favorite",
     char_import_failed: "Import failed", char_import_invalid_json: "The file is not valid JSON.",
 
     combat_melee: 'Melee: Contested roll. Damage = (Own successes − Opponent successes) + Weapon modifier.',

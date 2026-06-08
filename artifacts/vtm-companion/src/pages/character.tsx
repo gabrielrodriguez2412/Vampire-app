@@ -316,6 +316,17 @@ export default function CharacterPage() {
     refreshChronicles();
   }, [boundaryKey, refreshChronicles]);
 
+  // Batch AK — scroll the window to the top whenever we open a character
+  // sheet. Without this, creating a new character (or opening one from a
+  // scrolled list) lands the user mid-page, since switching `activeView`
+  // does not implicitly reset scroll. Including `activeChar?.id` in the
+  // deps so jumping between different sheets also resets scroll.
+  useEffect(() => {
+    if (activeView === 'sheet' && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [activeView, activeChar?.id]);
+
   // Cross-page deep-link: chronicle page sets `vtm-open-character-id` in
   // sessionStorage and navigates here; we consume it once on mount.
   useEffect(() => {
@@ -1068,6 +1079,11 @@ export default function CharacterPage() {
                   const clanColor = clanData?.colorTheme || '#8B0000';
                   const isV5 = char.edition === 'V5';
                   const isSelected = selection.isSelected(char.id);
+                  // Batch AK — visible favorite indicator. The More-menu
+                  // toggle already exists; this just mirrors that state
+                  // on the card itself so favorited characters are
+                  // recognisable from the list without opening a menu.
+                  const isFavCard = isFavoriteTyped('character', char.id);
                   return (
                   <Card
                     key={char.id}
@@ -1139,6 +1155,16 @@ export default function CharacterPage() {
                               same V5 / classic split the rest of the
                               app uses on the Tools combat summary. */}
                           <div className="flex items-center flex-wrap gap-1.5 text-sm text-muted-foreground">
+                            {isFavCard && (
+                              <span
+                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary"
+                                aria-label={strings.favorite_indicator || "Favorite"}
+                                title={strings.favorite_indicator || "Favorite"}
+                                data-testid={`card-fav-indicator-character-${char.id}`}
+                              >
+                                <Heart className="w-3 h-3 fill-current" aria-hidden />
+                              </span>
+                            )}
                             {char.status === 'archived' && (
                               <span
                                 className="inline-flex items-center gap-1 uppercase text-[10px] tracking-wider border px-1.5 rounded border-zinc-700 bg-zinc-900 text-zinc-400"
@@ -1186,11 +1212,26 @@ export default function CharacterPage() {
                               );
                             })()}
                           </div>
-                          {char.updatedAt && (
-                            <div className="text-[10px] text-muted-foreground/60 mt-2 font-sans tracking-wide">
-                              {new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                            </div>
-                          )}
+                          {/* Batch AK — footer rhythm: pull the updated date
+                              and an "Open →" affordance into a single row.
+                              Mirrors the chronicle card so the character
+                              card no longer feels visually empty under the
+                              badge row, especially on mobile widths. The
+                              arrow is a hover hint only and never replaces
+                              the existing tap-the-card behaviour. */}
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <span className="text-[10px] text-muted-foreground/60 font-sans tracking-wide">
+                              {char.updatedAt
+                                ? new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+                                : ''}
+                            </span>
+                            {!selection.active && (
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 group-hover:text-primary/80 transition-colors">
+                                {strings.chr_open_character || "Open"}
+                                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         {/* ⋯ More menu.

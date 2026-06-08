@@ -1074,6 +1074,10 @@ export default function ChroniclePage() {
             const accentColor = isArchived ? '#3f3f46' /* zinc-700 */ : '#8b0000' /* primary */;
             const isV5 = chr.edition === 'V5';
             const isSelected = selection.isSelected(chr.id);
+            // Batch AK — visible favorite indicator. Mirrors the More-menu
+            // favorite toggle so favourited chronicles read as such from
+            // the list view without opening the menu.
+            const isFavCard = isFavoriteTyped('chronicle', chr.id);
             return (
               <Card
                 key={chr.id}
@@ -1120,6 +1124,16 @@ export default function ChroniclePage() {
                         <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0 tracking-tight group-hover:text-on-surface transition-colors">
                           {chr.name}
                         </CardTitle>
+                        {isFavCard && (
+                          <span
+                            className="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary"
+                            aria-label={strings.favorite_indicator || "Favorite"}
+                            title={strings.favorite_indicator || "Favorite"}
+                            data-testid={`card-fav-indicator-chronicle-${chr.id}`}
+                          >
+                            <Heart className="w-3 h-3 fill-current" aria-hidden />
+                          </span>
+                        )}
                         <span className={`shrink-0 mt-0.5 uppercase text-[9px] tracking-wider border px-1.5 py-0.5 rounded ${
                           isArchived
                             ? "border-zinc-700 bg-zinc-900 text-zinc-500"

@@ -76,7 +76,10 @@ export function ClassicPoolTracker({
 
   return (
     <div
-      className="flex flex-wrap items-center gap-1"
+      // Wider gap so adjacent cells read as individual points instead of
+      // a single bar — covers both the Blood drops row and the Willpower
+      // box row (Batch AN review polish).
+      className="flex flex-wrap items-center gap-1.5"
       role="group"
       aria-label={`${label} ${safeCurrent} of ${safeMax}`}
       data-testid={groupTestId}
@@ -114,21 +117,42 @@ export function ClassicPoolTracker({
             </span>
           );
         }
-        // Willpower square — classic V20 sheets draw these as small boxes
-        // you check off as you spend a point. Filled = current temporary
-        // Willpower available; outlined = spent.
+        // Batch AN review polish — Willpower square.
+        //
+        // Each Willpower point is rendered as a small outlined cell with
+        // a smaller filled inner inset when the point is still available.
+        // The bordered outer + the inner core gives every box a clear
+        // individual identity even when many are adjacent (the previous
+        // solid-fill version blurred into a single yellow bar on full
+        // pools). Muted gold tones keep the row from over-saturating.
+        //
+        // This is deliberately NOT a Health damage track: no bashing /
+        // lethal / aggravated states, no damage labels, no per-cell
+        // multi-state cycle. The cell is binary — filled (point
+        // available) or empty (point spent) — so the row reads cleanly
+        // as a single temporary-Willpower meter, the way the V20 sheet
+        // draws it.
+        const outerClasses = filled
+          ? "border-amber-500/60 bg-amber-500/5"
+          : "border-zinc-600/80 bg-zinc-950/30";
         return (
           <span
             key={i}
             {...commonProps}
             className={cn(
-              "inline-block w-4 h-4 rounded-sm border-2 transition-colors",
-              interactive ? "cursor-pointer hover:border-primary" : "cursor-default",
-              filled
-                ? "bg-amber-400/70 border-amber-300"
-                : "bg-transparent border-zinc-600",
+              "inline-flex items-center justify-center w-4 h-4 rounded-sm border transition-colors",
+              interactive ? "cursor-pointer hover:border-amber-300" : "cursor-default",
+              outerClasses,
             )}
-          />
+          >
+            {filled && (
+              <span
+                aria-hidden
+                data-testid={`willpower-cell-${i}-inset`}
+                className="block w-2 h-2 rounded-[1px] bg-amber-500/70"
+              />
+            )}
+          </span>
         );
       })}
       {/* Numeric "X / Y" readout keeps the exact value visible alongside

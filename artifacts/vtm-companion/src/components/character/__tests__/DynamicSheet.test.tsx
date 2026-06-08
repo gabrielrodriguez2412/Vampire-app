@@ -853,6 +853,60 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
     expect(screen.getByTestId('willpower-tracker-readout').textContent).toMatch(/4\s*\/\s*6/);
   });
 
+  it('V20 Willpower box visuals (Batch AN polish) — filled cells get an inner inset; empty cells do not', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'willpower', type: 'special-willpower', labelKey: 'sheet_willpower', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} />
+    );
+    // Filled boxes (1..current) carry a smaller inner inset that gives
+    // each point its own visual identity instead of blurring into a
+    // single yellow bar. Empty boxes (current+1..max) do not.
+    expect(screen.getByTestId('willpower-cell-1-inset')).toBeInTheDocument();
+    expect(screen.getByTestId('willpower-cell-4-inset')).toBeInTheDocument();
+    expect(screen.queryByTestId('willpower-cell-5-inset')).toBeNull();
+    expect(screen.queryByTestId('willpower-cell-6-inset')).toBeNull();
+    // Each Willpower box is its own focusable button — the inner inset
+    // is decorative (aria-hidden) so screen readers still announce one
+    // cell per point and the labelled group reads "Willpower 4 of 6".
+    expect(screen.getByTestId('willpower-cell-1')).toHaveAttribute('role', 'button');
+    expect(screen.getByTestId('willpower-cell-1-inset')).toHaveAttribute('aria-hidden');
+    expect(
+      screen.getByRole('group', { name: /sheet_willpower 4 of 6/i })
+    ).toBeInTheDocument();
+  });
+
+  it('V20 Willpower is NOT rendered as a Health damage track (no bashing/lethal/aggravated states)', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'willpower', type: 'special-willpower', labelKey: 'sheet_willpower', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} />
+    );
+    // None of the Health-damage labels or sub-track testids the
+    // ClassicHealthTracker uses leak into the Willpower row. Willpower
+    // is a single binary (filled / empty) cell row, not a multi-state
+    // damage track.
+    for (const id of ['willpower-cell-1', 'willpower-cell-2', 'willpower-cell-6']) {
+      const cell = screen.getByTestId(id);
+      expect(cell).toHaveAttribute('data-state');
+      expect(cell.getAttribute('data-state')).toMatch(/^(filled|empty)$/);
+      expect(cell.textContent).not.toMatch(/bashing|lethal|aggravated/i);
+    }
+    // No multi-state cycle labels show up at the group level either.
+    const tracker = screen.getByTestId('willpower-tracker');
+    expect(tracker.textContent).not.toMatch(/bashing|lethal|aggravated/i);
+  });
+
   it('V20 Willpower is editable in View Mode and preserves the {current, max} shape', () => {
     const schema: SheetSchema = {
       sections: [{

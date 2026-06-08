@@ -202,6 +202,84 @@ describe('Tools — recent roll history (Batch AL)', () => {
   });
 });
 
+describe('Tools — Recent rolls are filtered by active edition (Batch AL polish)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    window.localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('V5 view shows V5 dice rolls AND rouse checks, but never classic rolls', () => {
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.7);
+    renderTools();
+
+    // A V5 dice roll AND a rouse check — both should be V5-relevant.
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+
+    // Expand so all V5-relevant entries are visible.
+    fireEvent.click(screen.getByTestId('dice-history-toggle'));
+    const list = screen.getByTestId('dice-history-list');
+    expect(list.textContent).toMatch(/V5/);     // V5 kind chip
+    expect(list.textContent).toMatch(/Rouse/);  // rouse kind chip
+    // Classic-only marker: the classic summary uses "Diff" (e.g.
+    // "Pool 5 / Diff 6 — 0 net success(es)"); V5 summaries never include
+    // it, so its absence proves no classic entries leaked into the view.
+    expect(list.textContent).not.toMatch(/Diff/);
+  });
+
+  it('classic / V20 view hides V5 hunger rolls and shows only its own pool/difficulty rolls', () => {
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.7);
+    const view = renderTools();
+
+    // Make a V5 roll on V5 first — it lands in the store.
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+    expect(screen.getByTestId('dice-history-entry-0').textContent).toMatch(/V5/);
+
+    // Switch to V20 (rerender under a new edition-seeded provider).
+    view.unmount();
+    window.localStorage.setItem('vtm-edition', 'V20');
+    renderTools();
+
+    // The V5 entry is in the store but NOT rendered — empty state shows.
+    expect(screen.getByTestId('dice-history-empty')).toBeInTheDocument();
+
+    // Make a classic roll — now THAT is the only visible entry.
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+    const entry = screen.getByTestId('dice-history-entry-0');
+    // Classic summary has "Diff" and "net success(es)"; V5 has "Hunger";
+    // rouse has "Rouse check". Assert against the markers that only
+    // appear on the right side of the filter.
+    expect(entry.textContent).toMatch(/Diff/);
+    expect(entry.textContent).not.toMatch(/Hunger/);
+    expect(entry.textContent).not.toMatch(/Rouse check/);
+  });
+
+  it('the visible count reflects the filtered list, not the underlying store', () => {
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.7);
+    renderTools();
+
+    // Two V5 rolls + two rouse checks — all V5-relevant.
+    const v5Roll = screen.getByRole('button', { name: /^Roll$/i });
+    fireEvent.click(v5Roll);
+    fireEvent.click(v5Roll);
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+
+    // Header should report 4 (all four are V5-relevant).
+    fireEvent.click(screen.getByTestId('dice-history-toggle'));
+    const entries = screen.getAllByTestId(/dice-history-entry-/);
+    expect(entries.length).toBe(4);
+  });
+});
+
 describe('Tools — Batch AL i18n labels', () => {
   it('Spanish and English rouse / history labels are present and distinct', async () => {
     const { UI_STRINGS } = await import('@/i18n/ui');

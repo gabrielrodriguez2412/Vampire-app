@@ -103,10 +103,16 @@ export default function Tools() {
 
         {/* Recent rolls — visually tied to the roller above. Collapsed by
             default (shows only the latest entry); the Show all / Show less
-            toggle reveals the rest of the capped 10. */}
+            toggle reveals the rest of the capped 10. Batch AL review #2
+            polish: the visible list is filtered by the active edition so
+            V5 hunger rolls and classic difficulty rolls never appear in
+            the same view. The underlying store still caps at 10 entries
+            regardless of edition — switching back surfaces the other
+            edition's history again, untouched. */}
         <RollHistoryCard
           strings={strings}
           history={history}
+          isV5={isV5}
           onClear={handleClearHistory}
         />
       </div>
@@ -910,15 +916,28 @@ function RouseCheckCard({ strings, editionLabel, pushHistory }: RouseCheckCardPr
 interface RollHistoryCardProps {
   strings: Record<string, string>;
   history: RollHistoryEntry[];
+  /** Active edition flag. Drives the V5-vs-classic filter so the visible
+   *  list never mixes hunger rolls and difficulty rolls. The full store
+   *  is preserved untouched — switching editions just changes what is
+   *  rendered. */
+  isV5: boolean;
   onClear: () => void;
 }
 
-function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
+function RollHistoryCard({ strings, history, isV5, onClear }: RollHistoryCardProps) {
   const [expanded, setExpanded] = useState(false);
-  // Default view: just the latest roll. The full list (up to the 10 cap)
-  // appears once the user expands.
-  const visible = expanded ? history : history.slice(0, 1);
-  const canExpand = history.length > 1;
+  // Filter the rendered list by edition-relevance (Batch AL review #2):
+  //   * V5 view shows kind 'v5' + 'rouse' — both are V5-specific.
+  //   * Classic view shows kind 'classic' only.
+  // The underlying `history` array stays full-fidelity so a quick edition
+  // toggle in the header never loses the other edition's rolls.
+  const filteredHistory = history.filter(entry =>
+    isV5 ? (entry.kind === 'v5' || entry.kind === 'rouse') : entry.kind === 'classic'
+  );
+  // Default view: just the latest roll. The full filtered list appears
+  // once the user expands.
+  const visible = expanded ? filteredHistory : filteredHistory.slice(0, 1);
+  const canExpand = filteredHistory.length > 1;
 
   return (
     <Card className="bg-card border-border">
@@ -926,9 +945,9 @@ function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
         <CardTitle className="font-serif text-lg flex items-center gap-2">
           <History className="w-4 h-4" aria-hidden />
           {strings.dice_history_title || 'Recent rolls'}
-          {history.length > 0 && (
+          {filteredHistory.length > 0 && (
             <span className="text-[11px] font-sans tabular-nums text-muted-foreground/70">
-              {history.length}
+              {filteredHistory.length}
             </span>
           )}
           <div className="ml-auto flex items-center gap-1">
@@ -947,6 +966,10 @@ function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
                   : (strings.dice_history_show_all || 'Show all')}
               </Button>
             )}
+            {/* Clear wipes the whole underlying store (both editions). The
+                button only appears when SOMETHING is stored — even rolls
+                from the other edition keep it available so the user can
+                explicitly reset their session. */}
             {history.length > 0 && (
               <Button
                 variant="ghost"
@@ -965,7 +988,7 @@ function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {history.length === 0 ? (
+        {filteredHistory.length === 0 ? (
           <p className="text-xs text-muted-foreground italic" data-testid="dice-history-empty">
             {strings.dice_history_empty || 'No rolls yet.'}
           </p>

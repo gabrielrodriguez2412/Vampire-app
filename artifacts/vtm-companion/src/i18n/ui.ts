@@ -450,15 +450,20 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     dice_classic_ones: 'Unos',
     dice_classic_needs_review: 'Reglas clásicas resumidas; algunos detalles (10s dobles, pifias) varían por edición.',
     dice_classic_failure: 'Fallo',
-    // Batch AL — V5 rouse check + historial de tiradas recientes.
+    // Batch AL — V5 rouse check + historial de tiradas recientes. Tras
+    // la revisión de Batch AL la tarjeta de Tirada de Hambre solo se
+    // muestra en V5, así que `dice_rouse_v5_only` se eliminó a
+    // propósito.
     dice_rouse_check: 'Tirada de Hambre',
-    dice_rouse_help: 'Un dado — 6+ mantiene el Hambre, 1-5 sube el Hambre en 1.',
+    dice_rouse_help: 'Tira un dado — 6+ el Hambre no sube, 1–5 el Hambre sube en 1.',
     dice_rouse_success: 'Éxito — el Hambre no sube',
     dice_rouse_failure: 'Fallo — el Hambre sube en 1',
-    dice_rouse_v5_only: 'La Tirada de Hambre es exclusiva de V5 — cambia a V5 en la cabecera para usarla.',
     dice_history_title: 'Tiradas recientes',
     dice_history_empty: 'Aún no hay tiradas.',
     dice_history_clear: 'Borrar historial',
+    // Batch AL pulido de revisión — UX colapsada por defecto.
+    dice_history_show_all: 'Ver todo',
+    dice_history_show_less: 'Ver menos',
     dice_history_summary_v5: 'Reserva {pool} / Hambre {hunger} — {successes} éxito(s)',
     dice_history_summary_classic: 'Reserva {pool} / Dif. {difficulty} — {net} éxito(s) netos',
     dice_history_summary_rouse: 'Tirada de Hambre — {outcome} (dado {die})',
@@ -913,15 +918,20 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     dice_classic_ones: 'Ones',
     dice_classic_needs_review: 'Short classic summary; some details (10s as 2, botch edge cases) vary by edition.',
     dice_classic_failure: 'Failure',
-    // Batch AL — V5 rouse check + recent roll history labels.
+    // Batch AL — V5 rouse check + recent roll history labels. Batch AL
+    // review polish: the rouse card now renders V5-only (no fallback hint
+    // for classic editions), so `dice_rouse_v5_only` is intentionally
+    // gone.
     dice_rouse_check: 'Rouse check',
-    dice_rouse_help: 'One die — 6+ keeps Hunger, 1-5 raises Hunger by 1.',
+    dice_rouse_help: 'Roll one die — 6+ no Hunger increase, 1–5 Hunger increases by 1.',
     dice_rouse_success: 'Success — Hunger does not increase',
     dice_rouse_failure: 'Failure — Hunger increases by 1',
-    dice_rouse_v5_only: 'Rouse checks are V5 only — switch to V5 in the header to use them.',
     dice_history_title: 'Recent rolls',
     dice_history_empty: 'No rolls yet.',
     dice_history_clear: 'Clear history',
+    // Batch AL review polish — collapse-by-default UX.
+    dice_history_show_all: 'Show all',
+    dice_history_show_less: 'Show less',
     dice_history_summary_v5: 'Pool {pool} / Hunger {hunger} — {successes} success(es)',
     dice_history_summary_classic: 'Pool {pool} / Diff {difficulty} — {net} net success(es)',
     dice_history_summary_rouse: 'Rouse check — {outcome} (die {die})',

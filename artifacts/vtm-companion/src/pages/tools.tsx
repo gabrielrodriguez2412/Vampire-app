@@ -91,33 +91,39 @@ export default function Tools() {
         <p className="text-muted-foreground text-sm sm:text-base">{strings.tools}</p>
       </div>
 
-      {/* Dice Roller — edition-aware. Hunger lives inside the V5 roller. */}
-      <div className="max-w-xl mx-auto w-full">
+      {/* Dice Roller — edition-aware. Hunger lives inside the V5 roller.
+          Batch AL review polish: the Recent Rolls card sits immediately
+          below this so the history reads as attached to the roller. The
+          V5-only Rouse Check card comes after the history, not between
+          it and the roller. */}
+      <div className="max-w-xl mx-auto w-full space-y-3">
         {isV5
           ? <V5DiceRoller strings={strings} editionLabel={editionLabel} pushHistory={pushHistory} />
           : <ClassicDiceRoller strings={strings} editionLabel={editionLabel} pushHistory={pushHistory} />}
-      </div>
 
-      {/* Batch AL — Rouse Check card. V5-only: classic editions don't have
-          rouse checks, so we render a short edition-aware hint there
-          instead of the action button. */}
-      <div className="max-w-xl mx-auto w-full">
-        <RouseCheckCard
-          strings={strings}
-          editionLabel={editionLabel}
-          isV5={isV5}
-          pushHistory={pushHistory}
-        />
-      </div>
-
-      {/* Batch AL — Recent rolls history shared across all roller cards. */}
-      <div className="max-w-xl mx-auto w-full">
+        {/* Recent rolls — visually tied to the roller above. Collapsed by
+            default (shows only the latest entry); the Show all / Show less
+            toggle reveals the rest of the capped 10. */}
         <RollHistoryCard
           strings={strings}
           history={history}
           onClear={handleClearHistory}
         />
       </div>
+
+      {/* Batch AL — Rouse Check card. V5-only by design: the brief asks
+          us NOT to render it (or any "V5 only" hint) on classic editions.
+          The card is simply absent there, matching how the V5 Hunger
+          tracker hides itself on classic editions. */}
+      {isV5 && (
+        <div className="max-w-xl mx-auto w-full">
+          <RouseCheckCard
+            strings={strings}
+            editionLabel={editionLabel}
+            pushHistory={pushHistory}
+          />
+        </div>
+      )}
 
       <div className="max-w-xl mx-auto w-full mt-6">
          <Card className="bg-card border-border">
@@ -778,20 +784,19 @@ function dieStyle(kind: "normal" | "hunger" | "classic", value: DieValue, diffic
 // ---------------------------------------------------------------------------
 // Batch AL — V5 Rouse Check card.
 //
-// V5-only by design: classic editions never had rouse checks (they used the
-// Blood Pool spend instead). On non-V5 editions we render a short hint
-// explaining where the option lives, mirroring the way the combat summary
-// already explains edition-specific differences.
+// V5-only. Classic editions never had rouse checks (they spent Blood Pool
+// instead), so following Batch AL review polish the card is simply not
+// rendered for non-V5 editions — no fallback hint, mirroring the Hunger
+// tracker which is also V5-only.
 // ---------------------------------------------------------------------------
 
 interface RouseCheckCardProps {
   strings: Record<string, string>;
   editionLabel: string;
-  isV5: boolean;
   pushHistory: (entry: RollHistoryEntry) => void;
 }
 
-function RouseCheckCard({ strings, editionLabel, isV5, pushHistory }: RouseCheckCardProps) {
+function RouseCheckCard({ strings, editionLabel, pushHistory }: RouseCheckCardProps) {
   const [result, setResult] = useState<RouseCheckResult | null>(null);
 
   const handleRoll = () => {
@@ -823,75 +828,60 @@ function RouseCheckCard({ strings, editionLabel, isV5, pushHistory }: RouseCheck
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-foreground/80">
-        {isV5 ? (
-          <>
-            <p className="text-xs text-muted-foreground italic">
-              {strings.dice_rouse_help || 'One die — 6+ keeps Hunger, 1-5 raises Hunger by 1.'}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleRoll}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                data-testid="rouse-check-roll"
-              >
-                <Droplet className="w-4 h-4 mr-2" />
-                {strings.dice_rouse_check || 'Rouse check'}
-              </Button>
-              {result && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleRoll}
-                  title={strings.dice_reroll || 'Reroll'}
-                  data-testid="rouse-check-reroll"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-            <AnimatePresence mode="popLayout">
-              {result && (
-                <motion.div
-                  key={`rouse-${result.die}-${result.success}`}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.15 }}
-                  className={`p-3 rounded-md border text-sm flex items-start gap-2 ${
-                    result.success
-                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
-                      : 'bg-red-500/15 border-red-500/30 text-red-200'
-                  }`}
-                  data-testid="rouse-check-result"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <span className="font-bold tabular-nums text-base shrink-0 mt-0.5">
-                    {result.die}
-                  </span>
-                  <div>
-                    <div className="font-bold">
-                      {result.success
-                        ? (strings.dice_rouse_success || 'Success — Hunger does not increase')
-                        : (strings.dice_rouse_failure || 'Failure — Hunger increases by 1')}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </>
-        ) : (
-          // Non-V5: the rouse check rule does not exist in classic V:tM
-          // editions. We surface that explicitly so users on V20 / Revised /
-          // 2nd / 1st don't think the button is missing — it's just not
-          // applicable to their edition.
-          <p
-            className="text-xs text-amber-300/80 italic"
-            data-testid="rouse-check-not-applicable"
+        <p className="text-xs text-muted-foreground italic">
+          {strings.dice_rouse_help || 'Roll one die — 6+ no Hunger increase, 1–5 Hunger increases by 1.'}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleRoll}
+            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+            data-testid="rouse-check-roll"
           >
-            {strings.dice_rouse_v5_only || 'Rouse checks are V5 only — switch to V5 in the header to use them.'}
-          </p>
-        )}
+            <Droplet className="w-4 h-4 mr-2" />
+            {strings.dice_rouse_check || 'Rouse check'}
+          </Button>
+          {result && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRoll}
+              title={strings.dice_reroll || 'Reroll'}
+              data-testid="rouse-check-reroll"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
+        <AnimatePresence mode="popLayout">
+          {result && (
+            <motion.div
+              key={`rouse-${result.die}-${result.success}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className={`p-3 rounded-md border text-sm flex items-start gap-2 ${
+                result.success
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                  : 'bg-red-500/15 border-red-500/30 text-red-200'
+              }`}
+              data-testid="rouse-check-result"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="font-bold tabular-nums text-base shrink-0 mt-0.5">
+                {result.die}
+              </span>
+              <div>
+                <div className="font-bold">
+                  {result.success
+                    ? (strings.dice_rouse_success || 'Success — Hunger does not increase')
+                    : (strings.dice_rouse_failure || 'Failure — Hunger increases by 1')}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </CardContent>
     </Card>
   );
@@ -904,6 +894,17 @@ function RouseCheckCard({ strings, editionLabel, isV5, pushHistory }: RouseCheck
 // strings on each entry are captured at record time so we never re-localize
 // a historic roll. The clear button mirrors the existing dice "Clear" UX so
 // users don't have to learn a new affordance.
+//
+// Batch AL review polish:
+//   * Collapsed by default — the latest roll is the only entry rendered
+//     until the user hits "Show all". This keeps the section calm directly
+//     under the roller while still surfacing the most recent result.
+//   * Deferred follow-up: render the underlying dice as compact faces /
+//     chips per entry. The current `RollHistoryEntry` shape only stores a
+//     pre-formatted summary string (no per-die values), and the brief
+//     asked us NOT to expand the data model in this batch. Pencilled in
+//     for the upcoming dice visual redesign batch alongside the ankh /
+//     special-symbol work.
 // ---------------------------------------------------------------------------
 
 interface RollHistoryCardProps {
@@ -913,6 +914,12 @@ interface RollHistoryCardProps {
 }
 
 function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  // Default view: just the latest roll. The full list (up to the 10 cap)
+  // appears once the user expands.
+  const visible = expanded ? history : history.slice(0, 1);
+  const canExpand = history.length > 1;
+
   return (
     <Card className="bg-card border-border">
       <CardHeader>
@@ -920,19 +927,41 @@ function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
           <History className="w-4 h-4" aria-hidden />
           {strings.dice_history_title || 'Recent rolls'}
           {history.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClear}
-              className="ml-auto h-7 px-2 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground gap-1"
-              title={strings.dice_history_clear || 'Clear history'}
-              aria-label={strings.dice_history_clear || 'Clear history'}
-              data-testid="dice-history-clear"
-            >
-              <Trash2 className="w-3 h-3" />
-              {strings.dice_history_clear || 'Clear history'}
-            </Button>
+            <span className="text-[11px] font-sans tabular-nums text-muted-foreground/70">
+              {history.length}
+            </span>
           )}
+          <div className="ml-auto flex items-center gap-1">
+            {canExpand && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setExpanded(v => !v)}
+                aria-expanded={expanded}
+                aria-controls="dice-history-list"
+                className="h-7 px-2 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                data-testid="dice-history-toggle"
+              >
+                {expanded
+                  ? (strings.dice_history_show_less || 'Show less')
+                  : (strings.dice_history_show_all || 'Show all')}
+              </Button>
+            )}
+            {history.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { onClear(); setExpanded(false); }}
+                className="h-7 px-2 text-[11px] uppercase tracking-wider text-muted-foreground hover:text-foreground gap-1"
+                title={strings.dice_history_clear || 'Clear history'}
+                aria-label={strings.dice_history_clear || 'Clear history'}
+                data-testid="dice-history-clear"
+              >
+                <Trash2 className="w-3 h-3" />
+                {strings.dice_history_clear || 'Clear history'}
+              </Button>
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -941,8 +970,12 @@ function RollHistoryCard({ strings, history, onClear }: RollHistoryCardProps) {
             {strings.dice_history_empty || 'No rolls yet.'}
           </p>
         ) : (
-          <ol className="space-y-1.5" data-testid="dice-history-list">
-            {history.map((entry, idx) => (
+          <ol
+            id="dice-history-list"
+            className="space-y-1.5"
+            data-testid="dice-history-list"
+          >
+            {visible.map((entry, idx) => (
               <li
                 key={entry.id}
                 className="flex items-start gap-2 text-sm py-1.5 border-b border-border/40 last:border-0"

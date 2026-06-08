@@ -18,7 +18,7 @@
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
 import { render, cleanup, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { CharacterPrintModal, buildV5HealthBoxes, buildClassicHealthBoxes } from '../CharacterPrintView';
+import { CharacterPrintModal, buildV5HealthBoxes, buildClassicHealthBoxes, buildClassicPoolBoxes } from '../CharacterPrintView';
 import { AppContextProvider } from '@/context/AppContext';
 import { UI_STRINGS } from '@/i18n/ui';
 import type { Character, V5Character, ClassicCharacter } from '@/types';
@@ -288,6 +288,184 @@ describe('print/PDF Health capacity boxes — V20/classic (Batch AO)', () => {
     // inventing marks.
     expect(screen.queryByTestId('print-health-boxes')).toBeNull();
     expect(text).toContain('3 dmg');
+  });
+});
+
+describe('print/PDF classic pool box helper (Batch AO follow-up)', () => {
+  it('builds an array of {filled: boolean} per slot up to max', () => {
+    const boxes = buildClassicPoolBoxes({ current: 3, max: 5 }, 5);
+    expect(boxes.map(b => b.filled)).toEqual([true, true, true, false, false]);
+  });
+
+  it('falls back to defaultMax when the pool has no max', () => {
+    const boxes = buildClassicPoolBoxes({ current: 2 } as { current: number; max?: number }, 7);
+    expect(boxes).toHaveLength(7);
+    expect(boxes.filter(b => b.filled).length).toBe(2);
+  });
+
+  it('clamps current above max and never produces a longer row than max', () => {
+    const boxes = buildClassicPoolBoxes({ current: 99, max: 4 }, 5);
+    expect(boxes).toHaveLength(4);
+    expect(boxes.every(b => b.filled)).toBe(true);
+  });
+
+  it('tolerates undefined pool entirely', () => {
+    const boxes = buildClassicPoolBoxes(undefined, 5);
+    expect(boxes).toHaveLength(5);
+    expect(boxes.every(b => b.filled === false)).toBe(true);
+  });
+});
+
+describe('print/PDF Willpower — V5 capacity boxes (Batch AO follow-up)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders V5 Willpower as damage boxes with superficial / aggravated marks', () => {
+    const char = makeV5({ willpower: { damage: 2, aggravated: 1, max: 5 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-willpower-boxes');
+    expect(group).toBeInTheDocument();
+    const marks = Array.from({ length: 5 }, (_, i) =>
+      within(group).getByTestId(`print-willpower-box-${i}`).getAttribute('data-mark'),
+    );
+    expect(marks).toEqual(['aggravated', 'superficial', 'superficial', 'empty', 'empty']);
+    // Print-safe glyphs (no icon fonts).
+    expect(within(group).getByTestId('print-willpower-box-0').textContent).toBe('X');
+    expect(within(group).getByTestId('print-willpower-box-1').textContent).toBe('/');
+    // Damage summary stays alongside the boxes — Willpower mirrors the
+    // Health row so the numeric breakdown is right there.
+    expect(screen.getByTestId('print-willpower-summary').textContent).toBe(
+      '2 sup · 1 agg / 5',
+    );
+  });
+
+  it('V5 Willpower row exposes a group aria-label with the damaged count', () => {
+    const char = makeV5({ willpower: { damage: 1, aggravated: 2, max: 5 } });
+    renderPrint(char);
+    expect(
+      screen.getByRole('group', { name: /willpower 3 of 5/i })
+    ).toBeInTheDocument();
+  });
+
+  it('V5 Willpower with no damage still renders all five empty boxes', () => {
+    const char = makeV5({ willpower: { damage: 0, aggravated: 0, max: 5 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-willpower-boxes');
+    for (let i = 0; i < 5; i++) {
+      expect(within(group).getByTestId(`print-willpower-box-${i}`))
+        .toHaveAttribute('data-mark', 'empty');
+    }
+  });
+});
+
+describe('print/PDF Willpower — V20/classic binary boxes (Batch AO follow-up)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders one filled box per available point and outlined box per spent point', () => {
+    const char = makeClassic({ willpower: { current: 3, max: 5 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-willpower-boxes');
+    expect(group).toBeInTheDocument();
+    // First three are filled, last two are spent.
+    const states = Array.from({ length: 5 }, (_, i) =>
+      within(group).getByTestId(`print-willpower-box-${i}`).getAttribute('data-state'),
+    );
+    expect(states).toEqual(['filled', 'filled', 'filled', 'empty', 'empty']);
+    // current/max text stays alongside the boxes.
+    expect(screen.getByTestId('print-willpower-summary').textContent).toBe('3 / 5');
+  });
+
+  it('classic Willpower is NOT rendered as a damage track (no superficial/aggravated/lethal/bashing marks)', () => {
+    const char = makeClassic({ willpower: { current: 4, max: 6 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-willpower-boxes');
+    // None of the classic-WP cells carry a damage `data-mark`; they
+    // only carry the binary `data-state` filled / empty.
+    for (let i = 0; i < 6; i++) {
+      const box = within(group).getByTestId(`print-willpower-box-${i}`);
+      expect(box).not.toHaveAttribute('data-mark');
+      expect(box).toHaveAttribute('data-state');
+      expect(box.getAttribute('data-state')).toMatch(/^(filled|empty)$/);
+    }
+  });
+
+  it('classic Willpower exposes a group aria-label with the available count', () => {
+    const char = makeClassic({ willpower: { current: 2, max: 5 } });
+    renderPrint(char);
+    expect(
+      screen.getByRole('group', { name: /willpower 2 of 5/i })
+    ).toBeInTheDocument();
+  });
+});
+
+describe('print/PDF Blood Pool — V20/classic blood drops (Batch AO follow-up)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders one filled drop per available Blood Pool point and outline drop per spent point', () => {
+    const char = makeClassic({ bloodPool: { current: 7, max: 10 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-blood-pool-drops');
+    expect(group).toBeInTheDocument();
+    const states = Array.from({ length: 10 }, (_, i) =>
+      within(group).getByTestId(`print-blood-pool-drop-${i}`).getAttribute('data-state'),
+    );
+    expect(states.slice(0, 7).every(s => s === 'filled')).toBe(true);
+    expect(states.slice(7).every(s => s === 'empty')).toBe(true);
+    // current/max text stays alongside the drops.
+    expect(screen.getByTestId('print-blood-pool-summary').textContent).toBe('7 / 10');
+  });
+
+  it('a full Blood Pool prints all drops filled and zero prints all drops outline', () => {
+    const full = makeClassic({ bloodPool: { current: 10, max: 10 } });
+    renderPrint(full);
+    let group = screen.getByTestId('print-blood-pool-drops');
+    expect(
+      Array.from({ length: 10 }, (_, i) =>
+        within(group).getByTestId(`print-blood-pool-drop-${i}`).getAttribute('data-state'),
+      ).every(s => s === 'filled'),
+    ).toBe(true);
+    cleanup();
+    document.body.innerHTML = '';
+
+    const empty = makeClassic({ bloodPool: { current: 0, max: 10 } });
+    renderPrint(empty);
+    group = screen.getByTestId('print-blood-pool-drops');
+    expect(
+      Array.from({ length: 10 }, (_, i) =>
+        within(group).getByTestId(`print-blood-pool-drop-${i}`).getAttribute('data-state'),
+      ).every(s => s === 'empty'),
+    ).toBe(true);
+  });
+
+  it('Blood Pool exposes a group aria-label with the available count', () => {
+    const char = makeClassic({ bloodPool: { current: 9, max: 10 } });
+    renderPrint(char);
+    expect(
+      screen.getByRole('group', { name: /blood pool 9 of 10/i })
+    ).toBeInTheDocument();
+  });
+});
+
+describe('print/PDF Health regression — Batch AO follow-up did not disturb Health output', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V5 Health row still renders boxes and the same superficial/aggravated summary', () => {
+    const char = makeV5({ health: { damage: 1, aggravated: 2, max: 5 } });
+    renderPrint(char);
+    expect(screen.getByTestId('print-health-boxes')).toBeInTheDocument();
+    expect(screen.getByTestId('print-health-summary').textContent).toBe('1 sup · 2 agg / 5');
+  });
+
+  it('classic Health row still renders boxes and the localized abbreviated summary', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
+    renderPrint(char);
+    expect(screen.getByTestId('print-health-boxes')).toBeInTheDocument();
+    expect(screen.getByTestId('print-health-summary').textContent).toBe(
+      '2 bash · 2 leth · 1 agg / 7',
+    );
   });
 });
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Printer, X } from "lucide-react";
+import { Printer, X, Droplet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Character, EditionId, V5Character, ClassicCharacter, InventoryItem, CharacterNote, CharacterNoteCategory } from "@/types";
 import { useAppContext } from "@/context/AppContext";
@@ -174,19 +174,34 @@ export function buildClassicHealthBoxes(h: {
   return boxes;
 }
 
-function PrintHealthBoxes({ boxes, label }: { boxes: PrintHealthBox[]; label: string }) {
+/**
+ * Render a sequence of pre-built damage boxes. Used by Health (both
+ * editions) and V5 Willpower (which shares the `{ damage, aggravated,
+ * max }` shape). `testIdBase` namespaces the per-slot testids so the
+ * same row can appear twice on one print page without colliding (e.g.
+ * V5 Health + V5 Willpower side-by-side).
+ */
+function PrintDamageBoxes({
+  boxes,
+  label,
+  testIdBase = 'print-health',
+}: {
+  boxes: PrintHealthBox[];
+  label: string;
+  testIdBase?: string;
+}) {
   const damaged = boxes.filter(b => b.kind !== 'empty').length;
   return (
     <span
       role="group"
       aria-label={`${label} ${damaged} of ${boxes.length}`}
-      data-testid="print-health-boxes"
+      data-testid={`${testIdBase}-boxes`}
       className="inline-flex flex-wrap items-center gap-0.5 align-middle"
     >
       {boxes.map((box, i) => (
         <span
           key={i}
-          data-testid={`print-health-box-${i}`}
+          data-testid={`${testIdBase}-box-${i}`}
           data-mark={box.kind}
           aria-label={
             box.kind === 'empty'
@@ -200,6 +215,94 @@ function PrintHealthBoxes({ boxes, label }: { boxes: PrintHealthBox[]; label: st
           className="inline-flex items-center justify-center w-3 h-3 border border-black text-[8px] font-bold leading-none text-black bg-white"
         >
           {box.symbol}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Batch AO follow-up — V20/classic binary pool trackers for Willpower and
+// Blood Pool. Both are simple filled/empty rows (no damage types), so we
+// model them as a single helper that returns a boolean per slot and two
+// thin renderers (one square box, one blood drop).
+// ---------------------------------------------------------------------------
+
+export interface PrintPoolBox {
+  filled: boolean;
+}
+
+export function buildClassicPoolBoxes(pool: {
+  current?: number;
+  max?: number;
+} | undefined, defaultMax: number): PrintPoolBox[] {
+  const max = Math.max(0, Math.floor(pool?.max ?? defaultMax));
+  const current = Math.max(0, Math.min(max, Math.floor(pool?.current ?? 0)));
+  return Array.from({ length: max }, (_, i) => ({ filled: i < current }));
+}
+
+/**
+ * V20 Willpower print row — small square boxes, filled-black when the
+ * point is still available, outlined when spent. No damage types.
+ */
+function PrintWillpowerBoxes({ boxes, label }: { boxes: PrintPoolBox[]; label: string }) {
+  const filled = boxes.filter(b => b.filled).length;
+  return (
+    <span
+      role="group"
+      aria-label={`${label} ${filled} of ${boxes.length}`}
+      data-testid="print-willpower-boxes"
+      className="inline-flex flex-wrap items-center gap-0.5 align-middle"
+    >
+      {boxes.map((box, i) => (
+        <span
+          key={i}
+          data-testid={`print-willpower-box-${i}`}
+          data-state={box.filled ? 'filled' : 'empty'}
+          aria-label={`${label} ${i + 1}${box.filled ? '' : ' spent'}`}
+          className={
+            box.filled
+              // Solid-black fill = available point. Prints unambiguously
+              // in greyscale and never depends on colour.
+              ? "inline-block w-3 h-3 border border-black bg-black"
+              // Bordered empty square = spent point. Still clearly
+              // visible so the total Willpower capacity reads at a
+              // glance even after several spends.
+              : "inline-block w-3 h-3 border border-black bg-white"
+          }
+        />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * V20 Blood Pool print row — small blood drops. Filled drops use a
+ * solid black `fill-current`; empty drops are outline-only. Lucide
+ * Droplet is vector SVG so it stays crisp at any print DPI without
+ * needing a colour profile.
+ */
+function PrintBloodPoolDrops({ boxes, label }: { boxes: PrintPoolBox[]; label: string }) {
+  const filled = boxes.filter(b => b.filled).length;
+  return (
+    <span
+      role="group"
+      aria-label={`${label} ${filled} of ${boxes.length}`}
+      data-testid="print-blood-pool-drops"
+      className="inline-flex flex-wrap items-center gap-0.5 align-middle"
+    >
+      {boxes.map((box, i) => (
+        <span
+          key={i}
+          data-testid={`print-blood-pool-drop-${i}`}
+          data-state={box.filled ? 'filled' : 'empty'}
+          aria-label={`${label} ${i + 1}${box.filled ? '' : ' spent'}`}
+          className="inline-flex items-center justify-center w-3 h-3 text-black"
+        >
+          <Droplet
+            aria-hidden
+            className={box.filled ? "w-3 h-3 fill-current" : "w-3 h-3 fill-transparent"}
+          />
         </span>
       ))}
     </span>
@@ -282,7 +385,7 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       label: healthLabel,
       value: (
         <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-          <PrintHealthBoxes boxes={boxes} label={healthLabel} />
+          <PrintDamageBoxes boxes={boxes} label={healthLabel} testIdBase="print-health" />
           <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-health-summary">
             {summary}
           </span>
@@ -303,7 +406,7 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
         label: healthLabel,
         value: (
           <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
-            <PrintHealthBoxes boxes={boxes} label={healthLabel} />
+            <PrintDamageBoxes boxes={boxes} label={healthLabel} testIdBase="print-health" />
             <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-health-summary">
               {summary}
             </span>
@@ -319,15 +422,41 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       trackerRows.push({ label: healthLabel, value: "—" });
     }
   }
+  const willpowerLabel = strings.sheet_willpower || "Willpower";
   if (isV5 && v5?.willpower) {
+    // Batch AO follow-up — V5 Willpower has the same superficial /
+    // aggravated damage shape as V5 Health, so we reuse the damage-box
+    // helper. The explanatory summary stays next to the boxes.
+    const boxes = buildV5HealthBoxes(v5.willpower);
+    const summary = `${v5.willpower.damage || 0} sup · ${v5.willpower.aggravated || 0} agg / ${v5.willpower.max || 5}`;
     trackerRows.push({
-      label: strings.sheet_willpower || "Willpower",
-      value: `${v5.willpower.damage || 0} sup · ${v5.willpower.aggravated || 0} agg / ${v5.willpower.max || 5}`,
+      label: willpowerLabel,
+      value: (
+        <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+          <PrintDamageBoxes boxes={boxes} label={willpowerLabel} testIdBase="print-willpower" />
+          <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-willpower-summary">
+            {summary}
+          </span>
+        </span>
+      ),
     });
   } else if (!isV5 && cl?.willpower) {
+    // Batch AO follow-up — V20/classic Willpower is a simple
+    // current-of-max pool, NOT a damage track. We render binary
+    // filled/empty boxes (filled = available, empty = spent) plus the
+    // existing "X / Y" text so the exact value stays visible.
+    const boxes = buildClassicPoolBoxes(cl.willpower, 5);
+    const summary = `${cl.willpower.current ?? 0} / ${cl.willpower.max ?? 5}`;
     trackerRows.push({
-      label: strings.sheet_willpower || "Willpower",
-      value: `${cl.willpower.current ?? 0} / ${cl.willpower.max ?? 5}`,
+      label: willpowerLabel,
+      value: (
+        <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+          <PrintWillpowerBoxes boxes={boxes} label={willpowerLabel} />
+          <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-willpower-summary">
+            {summary}
+          </span>
+        </span>
+      ),
     });
   }
   if (isV5) {
@@ -336,9 +465,22 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       value: <span className="font-mono">{dotsString(v5?.hunger || 0, 5)}</span>,
     });
   } else if (cl?.bloodPool) {
+    // Batch AO follow-up — V20/classic Blood Pool prints as a row of
+    // filled / outlined blood drops (vector SVG via lucide Droplet).
+    // Filled = available; outline = spent.
+    const bloodPoolLabel = strings.sheet_blood_pool || "Blood Pool";
+    const boxes = buildClassicPoolBoxes(cl.bloodPool, 10);
+    const summary = `${cl.bloodPool.current ?? 0} / ${cl.bloodPool.max ?? 10}`;
     trackerRows.push({
-      label: strings.sheet_blood_pool || "Blood Pool",
-      value: `${cl.bloodPool.current ?? 0} / ${cl.bloodPool.max ?? 10}`,
+      label: bloodPoolLabel,
+      value: (
+        <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+          <PrintBloodPoolDrops boxes={boxes} label={bloodPoolLabel} />
+          <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-blood-pool-summary">
+            {summary}
+          </span>
+        </span>
+      ),
     });
   }
   trackerRows.push({

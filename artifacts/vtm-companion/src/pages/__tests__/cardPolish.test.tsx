@@ -192,6 +192,76 @@ describe('Character sheet — scroll-to-top on open / create (Batch AK)', () => 
   });
 });
 
+describe('Batch AK review polish — corner-aligned char pip and "Open" text removed', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    window.localStorage.clear();
+  });
+
+  it('character card pip sits in the top-right action cluster, NOT in the badge row', () => {
+    const alice = saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    favorite('character', alice.id);
+    setLanguage('en');
+
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    const pip = screen.getByTestId(`card-fav-indicator-character-${alice.id}`);
+    // The cluster wraps the pip and the ⋯ More-menu trigger as siblings —
+    // ensures the pip is positioned with the top-right actions, not buried
+    // inline beneath the character name with the edition / PC tags.
+    const cluster = pip.parentElement!;
+    expect(cluster).toBeTruthy();
+    const moreTrigger = cluster.querySelector('button[aria-label="More actions"]');
+    expect(moreTrigger).not.toBeNull();
+  });
+
+  it('character preview cards no longer render the "Open →" hint text', () => {
+    saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    setLanguage('en');
+
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    // The character page itself doesn't otherwise display the literal string
+    // "Open sheet" (or the bare "Open" call-to-action) in list view, so we
+    // can safely assert it's absent from the document.
+    expect(screen.queryByText('Open sheet')).toBeNull();
+    expect(screen.queryByText('Open')).toBeNull();
+    // The card click handler is still wired up — the title acts as the
+    // click surface.
+    const card = screen.getByText('Alice').closest('[class*="cursor-pointer"]');
+    expect(card).not.toBeNull();
+  });
+
+  it('chronicle preview cards no longer render the "Open →" hint text', () => {
+    saveChronicle(createEmptyChronicle('Berlin by Night'));
+    setLanguage('en');
+
+    render(
+      <AppContextProvider>
+        <ChroniclePage />
+      </AppContextProvider>
+    );
+
+    // No bare "Open" CTA inside any list-card footer.
+    expect(screen.queryByText('Open')).toBeNull();
+    // Card itself remains clickable.
+    const card = screen.getByText('Berlin by Night').closest('[class*="cursor-pointer"]');
+    expect(card).not.toBeNull();
+  });
+});
+
 describe('favorite indicator label is localized (Batch AK)', () => {
   it('Spanish "Favorito" / English "Favorite"', async () => {
     const { UI_STRINGS } = await import('@/i18n/ui');

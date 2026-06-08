@@ -1378,17 +1378,13 @@ export default function ChroniclePage() {
                     </span>
                   </div>
 
-                  {/* Footer with a subtle hairline above. The "Open"
-                      affordance brightens and animates a trailing
-                      arrow on hover so the card reads as actionable
-                      even when no stats are present. */}
-                  <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+                  {/* Footer hairline keeps the date visually anchored. The
+                      "Open →" call-to-action was removed in Batch AK review
+                      polish — the whole card is already a click target and
+                      the redundant text added clutter. */}
+                  <div className="pt-2 border-t border-zinc-800/60">
                     <span className="text-[10px] text-muted-foreground/50 font-sans tracking-wide">
                       {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 group-hover:text-primary/80 transition-colors">
-                      {strings.chr_open_manage || "Open"}
-                      <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
                     </span>
                   </div>
                 </CardContent>

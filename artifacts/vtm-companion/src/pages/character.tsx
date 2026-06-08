@@ -1075,6 +1075,13 @@ export default function CharacterPage() {
                   // every clan; we reuse it as a 3px left accent strip
                   // and a faint radial glow in the top-right corner.
                   // All CSS-only — no new assets and no image loads.
+                  //
+                  // Batch AK follow-up (deferred): the chronicle card carries
+                  // a faded ScrollText watermark in its corner. A matching
+                  // clan-symbol watermark on the character card would balance
+                  // them visually, but it pulls in clan-asset / licensing /
+                  // responsive concerns the polish batch isn't scoped for —
+                  // tracked for a dedicated batch.
                   const clanData = clans.find(c => c.id === char.clan);
                   const clanColor = clanData?.colorTheme || '#8B0000';
                   const isV5 = char.edition === 'V5';
@@ -1155,16 +1162,6 @@ export default function CharacterPage() {
                               same V5 / classic split the rest of the
                               app uses on the Tools combat summary. */}
                           <div className="flex items-center flex-wrap gap-1.5 text-sm text-muted-foreground">
-                            {isFavCard && (
-                              <span
-                                className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary"
-                                aria-label={strings.favorite_indicator || "Favorite"}
-                                title={strings.favorite_indicator || "Favorite"}
-                                data-testid={`card-fav-indicator-character-${char.id}`}
-                              >
-                                <Heart className="w-3 h-3 fill-current" aria-hidden />
-                              </span>
-                            )}
                             {char.status === 'archived' && (
                               <span
                                 className="inline-flex items-center gap-1 uppercase text-[10px] tracking-wider border px-1.5 rounded border-zinc-700 bg-zinc-900 text-zinc-400"
@@ -1212,26 +1209,11 @@ export default function CharacterPage() {
                               );
                             })()}
                           </div>
-                          {/* Batch AK — footer rhythm: pull the updated date
-                              and an "Open →" affordance into a single row.
-                              Mirrors the chronicle card so the character
-                              card no longer feels visually empty under the
-                              badge row, especially on mobile widths. The
-                              arrow is a hover hint only and never replaces
-                              the existing tap-the-card behaviour. */}
-                          <div className="mt-2 flex items-center justify-between gap-2">
-                            <span className="text-[10px] text-muted-foreground/60 font-sans tracking-wide">
-                              {char.updatedAt
-                                ? new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-                                : ''}
-                            </span>
-                            {!selection.active && (
-                              <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 group-hover:text-primary/80 transition-colors">
-                                {strings.chr_open_character || "Open"}
-                                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-                              </span>
-                            )}
-                          </div>
+                          {char.updatedAt && (
+                            <div className="text-[10px] text-muted-foreground/60 mt-2 font-sans tracking-wide">
+                              {new Date(char.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </div>
+                          )}
                         </div>
 
                         {/* ⋯ More menu.
@@ -1246,7 +1228,23 @@ export default function CharacterPage() {
                             hover:hover) keep the original reveal-on-hover
                             behaviour. The `focus:opacity-100` line still covers
                             keyboard users on desktop. */}
-                        <div onClick={e => e.stopPropagation()} className={selection.active ? "hidden" : ""}>
+                        {/* Batch AK — top-right action cluster: the favourite
+                            pip sits to the left of the ⋯ menu so a favourited
+                            character reads as such from the corner of the
+                            card, matching the chronicle card's corner-aligned
+                            indicator. Always-visible (never tied to hover) so
+                            touch users get the same affordance as desktop. */}
+                        <div onClick={e => e.stopPropagation()} className={`flex items-center gap-1 -mt-1 -mr-1 ${selection.active ? "hidden" : ""}`}>
+                          {isFavCard && (
+                            <span
+                              className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary shrink-0"
+                              aria-label={strings.favorite_indicator || "Favorite"}
+                              title={strings.favorite_indicator || "Favorite"}
+                              data-testid={`card-fav-indicator-character-${char.id}`}
+                            >
+                              <Heart className="w-3 h-3 fill-current" aria-hidden />
+                            </span>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

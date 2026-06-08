@@ -280,6 +280,120 @@ describe('Tools — Recent rolls are filtered by active edition (Batch AL polish
   });
 });
 
+describe('Tools — dice visual polish + safe special mark (Batch AP)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    window.localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('V5 roller renders normal + hunger dice as DieFace chips with edition-distinct kinds', () => {
+    setSession('en', 'V5');
+    // Math.random() = 0.6 → die value 7 across the whole pool.
+    vi.spyOn(Math, 'random').mockReturnValue(0.6);
+    renderTools();
+
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+
+    // Default V5 pool is 5 dice with 1 hunger → 4 normal + 1 hunger chips.
+    const normalChips = screen.getAllByTestId(/^die-face-normal-\d+$/);
+    const hungerChips = screen.getAllByTestId(/^die-face-hunger-\d+$/);
+    expect(normalChips.length).toBe(4);
+    expect(hungerChips.length).toBe(1);
+    // Hunger chips carry a distinct kind attribute so visually-similar
+    // dice rows never confuse the two in tests or screen-reader output.
+    expect(hungerChips[0]).toHaveAttribute('data-die-kind', 'hunger');
+    expect(normalChips[0]).toHaveAttribute('data-die-kind', 'normal');
+    // Accessible label still exposes "Hunger die N" vs "Normal die N".
+    expect(hungerChips[0].getAttribute('aria-label')).toMatch(/Hunger die \d+/i);
+    expect(normalChips[0].getAttribute('aria-label')).toMatch(/Normal die \d+/i);
+  });
+
+  it('a die showing 10 renders the safe Sparkles critical mark; non-10s do not', () => {
+    setSession('en', 'V5');
+    // Math.random() = 0.95 → Math.floor(9.5)+1 = 10 across the pool.
+    vi.spyOn(Math, 'random').mockReturnValue(0.95);
+    renderTools();
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+
+    // Every die shows a critical mark (Sparkles SVG is rendered with
+    // the dedicated test-id; aria-hidden so it doesn't double-announce).
+    const markers = screen.getAllByTestId('die-critical-mark');
+    expect(markers.length).toBe(5); // 4 normal + 1 hunger = 5 chips
+    for (const m of markers) {
+      expect(m).toHaveAttribute('aria-hidden');
+    }
+
+    // Re-render with a guaranteed non-10 (Math.random() = 0 → die value 1)
+    // and confirm no critical marks appear.
+    cleanup();
+    document.body.innerHTML = '';
+    window.localStorage.clear();
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    renderTools();
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+    expect(screen.queryAllByTestId('die-critical-mark').length).toBe(0);
+  });
+
+  it('classic roller renders dice as classic-kind DieFace chips and surfaces the critical mark on 10s', () => {
+    setSession('en', 'V20');
+    vi.spyOn(Math, 'random').mockReturnValue(0.95); // every die = 10
+    renderTools();
+    fireEvent.click(screen.getByRole('button', { name: /^Roll$/i }));
+
+    const classicChips = screen.getAllByTestId(/^die-face-classic-\d+$/);
+    expect(classicChips.length).toBe(5); // default classic pool size = 5
+    for (const c of classicChips) {
+      expect(c).toHaveAttribute('data-die-kind', 'classic');
+      expect(c).toHaveAttribute('data-die-value', '10');
+    }
+    // 10s carry the safe Sparkles mark; rendered once per die.
+    expect(screen.getAllByTestId('die-critical-mark').length).toBe(5);
+  });
+
+  it('rouse check result renders the d10 as a rouse-kind DieFace chip', () => {
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.7); // success (die = 8)
+    renderTools();
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+
+    const rouseChip = screen.getByTestId('die-face-rouse-8');
+    expect(rouseChip).toBeInTheDocument();
+    expect(rouseChip).toHaveAttribute('data-die-kind', 'rouse');
+    expect(rouseChip).toHaveAttribute('data-die-value', '8');
+    // Accessible label uses the Batch AP "Rouse die" string.
+    expect(rouseChip.getAttribute('aria-label')).toMatch(/Rouse die 8/i);
+    // The result panel still surrounds it (still role="status" live region).
+    expect(screen.getByTestId('rouse-check-result')).toContainElement(rouseChip);
+  });
+
+  it('a critical rouse check (10) shows the Sparkles mark on the rouse die', () => {
+    setSession('en', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.95); // die = 10
+    renderTools();
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+
+    expect(screen.getByTestId('die-face-rouse-10')).toBeInTheDocument();
+    // Sparkles mark is rendered inside the rouse die chip.
+    const marks = screen.getAllByTestId('die-critical-mark');
+    expect(marks.length).toBe(1);
+  });
+
+  it('Spanish translates the rouse-die accessible label', async () => {
+    setSession('es', 'V5');
+    vi.spyOn(Math, 'random').mockReturnValue(0.7);
+    renderTools();
+    fireEvent.click(screen.getByTestId('rouse-check-roll'));
+    const chip = screen.getByTestId('die-face-rouse-8');
+    expect(chip.getAttribute('aria-label')).toMatch(/Dado de Tirada de Hambre 8/);
+  });
+});
+
 describe('Tools — V5 Hunger blood-drop accents (Batch AM)', () => {
   beforeEach(() => {
     window.localStorage.clear();

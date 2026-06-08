@@ -529,15 +529,14 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
       }]
     };
 
-    const { container } = renderWithContext(
+    renderWithContext(
       <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} readonly={true} />
     );
 
-    // Click a hunger dot — should trigger onChange because hunger is a gameplay field
-    const dots = container.querySelectorAll('.rounded-full');
-    if (dots.length > 0) {
-      fireEvent.click(dots[dots.length - 1]); // click last dot
-    }
+    // Click a hunger drop — Batch AM swapped the rounded-dot for a
+    // blood-drop SVG, but the field is still a gameplay tracker so it
+    // should fire onChange in View Mode the same way.
+    fireEvent.click(screen.getByTestId('hunger-drop-5'));
     expect(mockOnChange).toHaveBeenCalled();
   });
 
@@ -658,5 +657,122 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
       fireEvent.click(dots[0]);
     }
     expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------
+  // Batch AM — V5 Hunger renders as blood drops, not round dots, and
+  // exposes its value via aria-label so screen readers keep parity.
+  // ---------------------------------------------------------------------
+
+  it('V5 Hunger field renders blood-drop slots with the value reflected per slot', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 3, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'vampire_traits', labelKey: 'vt', fields: [
+          { id: 'hunger', type: 'dots-5', special: 'hunger', labelKey: 'sheet_hunger' }
+        ]
+      }]
+    };
+
+    renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} />
+    );
+
+    // Five drop slots are rendered, one per Hunger level.
+    expect(screen.getByTestId('hunger-drop-1')).toBeInTheDocument();
+    expect(screen.getByTestId('hunger-drop-2')).toBeInTheDocument();
+    expect(screen.getByTestId('hunger-drop-5')).toBeInTheDocument();
+    // The first three drops are filled (Hunger 3); the rest are empty.
+    expect(screen.getByTestId('hunger-drop-1')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('hunger-drop-3')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('hunger-drop-4')).toHaveAttribute('data-state', 'empty');
+    expect(screen.getByTestId('hunger-drop-5')).toHaveAttribute('data-state', 'empty');
+  });
+
+  it('V5 Hunger field exposes the underlying numeric value through aria-label', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 4, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'vampire_traits', labelKey: 'vt', fields: [
+          { id: 'hunger', type: 'dots-5', special: 'hunger', labelKey: 'sheet_hunger' }
+        ]
+      }]
+    };
+
+    renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} />
+    );
+
+    // The whole group announces "sheet_hunger 4 of 5" so screen readers
+    // get the numeric value even though the visible glyphs are drops.
+    expect(screen.getByRole('group', { name: /sheet_hunger 4 of 5/i })).toBeInTheDocument();
+  });
+
+  it('classic / non-V5 sheets do NOT render Hunger blood drops', () => {
+    const classicChar: ClassicCharacter = {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 10, max: 10 }, health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 }, generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    // Classic characters use Blood Pool, not Hunger — but even if a hostile
+    // schema tried to render a Hunger field, the drop visual is only
+    // triggered by `field.special === 'hunger'`, which the classic schema
+    // never sets. Render a normal Humanity dots row instead and confirm
+    // the drop test-ids are absent.
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'traits', labelKey: 't', fields: [
+          { id: 'humanity', type: 'dots-10', labelKey: 'sheet_humanity_path' }
+        ]
+      }]
+    };
+
+    renderWithContext(
+      <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} />
+    );
+    expect(screen.queryByTestId('hunger-drop-1')).toBeNull();
+    expect(screen.queryByTestId('hunger-drop-5')).toBeNull();
+  });
+
+  it('Hunger drop click updates the value (Edit Mode)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5 Char', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {}, willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 1, humanity: 7, createdAt: '', updatedAt: '', experience: 0
+    };
+
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'vampire_traits', labelKey: 'vt', fields: [
+          { id: 'hunger', type: 'dots-5', special: 'hunger', labelKey: 'sheet_hunger', gameplay: true }
+        ]
+      }]
+    };
+
+    renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} />
+    );
+
+    // Clicking the 4th drop should drive Hunger up to 4.
+    fireEvent.click(screen.getByTestId('hunger-drop-4'));
+    expect(mockOnChange).toHaveBeenCalled();
+    const updated = mockOnChange.mock.calls[0][0] as V5Character;
+    expect(updated.hunger).toBe(4);
   });
 });

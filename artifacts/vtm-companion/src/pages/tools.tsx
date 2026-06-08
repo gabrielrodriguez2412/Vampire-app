@@ -589,9 +589,23 @@ function NumberInput({ label, value, onChange, min, max, accent }: NumberInputPr
       : accent === "classic"
         ? "border-amber-900/40 bg-amber-950/10"
         : "border-border bg-background";
+  // Batch AM — show a small blood-drop next to the label when this input
+  // controls Hunger dice, so the V5 Hunger affordance reads as such at a
+  // glance. Purely visual; the numeric value remains the same and stays
+  // accessible.
+  const isHungerInput = accent === "hunger";
   return (
     <div>
-      <label className="text-xs font-medium text-muted-foreground mb-1 block">{label}</label>
+      <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+        {isHungerInput && (
+          <Droplet
+            className="w-3 h-3 text-red-500 fill-current shrink-0"
+            aria-hidden
+            data-testid="hunger-input-icon"
+          />
+        )}
+        {label}
+      </label>
       <div className={`flex items-stretch rounded-md border ${accentClasses}`}>
         <button
           type="button"

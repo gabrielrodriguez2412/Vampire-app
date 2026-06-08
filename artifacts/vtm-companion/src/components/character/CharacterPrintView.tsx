@@ -89,6 +89,123 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Batch AO — printable Health capacity boxes.
+//
+// The print sheet used to collapse Health into a one-line text summary
+// (e.g. "2 bash · 2 leth · 1 agg / 7"). That was reading-only — no sense
+// of the full track length, no visible empty boxes, no way to tell at a
+// glance which boxes were damaged. We now render the full track as a
+// row of small bordered boxes, marked with the same symbols the live
+// trackers (`DamageTracker`, `ClassicHealthTracker`) already use:
+//
+//     V5      → `/` superficial · `X` aggravated
+//     classic → `/` bashing · `X` lethal · `✱` aggravated
+//
+// Boxes are filled most-severe-first, just like the live trackers.
+// Marks rely on distinct symbols, NOT colour — so a black-and-white
+// print is still legible. The short text summary stays next to the
+// boxes so the exact numeric breakdown remains accessible.
+// ---------------------------------------------------------------------------
+
+export type PrintHealthMarkKind =
+  | 'empty'
+  | 'aggravated'
+  | 'lethal'
+  | 'bashing'
+  | 'superficial';
+
+export interface PrintHealthBox {
+  /** Visible glyph: '' for empty, '/' or 'X' or '✱'. */
+  symbol: string;
+  kind: PrintHealthMarkKind;
+}
+
+/**
+ * Build the V5 box sequence. V5 tracks two damage types:
+ *   * superficial (`damage` field) → `/`
+ *   * aggravated                   → `X`
+ * Boxes are filled most-severe-first, then padded with empties up to
+ * `max`. Defensive against missing / corrupted fields.
+ */
+export function buildV5HealthBoxes(h: {
+  damage?: number;
+  aggravated?: number;
+  max?: number;
+}): PrintHealthBox[] {
+  const max = Math.max(0, Math.floor(h.max ?? 5));
+  const agg = Math.max(0, Math.floor(h.aggravated ?? 0));
+  const sup = Math.max(0, Math.floor(h.damage ?? 0));
+  const boxes: PrintHealthBox[] = [];
+  for (let i = 0; i < max; i++) {
+    if (i < agg) boxes.push({ symbol: 'X', kind: 'aggravated' });
+    else if (i < agg + sup) boxes.push({ symbol: '/', kind: 'superficial' });
+    else boxes.push({ symbol: '', kind: 'empty' });
+  }
+  return boxes;
+}
+
+/**
+ * Build the classic / WoD box sequence. Three damage types:
+ *   * bashing    → `/`
+ *   * lethal     → `X`
+ *   * aggravated → `✱`
+ * Severity order matches the live `ClassicHealthTracker` (aggravated
+ * first, then lethal, then bashing) so the print preview always reads
+ * the same shape as what the player sees on screen.
+ */
+export function buildClassicHealthBoxes(h: {
+  bashing?: number;
+  lethal?: number;
+  aggravated?: number;
+  max?: number;
+}): PrintHealthBox[] {
+  const max = Math.max(0, Math.floor(h.max ?? 7));
+  const agg = Math.max(0, Math.floor(h.aggravated ?? 0));
+  const leth = Math.max(0, Math.floor(h.lethal ?? 0));
+  const bash = Math.max(0, Math.floor(h.bashing ?? 0));
+  const boxes: PrintHealthBox[] = [];
+  for (let i = 0; i < max; i++) {
+    if (i < agg) boxes.push({ symbol: '✱', kind: 'aggravated' });
+    else if (i < agg + leth) boxes.push({ symbol: 'X', kind: 'lethal' });
+    else if (i < agg + leth + bash) boxes.push({ symbol: '/', kind: 'bashing' });
+    else boxes.push({ symbol: '', kind: 'empty' });
+  }
+  return boxes;
+}
+
+function PrintHealthBoxes({ boxes, label }: { boxes: PrintHealthBox[]; label: string }) {
+  const damaged = boxes.filter(b => b.kind !== 'empty').length;
+  return (
+    <span
+      role="group"
+      aria-label={`${label} ${damaged} of ${boxes.length}`}
+      data-testid="print-health-boxes"
+      className="inline-flex flex-wrap items-center gap-0.5 align-middle"
+    >
+      {boxes.map((box, i) => (
+        <span
+          key={i}
+          data-testid={`print-health-box-${i}`}
+          data-mark={box.kind}
+          aria-label={
+            box.kind === 'empty'
+              ? `${label} ${i + 1}`
+              : `${label} ${i + 1} ${box.kind}`
+          }
+          // Solid 1px black border + white background keeps every box
+          // clearly visible on greyscale prints. Mark glyph is rendered
+          // as text so the symbol scales with the page font and never
+          // depends on web-only icon fonts.
+          className="inline-flex items-center justify-center w-3 h-3 border border-black text-[8px] font-bold leading-none text-black bg-white"
+        >
+          {box.symbol}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function TraitGrid({ entries, max }: { entries: [string, unknown][]; max: number }) {
   const sorted = [...entries].sort(([a], [b]) => humanize(a).localeCompare(humanize(b)));
   return (
@@ -154,28 +271,53 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
 
   // Tracker rows — these are always meaningful (created with defaults).
   const trackerRows: Row[] = [];
+  const healthLabel = strings.sheet_health || "Health";
   if (isV5 && v5?.health) {
+    // Batch AO — render Health as capacity boxes (most-severe-first marks)
+    // alongside the existing one-line abbreviated summary so the exact
+    // numeric breakdown stays visible next to the boxes.
+    const boxes = buildV5HealthBoxes(v5.health);
+    const summary = `${v5.health.damage || 0} sup · ${v5.health.aggravated || 0} agg / ${v5.health.max || 5}`;
     trackerRows.push({
-      label: strings.sheet_health || "Health",
-      value: `${v5.health.damage || 0} sup · ${v5.health.aggravated || 0} agg / ${v5.health.max || 5}`,
+      label: healthLabel,
+      value: (
+        <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+          <PrintHealthBoxes boxes={boxes} label={healthLabel} />
+          <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-health-summary">
+            {summary}
+          </span>
+        </span>
+      ),
     });
   } else if (!isV5) {
     // Classic health may be the new structured track or (legacy) a plain number.
     const ch: unknown = cl?.health;
-    let healthValue = "—";
     if (ch && typeof ch === "object") {
       const h = ch as { bashing?: number; lethal?: number; aggravated?: number; max?: number };
+      const boxes = buildClassicHealthBoxes(h);
       const bashAbbr = strings.dmg_bashing_abbr || "bash";
       const lethAbbr = strings.dmg_lethal_abbr || "leth";
       const aggAbbr = strings.dmg_aggravated_abbr || "agg";
-      healthValue = `${h.bashing || 0} ${bashAbbr} · ${h.lethal || 0} ${lethAbbr} · ${h.aggravated || 0} ${aggAbbr} / ${h.max || 7}`;
+      const summary = `${h.bashing || 0} ${bashAbbr} · ${h.lethal || 0} ${lethAbbr} · ${h.aggravated || 0} ${aggAbbr} / ${h.max || 7}`;
+      trackerRows.push({
+        label: healthLabel,
+        value: (
+          <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+            <PrintHealthBoxes boxes={boxes} label={healthLabel} />
+            <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-health-summary">
+              {summary}
+            </span>
+          </span>
+        ),
+      });
     } else if (typeof ch === "number") {
-      healthValue = `${ch} dmg`;
+      // Legacy bare-number save — we don't know which damage type is
+      // recorded, so we don't invent a mark sequence. Fall back to the
+      // text summary only.
+      trackerRows.push({ label: healthLabel, value: `${ch} dmg` });
+    } else {
+      trackerRows.push({ label: healthLabel, value: "—" });
     }
-    trackerRows.push({
-      label: strings.sheet_health || "Health",
-      value: healthValue,
-    });
   }
   if (isV5 && v5?.willpower) {
     trackerRows.push({

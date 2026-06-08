@@ -16,9 +16,9 @@
  * sections still render, and that empty sections stay hidden.
  */
 import { describe, it, expect, afterEach, beforeEach } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
-import { CharacterPrintModal } from '../CharacterPrintView';
+import { CharacterPrintModal, buildV5HealthBoxes, buildClassicHealthBoxes } from '../CharacterPrintView';
 import { AppContextProvider } from '@/context/AppContext';
 import { UI_STRINGS } from '@/i18n/ui';
 import type { Character, V5Character, ClassicCharacter } from '@/types';
@@ -163,6 +163,131 @@ describe('print/PDF classic health track (Batch Y)', () => {
     const char = makeV5({ health: { damage: 1, aggravated: 2, max: 5 } });
     const text = renderPrint(char, 'en');
     expect(text).toContain('1 sup · 2 agg / 5');
+  });
+});
+
+describe('print/PDF Health box helpers (Batch AO)', () => {
+  it('buildV5HealthBoxes pads the row to max and marks aggravated first, then superficial', () => {
+    const boxes = buildV5HealthBoxes({ damage: 2, aggravated: 1, max: 5 });
+    expect(boxes.map(b => b.kind)).toEqual([
+      'aggravated', 'superficial', 'superficial', 'empty', 'empty',
+    ]);
+    expect(boxes.map(b => b.symbol)).toEqual(['X', '/', '/', '', '']);
+  });
+
+  it('buildV5HealthBoxes returns an all-empty row when there is no damage', () => {
+    const boxes = buildV5HealthBoxes({ damage: 0, aggravated: 0, max: 5 });
+    expect(boxes).toHaveLength(5);
+    expect(boxes.every(b => b.kind === 'empty')).toBe(true);
+  });
+
+  it('buildClassicHealthBoxes marks aggravated, then lethal, then bashing, then empty', () => {
+    const boxes = buildClassicHealthBoxes({ bashing: 2, lethal: 2, aggravated: 1, max: 7 });
+    expect(boxes.map(b => b.kind)).toEqual([
+      'aggravated', 'lethal', 'lethal', 'bashing', 'bashing', 'empty', 'empty',
+    ]);
+    expect(boxes.map(b => b.symbol)).toEqual(['✱', 'X', 'X', '/', '/', '', '']);
+  });
+
+  it('buildClassicHealthBoxes returns an all-empty row when there is no damage', () => {
+    const boxes = buildClassicHealthBoxes({ bashing: 0, lethal: 0, aggravated: 0, max: 7 });
+    expect(boxes).toHaveLength(7);
+    expect(boxes.every(b => b.kind === 'empty')).toBe(true);
+  });
+
+  it('build helpers tolerate missing / corrupted fields', () => {
+    expect(buildV5HealthBoxes({})).toHaveLength(5);
+    expect(buildClassicHealthBoxes({})).toHaveLength(7);
+    // Negative numbers clamp to zero rather than producing a longer row.
+    expect(buildClassicHealthBoxes({ bashing: -3, lethal: 0, aggravated: 0, max: 7 })
+      .every(b => b.kind === 'empty')).toBe(true);
+  });
+});
+
+describe('print/PDF Health capacity boxes — V5 (Batch AO)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders one box per Health slot, with empty boxes still visible', () => {
+    const char = makeV5({ health: { damage: 0, aggravated: 0, max: 5 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-health-boxes');
+    expect(group).toBeInTheDocument();
+    // Five slots, all empty — empty boxes must still render in print.
+    for (let i = 0; i < 5; i++) {
+      const box = within(group).getByTestId(`print-health-box-${i}`);
+      expect(box).toHaveAttribute('data-mark', 'empty');
+      expect(box.textContent).toBe('');
+    }
+  });
+
+  it('marks aggravated then superficial slots and leaves the rest empty', () => {
+    const char = makeV5({ health: { damage: 2, aggravated: 1, max: 5 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-health-boxes');
+    const marks = Array.from({ length: 5 }, (_, i) =>
+      within(group).getByTestId(`print-health-box-${i}`).getAttribute('data-mark'),
+    );
+    expect(marks).toEqual(['aggravated', 'superficial', 'superficial', 'empty', 'empty']);
+    // Mark glyphs render as text (print-safe — no icon fonts).
+    expect(within(group).getByTestId('print-health-box-0').textContent).toBe('X');
+    expect(within(group).getByTestId('print-health-box-1').textContent).toBe('/');
+    // Existing one-line summary stays next to the boxes so the numeric
+    // breakdown remains visible without needing to count boxes.
+    expect(screen.getByTestId('print-health-summary').textContent).toBe('2 sup · 1 agg / 5');
+  });
+
+  it('exposes the total damaged count via an aria-label on the group', () => {
+    const char = makeV5({ health: { damage: 1, aggravated: 2, max: 5 } });
+    renderPrint(char);
+    expect(
+      screen.getByRole('group', { name: /health 3 of 5/i })
+    ).toBeInTheDocument();
+  });
+});
+
+describe('print/PDF Health capacity boxes — V20/classic (Batch AO)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders seven boxes by default with all-empty when no damage is recorded', () => {
+    const char = makeClassic({ health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-health-boxes');
+    for (let i = 0; i < 7; i++) {
+      const box = within(group).getByTestId(`print-health-box-${i}`);
+      expect(box).toHaveAttribute('data-mark', 'empty');
+    }
+  });
+
+  it('marks aggravated first, then lethal, then bashing — preserving damage distinctions', () => {
+    const char = makeClassic({ health: { bashing: 2, lethal: 2, aggravated: 1, max: 7 } });
+    renderPrint(char);
+    const group = screen.getByTestId('print-health-boxes');
+    const marks = Array.from({ length: 7 }, (_, i) =>
+      within(group).getByTestId(`print-health-box-${i}`).getAttribute('data-mark'),
+    );
+    expect(marks).toEqual([
+      'aggravated', 'lethal', 'lethal', 'bashing', 'bashing', 'empty', 'empty',
+    ]);
+    // Print-safe glyphs (work in greyscale, no icon fonts).
+    expect(within(group).getByTestId('print-health-box-0').textContent).toBe('✱');
+    expect(within(group).getByTestId('print-health-box-1').textContent).toBe('X');
+    expect(within(group).getByTestId('print-health-box-3').textContent).toBe('/');
+    // Localized summary still shows the numeric breakdown.
+    expect(screen.getByTestId('print-health-summary').textContent).toBe(
+      '2 bash · 2 leth · 1 agg / 7',
+    );
+  });
+
+  it('legacy bare-number health stays as the text fallback (no invented marks)', () => {
+    const char = makeClassic({ health: 3 as unknown as ClassicCharacter['health'] });
+    const text = renderPrint(char);
+    // No box group rendered — we don't know which damage type to assign,
+    // so the print sheet keeps the existing text fallback rather than
+    // inventing marks.
+    expect(screen.queryByTestId('print-health-boxes')).toBeNull();
+    expect(text).toContain('3 dmg');
   });
 });
 

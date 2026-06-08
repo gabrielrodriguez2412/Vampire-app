@@ -5,6 +5,7 @@ import { SheetSchema, FieldDef } from "@/data/characterSheets/schemas";
 import { DotRating } from "./DotRating";
 import { DamageTracker } from "./DamageTracker";
 import { ClassicHealthTracker } from "./ClassicHealthTracker";
+import { ClassicPoolTracker } from "./ClassicPoolTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -1128,33 +1129,43 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
             </div>
           );
         } else {
-          // Classic style (blood pool or willpower pool)
+          // Batch AN — classic Blood Pool / Willpower pool tracker.
+          //
+          // Both store as `{ current, max }`. We read the stored shape,
+          // hand it to `ClassicPoolTracker`, and write back the same
+          // shape on every change — so existing saved characters and the
+          // classic schema are unaffected. The legacy number-input
+          // fallback (when value is a bare number, not an object) is
+          // preserved by promoting the bare number to a current value
+          // and reading max from the classic defaults below.
           const isObject = typeof value === 'object' && value !== null;
           const currentValue = isObject ? (value.current ?? 0) : (typeof value === 'number' ? value : 0);
-          const classicMax = isObject ? (value.max || 10) : (field.special === 'bloodPool' ? 20 : 7); 
-          
+          const classicMax = isObject ? (value.max || 10) : (field.special === 'bloodPool' ? 20 : 7);
+          const poolKind = field.special === 'bloodPool' ? 'blood' : 'willpower';
+
           return (
-             <div key={field.id} className="flex flex-col gap-2 py-2">
-               <label className="text-sm text-foreground font-serif">{label}</label>
-               <div className="flex gap-2 items-center">
-                 <Input 
-                    type="number"
-                    value={currentValue} 
-                    onChange={e => {
-                      const num = parseInt(e.target.value) || 0;
-                      if (isObject) {
-                        handleUpdate(field.id, { ...value, current: num }, field);
-                      } else {
-                        handleUpdate(field.id, num, field);
-                      }
-                    }} 
-                    readOnly={isFieldReadOnly(field)}
-                    className="w-16 bg-zinc-950 border-zinc-800"
-                  />
-                  <span className="text-xs text-muted-foreground">/ {classicMax}</span>
-               </div>
-             </div>
-           );
+            <div key={field.id} className="flex flex-col gap-2 py-2">
+              <label className="text-sm text-foreground font-serif">{label}</label>
+              <ClassicPoolTracker
+                current={currentValue}
+                max={classicMax}
+                kind={poolKind}
+                label={label}
+                readonly={isFieldReadOnly(field)}
+                onChange={next => {
+                  // Preserve the stored shape: if storage was already
+                  // `{ current, max }` keep the rest of that object
+                  // intact; otherwise upgrade a bare number to the
+                  // canonical pair so we don't keep mixing shapes.
+                  if (isObject) {
+                    handleUpdate(field.id, { ...value, current: next }, field);
+                  } else {
+                    handleUpdate(field.id, { current: next, max: classicMax }, field);
+                  }
+                }}
+              />
+            </div>
+          );
         }
       case 'dynamic-dots-5':
         return (

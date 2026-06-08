@@ -252,7 +252,7 @@ describe('DynamicSheet Rendering', () => {
     expect(damageBoxes.length).toBeGreaterThan(0); 
   });
 
-  it('renders Classic input fields for health/willpower when edition is Classic', () => {
+  it('renders the classic Blood Pool as a cell tracker (Batch AN — no number input)', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       bloodPool: { current: 15, max: 20 },
@@ -269,11 +269,12 @@ describe('DynamicSheet Rendering', () => {
       }]
     };
 
-    const { container } = renderWithContext(<DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} />);
-    
-    // In Classic, it renders an <input type="number"> instead of DamageTracker buttons
-    const inputs = container.querySelectorAll('input[type="number"]');
-    expect(inputs.length).toBeGreaterThan(0);
+    renderWithContext(<DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} />);
+
+    // Batch AN replaced the plain number input with the cell tracker.
+    expect(screen.getByTestId('blood-pool-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('blood-pool-cell-15')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('blood-pool-cell-16')).toHaveAttribute('data-state', 'empty');
   });
 
   it('renders a box tracker (not a number input) for classic health', () => {
@@ -570,7 +571,7 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
     expect(updated.health).toEqual({ bashing: 1, lethal: 0, aggravated: 0, max: 7 });
   });
 
-  it('View Mode allows classic Blood Pool updates', () => {
+  it('View Mode allows classic Blood Pool updates (cell tracker is clickable as a gameplay field)', () => {
     const classicChar: ClassicCharacter = {
       id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
       bloodPool: { current: 15, max: 20 },
@@ -587,17 +588,16 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
       }]
     };
 
-    const { container } = renderWithContext(
+    renderWithContext(
       <DynamicSheet character={classicChar} schema={schema} onChange={mockOnChange} readonly={true} />
     );
 
-    const inputs = container.querySelectorAll('input[type="number"]');
-    expect(inputs.length).toBeGreaterThan(0);
-    const bpInput = inputs[0] as HTMLInputElement;
-    expect(bpInput.readOnly).toBe(false);
-
-    fireEvent.change(bpInput, { target: { value: '10' } });
+    // Click cell 10 — gameplay field, so View Mode still drives onChange.
+    fireEvent.click(screen.getByTestId('blood-pool-cell-10'));
     expect(mockOnChange).toHaveBeenCalled();
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    // Storage shape preserved: `{ current, max }`.
+    expect(updated.bloodPool).toEqual({ current: 10, max: 20 });
   });
 
   it('Humanity stays locked in View Mode (not a gameplay field)', () => {
@@ -774,5 +774,175 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
     expect(mockOnChange).toHaveBeenCalled();
     const updated = mockOnChange.mock.calls[0][0] as V5Character;
     expect(updated.hunger).toBe(4);
+  });
+
+  // ---------------------------------------------------------------------
+  // Batch AN — V20/classic Blood Pool + Willpower visual cell trackers.
+  // ---------------------------------------------------------------------
+
+  function makeClassicChar(overrides: Partial<ClassicCharacter> = {}): ClassicCharacter {
+    return {
+      id: '1', name: 'Classic Char', clan: 'brujah', edition: 'V20',
+      bloodPool: { current: 7, max: 10 },
+      willpower: { current: 4, max: 6 },
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0,
+      ...overrides,
+    };
+  }
+
+  it('V20 Blood Pool renders as a clickable cell tracker (drops) and surfaces the numeric readout', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'bloodPool', type: 'special-health', special: 'bloodPool', labelKey: 'sheet_blood_pool', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} />
+    );
+    // 10 cells, the first 7 filled (current = 7, max = 10).
+    expect(screen.getByTestId('blood-pool-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('blood-pool-cell-1')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('blood-pool-cell-7')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('blood-pool-cell-8')).toHaveAttribute('data-state', 'empty');
+    expect(screen.getByTestId('blood-pool-cell-10')).toHaveAttribute('data-state', 'empty');
+    // Numeric "X / Y" readout for the exact value.
+    expect(screen.getByTestId('blood-pool-tracker-readout').textContent).toMatch(/7\s*\/\s*10/);
+    // Group aria-label exposes the value for screen readers.
+    expect(
+      screen.getByRole('group', { name: /sheet_blood_pool 7 of 10/i })
+    ).toBeInTheDocument();
+  });
+
+  it('V20 Blood Pool is editable in View Mode and preserves the {current, max} shape', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'bloodPool', type: 'special-health', special: 'bloodPool', labelKey: 'sheet_blood_pool', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+    fireEvent.click(screen.getByTestId('blood-pool-cell-3'));
+    expect(mockOnChange).toHaveBeenCalled();
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    // Critical contract: storage shape unchanged.
+    expect(updated.bloodPool).toEqual({ current: 3, max: 10 });
+  });
+
+  it('V20 Willpower renders as a clickable cell tracker (boxes) and surfaces the numeric readout', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'willpower', type: 'special-willpower', labelKey: 'sheet_willpower', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} />
+    );
+    expect(screen.getByTestId('willpower-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('willpower-cell-4')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('willpower-cell-5')).toHaveAttribute('data-state', 'empty');
+    expect(screen.getByTestId('willpower-tracker-readout').textContent).toMatch(/4\s*\/\s*6/);
+  });
+
+  it('V20 Willpower is editable in View Mode and preserves the {current, max} shape', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'willpower', type: 'special-willpower', labelKey: 'sheet_willpower', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar()} schema={schema} onChange={mockOnChange} readonly={true} />
+    );
+    fireEvent.click(screen.getByTestId('willpower-cell-2'));
+    expect(mockOnChange).toHaveBeenCalled();
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    expect(updated.willpower).toEqual({ current: 2, max: 6 });
+  });
+
+  it('Re-clicking the current edge cell decrements by one (toggle pattern, matches DotRating)', () => {
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'bloodPool', type: 'special-health', special: 'bloodPool', labelKey: 'sheet_blood_pool', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={makeClassicChar({ bloodPool: { current: 5, max: 10 } })} schema={schema} onChange={mockOnChange} />
+    );
+    // Current is 5; clicking cell 5 decrements to 4 (so users can shed a
+    // single Blood point in one tap without leaving the row).
+    fireEvent.click(screen.getByTestId('blood-pool-cell-5'));
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    expect(updated.bloodPool.current).toBe(4);
+  });
+
+  it('V5 Hunger blood drops are unaffected by the Batch AN classic tracker (regression check)', () => {
+    const v5Char: V5Character = {
+      id: '1', name: 'V5', clan: 'brujah', edition: 'V5',
+      health: { damage: 0, aggravated: 0, max: 5 },
+      attributes: {}, skills: {}, disciplines: {},
+      willpower: { damage: 0, aggravated: 0, max: 5 },
+      bloodPotency: 1, hunger: 2, humanity: 7, createdAt: '', updatedAt: '', experience: 0,
+    };
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'vt', labelKey: 'vt', fields: [
+          { id: 'hunger', type: 'dots-5', special: 'hunger', labelKey: 'sheet_hunger' }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={v5Char} schema={schema} onChange={mockOnChange} />
+    );
+    // Hunger still renders as drops, not the classic pool tracker.
+    expect(screen.getByTestId('hunger-drop-2')).toHaveAttribute('data-state', 'filled');
+    expect(screen.queryByTestId('blood-pool-tracker')).toBeNull();
+    expect(screen.queryByTestId('willpower-tracker')).toBeNull();
+  });
+
+  it('Promotes a legacy bare-number Blood Pool to the {current, max} shape on first edit', () => {
+    // Legacy save: a Blood Pool stored as a bare number. We render
+    // tolerantly (treat it as the current value with classic defaults)
+    // and the first edit upgrades the field to the canonical pair —
+    // existing characters keep working, future writes are normalised.
+    const corrupted = {
+      id: '1', name: 'Legacy', clan: 'brujah', edition: 'V20',
+      bloodPool: 8, // bare number — pre-`{current, max}` save
+      willpower: { current: 5, max: 5 },
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      generation: 13, humanity: 7, createdAt: '', updatedAt: '', experience: 0,
+    } as unknown as Character;
+    const schema: SheetSchema = {
+      sections: [{
+        id: 'trackers', labelKey: 'test', fields: [
+          { id: 'bloodPool', type: 'special-health', special: 'bloodPool', labelKey: 'sheet_blood_pool', gameplay: true }
+        ]
+      }]
+    };
+    renderWithContext(
+      <DynamicSheet character={corrupted} schema={schema} onChange={mockOnChange} />
+    );
+    // Bare number is interpreted as the current value; max falls back to
+    // the classic Blood Pool default of 20.
+    expect(screen.getByTestId('blood-pool-cell-8')).toHaveAttribute('data-state', 'filled');
+    expect(screen.getByTestId('blood-pool-cell-9')).toHaveAttribute('data-state', 'empty');
+    // First edit upgrades storage to `{ current, max }`.
+    fireEvent.click(screen.getByTestId('blood-pool-cell-5'));
+    const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
+    expect(updated.bloodPool).toEqual({ current: 5, max: 20 });
   });
 });

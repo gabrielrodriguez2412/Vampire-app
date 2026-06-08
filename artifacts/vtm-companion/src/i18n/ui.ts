@@ -455,6 +455,8 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     // muestra en V5, así que `dice_rouse_v5_only` se eliminó a
     // propósito.
     dice_rouse_check: 'Tirada de Hambre',
+    // Batch AP — accessible label for the d10 chip rendered in the rouse result panel.
+    dice_rouse_check_die: 'Dado de Tirada de Hambre',
     dice_rouse_help: 'Tira un dado — 6+ el Hambre no sube, 1–5 el Hambre sube en 1.',
     dice_rouse_success: 'Éxito — el Hambre no sube',
     dice_rouse_failure: 'Fallo — el Hambre sube en 1',
@@ -923,6 +925,7 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     // for classic editions), so `dice_rouse_v5_only` is intentionally
     // gone.
     dice_rouse_check: 'Rouse check',
+    dice_rouse_check_die: 'Rouse die',
     dice_rouse_help: 'Roll one die — 6+ no Hunger increase, 1–5 Hunger increases by 1.',
     dice_rouse_success: 'Success — Hunger does not increase',
     dice_rouse_failure: 'Failure — Hunger increases by 1',

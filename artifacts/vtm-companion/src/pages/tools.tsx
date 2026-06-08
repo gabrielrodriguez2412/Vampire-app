@@ -389,10 +389,10 @@ function V5DiceRoller({ strings, editionLabel, pushHistory }: V5DiceRollerProps)
 
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {rollResult.normal.map((v, i) => (
-                  <DieFace key={`n-${i}`} value={v} kind="normal" label={strings.dice_normal_die} />
+                  <DieFace key={`n-${i}`} value={v} kind="normal" label={strings.dice_normal_die} index={i} />
                 ))}
                 {rollResult.hunger.map((v, i) => (
-                  <DieFace key={`h-${i}`} value={v} kind="hunger" label={strings.dice_hunger_die} />
+                  <DieFace key={`h-${i}`} value={v} kind="hunger" label={strings.dice_hunger_die} index={i} />
                 ))}
                 {rollResult.poolSize === 0 && (
                   <span className="text-xs text-muted-foreground">{strings.dice_no_pool}</span>
@@ -547,6 +547,7 @@ function ClassicDiceRoller({ strings, editionLabel, pushHistory }: ClassicDiceRo
                     kind="classic"
                     label={strings.dice_normal_die}
                     difficulty={rollResult.difficulty}
+                    index={i}
                   />
                 ))}
                 {rollResult.poolSize === 0 && (
@@ -727,10 +728,14 @@ function OutcomeBanner({ tone, title, hint }: OutcomeBannerProps) {
 
 interface DieFaceProps {
   value: DieValue;
-  kind: "normal" | "hunger" | "classic";
+  kind: "normal" | "hunger" | "classic" | "rouse";
   label: string;
   /** When kind === "classic", drives success styling. */
   difficulty?: number;
+  /** Optional positional id, only used to give the surrounding wrapper a
+   *  stable test-id (e.g. `die-face-hunger-0`). Pure dev/test ergonomics
+   *  — has no effect on the visible render. */
+  index?: number;
 }
 
 interface FaceStyle {
@@ -743,9 +748,18 @@ interface FaceStyle {
   inset: string;
 }
 
-function dieStyle(kind: "normal" | "hunger" | "classic", value: DieValue, difficulty: number): FaceStyle {
+function dieStyle(kind: "normal" | "hunger" | "classic" | "rouse", value: DieValue, difficulty: number): FaceStyle {
   const isTen = value === 10;
   const isOne = value === 1;
+
+  // Rouse dice reuse the Hunger red palette (the rouse check is a V5
+  // Hunger-adjacent roll) so the colour read is consistent across the
+  // page. The kind discriminator stays distinct on the wrapper so tests
+  // can target the rouse result without confusing it with a real
+  // Hunger pool die. (Batch AP.)
+  if (kind === "rouse") {
+    kind = "hunger";
+  }
 
   if (kind === "normal") {
     const isSuccess = value >= 6;
@@ -889,9 +903,16 @@ function RouseCheckCard({ strings, editionLabel, pushHistory }: RouseCheckCardPr
               role="status"
               aria-live="polite"
             >
-              <span className="font-bold tabular-nums text-base shrink-0 mt-0.5">
-                {result.die}
-              </span>
+              {/* Batch AP — render the rouse check's d10 as a real die
+                  face for visual consistency with the dice roller above.
+                  Uses the rouse-flavoured palette (same red family as
+                  Hunger) so the chip reads as a V5/Hunger-adjacent roll
+                  without copying the official rouse rulebook face. */}
+              <DieFace
+                value={result.die}
+                kind="rouse"
+                label={strings.dice_rouse_check_die || 'Rouse die'}
+              />
               <div>
                 <div className="font-bold">
                   {result.success
@@ -919,12 +940,12 @@ function RouseCheckCard({ strings, editionLabel, pushHistory }: RouseCheckCardPr
 //   * Collapsed by default — the latest roll is the only entry rendered
 //     until the user hits "Show all". This keeps the section calm directly
 //     under the roller while still surfacing the most recent result.
-//   * Deferred follow-up: render the underlying dice as compact faces /
-//     chips per entry. The current `RollHistoryEntry` shape only stores a
-//     pre-formatted summary string (no per-die values), and the brief
-//     asked us NOT to expand the data model in this batch. Pencilled in
-//     for the upcoming dice visual redesign batch alongside the ankh /
-//     special-symbol work.
+//   * Deferred follow-up (still deferred after Batch AP): render the
+//     underlying dice as compact faces / chips per entry. The current
+//     `RollHistoryEntry` shape only stores a pre-formatted summary string
+//     (no per-die values), and the brief explicitly asked NOT to
+//     restructure the history model for this visual polish either.
+//     Re-pencilled for a future batch that owns the data-model change.
 // ---------------------------------------------------------------------------
 
 interface RollHistoryCardProps {
@@ -1041,15 +1062,29 @@ function RollHistoryCard({ strings, history, isV5, onClear }: RollHistoryCardPro
   );
 }
 
-function DieFace({ value, kind, label, difficulty = 6 }: DieFaceProps) {
+function DieFace({ value, kind, label, difficulty = 6, index }: DieFaceProps) {
   const style = dieStyle(kind, value, difficulty);
+  // Batch AP — safe "special result" mark. A small Sparkles glyph sits
+  // in the top-right of every die showing a 10. We use lucide's
+  // built-in Sparkles icon as an app-native, app-licensable substitute
+  // for the official VTM critical face: it reads as "this die is a
+  // critical-eligible 10" without copying the rulebook artwork. The
+  // shape is also a clear visual cue independent of colour — important
+  // for the brief's "do not rely only on colour" requirement.
+  const isCritical = value === 10;
+  const testId = typeof index === 'number'
+    ? `die-face-${kind}-${index}`
+    : `die-face-${kind}-${value}`;
   // Outer diamond (rotated 45°) gives a d10 silhouette; a radial-gradient
   // "shine" plus an inset hairline suggest a faceted, physical die.
   return (
     <div
       title={`${label}: ${value}`}
       aria-label={`${label} ${value}`}
-      className="inline-flex items-center justify-center p-1.5"
+      data-testid={testId}
+      data-die-kind={kind}
+      data-die-value={value}
+      className="relative inline-flex items-center justify-center p-1.5"
     >
       <span
         className={`relative w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rotate-45 rounded-[3px] border-2 ${style.classes}`}
@@ -1062,6 +1097,20 @@ function DieFace({ value, kind, label, difficulty = 6 }: DieFaceProps) {
           {value}
         </span>
       </span>
+      {isCritical && (
+        <Sparkles
+          aria-hidden
+          data-testid="die-critical-mark"
+          // Positioned just outside the rotated diamond's top-right
+          // corner so it never clashes with the central numeral and
+          // stays legible at the smaller mobile face size.
+          className={`pointer-events-none absolute -top-0.5 -right-0.5 w-3 h-3 ${
+            kind === 'hunger' || kind === 'rouse'
+              ? 'text-red-200 drop-shadow-[0_0_3px_rgba(252,165,165,0.85)]'
+              : 'text-amber-200 drop-shadow-[0_0_3px_rgba(254,215,170,0.85)]'
+          }`}
+        />
+      )}
     </div>
   );
 }

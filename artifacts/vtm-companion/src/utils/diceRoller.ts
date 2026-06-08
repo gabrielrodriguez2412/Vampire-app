@@ -137,3 +137,33 @@ export function evaluateClassicRoll(dice: DieValue[], difficulty: number): Class
     botch: rawSuccesses === 0 && ones > 0,
   };
 }
+
+// ---------------------------------------------------------------------------
+// V5 rouse check (Batch AL).
+// ---------------------------------------------------------------------------
+
+/** Result of a V5 rouse check. Hunger never auto-mutates a sheet — the
+ *  `hungerGain` field is the *suggested* increase, displayed to the player. */
+export interface RouseCheckResult {
+  die: DieValue;
+  /** A rouse check succeeds on a single die showing 6 or higher. */
+  success: boolean;
+  /** 0 on success, 1 on failure (rules-as-written suggestion only). */
+  hungerGain: 0 | 1;
+}
+
+/**
+ * Roll a single V5 rouse check. Per the V5 Core rules a rouse check is a
+ * single d10: 6+ keeps Hunger unchanged, 1-5 raises Hunger by one. This
+ * helper returns only the suggestion (`hungerGain`); the actual character
+ * sheet is never auto-mutated.
+ *
+ * Needs Review: re-rolled rouse checks (Blood Potency 1+ extra die rule)
+ * are intentionally not modelled here — the simulator is a single-roll
+ * helper, not a Blood Potency calculator.
+ */
+export function rollRouseCheck(rng: () => number = Math.random): RouseCheckResult {
+  const die = (Math.floor(rng() * 10) + 1) as DieValue;
+  const success = die >= 6;
+  return { die, success, hungerGain: success ? 0 : 1 };
+}

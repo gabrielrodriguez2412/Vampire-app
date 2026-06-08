@@ -170,6 +170,78 @@ describe('character sheet action labels are localized (Batch U pin)', () => {
   });
 });
 
+describe('classic / V20 Abilities section label is correctly localized (Batch AJ)', () => {
+  it('Spanish "Abilities" section reads "Habilidades" (the V20 standard term, not the subcategory "Técnicas")', () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+
+    // The V20 Spanish rulebook uses "Habilidades" as the top-level Abilities
+    // section. The previous value, "Técnicas", was a subcategory of that
+    // section in the rulebook (one of Talentos / Habilidades / Conocimientos),
+    // so it read wrong as the section title on the V20 sheet.
+    expect(es.sheet_section_abilities).toBe('Habilidades');
+    expect(en.sheet_section_abilities).toBe('Abilities');
+    // V5 Skills section already used "Habilidades" in Spanish — both edition
+    // schemas now use the same Spanish word for the same concept-equivalent
+    // section, and they never appear side-by-side on a single sheet.
+    expect(es.sheet_section_skills).toBe('Habilidades');
+  });
+});
+
+describe('sheet schemas keep their canonical edition-accurate fields (Batch AJ)', () => {
+  // Pure audit-style tests: confirm the V5 and classic schemas still expose the
+  // edition-defining fields the audit checked for. Locks them in so a future
+  // schema edit can't quietly drop, say, Hunger or Blood Pool.
+  it('V5 schema carries Hunger, Blood Potency, Humanity, Resonance, Touchstones, Convictions, Predator Type', async () => {
+    const { v5Schema } = await import('@/data/characterSheets/v5');
+    const ids = v5Schema.sections.flatMap(s => s.fields.map(f => f.id));
+    for (const id of ['hunger', 'bloodPotency', 'humanity', 'resonance', 'touchstones', 'convictions', 'predatorType']) {
+      expect(ids).toContain(id);
+    }
+    // V5 must NOT carry classic-only fields.
+    for (const id of ['bloodPool', 'virtues.conscience', 'virtues.selfControl', 'virtues.courage', 'nature', 'demeanor']) {
+      expect(ids).not.toContain(id);
+    }
+  });
+
+  it('classic schema carries Blood Pool, Generation, Virtues, Humanity, Willpower, Backgrounds, classic Health, Merits, Flaws, Nature, Demeanor', async () => {
+    const { classicSchema } = await import('@/data/characterSheets/classic');
+    const ids = classicSchema.sections.flatMap(s => s.fields.map(f => f.id));
+    for (const id of [
+      'bloodPool', 'generation',
+      'virtues.conscience', 'virtues.selfControl', 'virtues.courage',
+      'humanity', 'willpower', 'backgrounds', 'health',
+      'merits', 'flaws', 'nature', 'demeanor',
+    ]) {
+      expect(ids).toContain(id);
+    }
+    // Classic must NOT carry V5-only fields.
+    for (const id of ['hunger', 'bloodPotency', 'resonance', 'touchstones', 'convictions', 'predatorType', 'ambition', 'desire']) {
+      expect(ids).not.toContain(id);
+    }
+  });
+
+  it('getSchemaForEdition routes V5 to v5Schema and every classic edition (1ST/2ND/REVISED/V20) to classicSchema', async () => {
+    const { getSchemaForEdition } = await import('@/data/characterSheets/editions');
+    const { v5Schema } = await import('@/data/characterSheets/v5');
+    const { classicSchema } = await import('@/data/characterSheets/classic');
+    expect(getSchemaForEdition('V5')).toBe(v5Schema);
+    expect(getSchemaForEdition('V20')).toBe(classicSchema);
+    expect(getSchemaForEdition('REVISED')).toBe(classicSchema);
+    expect(getSchemaForEdition('2ND')).toBe(classicSchema);
+    expect(getSchemaForEdition('1ST')).toBe(classicSchema);
+  });
+
+  it("classic Humanity label uses the dual 'Humanity / Path' wording (V20 supports either)", () => {
+    const en = UI_STRINGS.en;
+    const es = UI_STRINGS.es;
+    // V20 / classic characters may track Humanity OR a Path of Enlightenment;
+    // the slashed label avoids forcing one over the other.
+    expect(en.sheet_humanity_path).toBe('Humanity / Path');
+    expect(es.sheet_humanity_path).toBe('Humanidad / Senda');
+  });
+});
+
 describe('character archive labels are localized (Batch AA)', () => {
   it('Spanish archive / filter / status labels are translated and distinct from English', () => {
     const en = UI_STRINGS.en;

@@ -1053,17 +1053,25 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
       case 'dots-5':
       case 'dots-10':
         const max = field.type === 'dots-10' ? 10 : 5;
-        const colorClass = field.special === 'hunger' ? 'text-red-500 border-red-500 [&>div.bg-primary]:bg-red-500 [&>div.border-primary]:border-red-500' : '';
+        // Batch AM — V5 Hunger renders as red blood drops instead of the
+        // generic round dots. We keep the existing red color override but
+        // switch the slot silhouette to a drop so Hunger reads
+        // distinctively at a glance.
+        const isHunger = field.special === 'hunger';
+        const colorClass = isHunger ? 'text-red-500 border-red-500 [&>div.bg-primary]:bg-red-500 [&>div.border-primary]:border-red-500' : '';
+        const numericValue = typeof value === 'number' ? value : parseInt(String(value)) || 0;
         return (
           <div key={field.id} className="flex items-center justify-between gap-4 py-1 border-b border-zinc-800/50">
             <label className="text-sm text-foreground font-serif">{label}</label>
-            <DotRating 
-              value={typeof value === 'number' ? value : parseInt(String(value)) || 0} 
-              max={max} 
+            <DotRating
+              value={numericValue}
+              max={max}
               min={field.min || 0}
-              onChange={v => handleUpdate(field.id, v, field)} 
+              onChange={v => handleUpdate(field.id, v, field)}
               readonly={isFieldReadOnly(field)}
               className={colorClass}
+              shape={isHunger ? 'drop' : 'dot'}
+              ariaLabel={isHunger ? label : undefined}
             />
           </div>
         );

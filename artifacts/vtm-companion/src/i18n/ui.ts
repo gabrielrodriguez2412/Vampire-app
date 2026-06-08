@@ -93,7 +93,11 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     
     // Character Sheet Layout & Fields
     sheet_section_basic: "Info Básica", sheet_section_attributes: "Atributos", sheet_section_skills: "Habilidades",
-    sheet_section_abilities: "Técnicas", sheet_section_vampire_traits: "Rasgos Vampíricos", sheet_section_trackers: "Medidores",
+    // Batch AJ — V20/classic top-level section is "Habilidades" in the official
+    // Spanish rulebook (with Talentos / Habilidades [subset] / Conocimientos
+    // *underneath*). The previous "Técnicas" was actually a subcategory label
+    // and read wrong as the section title on a V20 character sheet.
+    sheet_section_abilities: "Habilidades", sheet_section_vampire_traits: "Rasgos Vampíricos", sheet_section_trackers: "Medidores",
     sheet_section_social_moral: "Social y Moral", sheet_section_notes: "Notas", sheet_section_journal: "Diario", sheet_section_advantages: "Ventajas",
     journal_add_note: "Añadir nota", journal_edit: "Editar", journal_delete: "Eliminar", journal_save: "Guardar", journal_cancel: "Cancelar",
     journal_confirm_delete: "¿Eliminar esta nota?", journal_title_label: "Título", journal_title_placeholder: "Título (opcional)",

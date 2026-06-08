@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rollDice, evaluateV5Roll, rollClassicDice, evaluateClassicRoll, DieValue } from '../diceRoller';
+import { rollDice, evaluateV5Roll, rollClassicDice, evaluateClassicRoll, rollRouseCheck, DieValue } from '../diceRoller';
 
 function makeRoll(normal: number[], hunger: number[]) {
   return { normal: normal as DieValue[], hunger: hunger as DieValue[] };
@@ -182,5 +182,48 @@ describe('evaluateClassicRoll', () => {
     expect(r.poolSize).toBe(0);
     expect(r.successes).toBe(0);
     expect(r.botch).toBe(false);
+  });
+});
+
+describe('rollRouseCheck (Batch AL)', () => {
+  // The helper takes a seeded rng so these tests stay deterministic.
+  // `Math.floor(rng() * 10) + 1` is the underlying mapping; rng() = 0.0 yields 1,
+  // rng() = 0.5 yields 6, rng() = 0.99 yields 10.
+  it('succeeds and does NOT raise Hunger when the die shows 6+ (rng = 0.5 -> 6)', () => {
+    const r = rollRouseCheck(() => 0.5);
+    expect(r.die).toBe(6);
+    expect(r.success).toBe(true);
+    expect(r.hungerGain).toBe(0);
+  });
+
+  it('succeeds on 10 (rng = 0.99 -> 10)', () => {
+    const r = rollRouseCheck(() => 0.99);
+    expect(r.die).toBe(10);
+    expect(r.success).toBe(true);
+    expect(r.hungerGain).toBe(0);
+  });
+
+  it('fails and suggests Hunger +1 on a 1 (rng = 0 -> 1)', () => {
+    const r = rollRouseCheck(() => 0);
+    expect(r.die).toBe(1);
+    expect(r.success).toBe(false);
+    expect(r.hungerGain).toBe(1);
+  });
+
+  it('fails on a 5 (rng = 0.49 -> 5)', () => {
+    const r = rollRouseCheck(() => 0.49);
+    expect(r.die).toBe(5);
+    expect(r.success).toBe(false);
+    expect(r.hungerGain).toBe(1);
+  });
+
+  it('produces a die in [1, 10] for many real Math.random calls', () => {
+    for (let i = 0; i < 200; i++) {
+      const r = rollRouseCheck();
+      expect(r.die).toBeGreaterThanOrEqual(1);
+      expect(r.die).toBeLessThanOrEqual(10);
+      expect(r.success).toBe(r.die >= 6);
+      expect(r.hungerGain).toBe(r.success ? 0 : 1);
+    }
   });
 });

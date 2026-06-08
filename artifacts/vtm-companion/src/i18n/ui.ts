@@ -450,6 +450,25 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     dice_classic_ones: 'Unos',
     dice_classic_needs_review: 'Reglas clásicas resumidas; algunos detalles (10s dobles, pifias) varían por edición.',
     dice_classic_failure: 'Fallo',
+    // Batch AL — V5 rouse check + historial de tiradas recientes. Tras
+    // la revisión de Batch AL la tarjeta de Tirada de Hambre solo se
+    // muestra en V5, así que `dice_rouse_v5_only` se eliminó a
+    // propósito.
+    dice_rouse_check: 'Tirada de Hambre',
+    dice_rouse_help: 'Tira un dado — 6+ el Hambre no sube, 1–5 el Hambre sube en 1.',
+    dice_rouse_success: 'Éxito — el Hambre no sube',
+    dice_rouse_failure: 'Fallo — el Hambre sube en 1',
+    dice_history_title: 'Tiradas recientes',
+    dice_history_empty: 'Aún no hay tiradas.',
+    dice_history_clear: 'Borrar historial',
+    // Batch AL pulido de revisión — UX colapsada por defecto.
+    dice_history_show_all: 'Ver todo',
+    dice_history_show_less: 'Ver menos',
+    dice_history_summary_v5: 'Reserva {pool} / Hambre {hunger} — {successes} éxito(s)',
+    dice_history_summary_classic: 'Reserva {pool} / Dif. {difficulty} — {net} éxito(s) netos',
+    dice_history_summary_rouse: 'Tirada de Hambre — {outcome} (dado {die})',
+    dice_history_summary_rouse_success: 'éxito',
+    dice_history_summary_rouse_failure: 'fallo',
     hunger_state_1: 'Saciado. Tu Bestia duerme.',
     hunger_state_2: 'Hambriento. Empiezas a notar la sed.',
     hunger_state_3: 'Sediento. La Bestia se agita. Cuidado con los fallos.',
@@ -899,6 +918,25 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     dice_classic_ones: 'Ones',
     dice_classic_needs_review: 'Short classic summary; some details (10s as 2, botch edge cases) vary by edition.',
     dice_classic_failure: 'Failure',
+    // Batch AL — V5 rouse check + recent roll history labels. Batch AL
+    // review polish: the rouse card now renders V5-only (no fallback hint
+    // for classic editions), so `dice_rouse_v5_only` is intentionally
+    // gone.
+    dice_rouse_check: 'Rouse check',
+    dice_rouse_help: 'Roll one die — 6+ no Hunger increase, 1–5 Hunger increases by 1.',
+    dice_rouse_success: 'Success — Hunger does not increase',
+    dice_rouse_failure: 'Failure — Hunger increases by 1',
+    dice_history_title: 'Recent rolls',
+    dice_history_empty: 'No rolls yet.',
+    dice_history_clear: 'Clear history',
+    // Batch AL review polish — collapse-by-default UX.
+    dice_history_show_all: 'Show all',
+    dice_history_show_less: 'Show less',
+    dice_history_summary_v5: 'Pool {pool} / Hunger {hunger} — {successes} success(es)',
+    dice_history_summary_classic: 'Pool {pool} / Diff {difficulty} — {net} net success(es)',
+    dice_history_summary_rouse: 'Rouse check — {outcome} (die {die})',
+    dice_history_summary_rouse_success: 'success',
+    dice_history_summary_rouse_failure: 'failure',
     hunger_state_1: 'Sated. Your Beast sleeps.',
     hunger_state_2: 'Peckish. You start to feel the thirst.',
     hunger_state_3: 'Thirsty. The Beast stirs. Watch for failures.',

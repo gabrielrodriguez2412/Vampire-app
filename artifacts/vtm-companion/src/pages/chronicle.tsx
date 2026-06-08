@@ -1074,6 +1074,10 @@ export default function ChroniclePage() {
             const accentColor = isArchived ? '#3f3f46' /* zinc-700 */ : '#8b0000' /* primary */;
             const isV5 = chr.edition === 'V5';
             const isSelected = selection.isSelected(chr.id);
+            // Batch AK — visible favorite indicator. Mirrors the More-menu
+            // favorite toggle so favourited chronicles read as such from
+            // the list view without opening the menu.
+            const isFavCard = isFavoriteTyped('chronicle', chr.id);
             return (
               <Card
                 key={chr.id}
@@ -1120,6 +1124,16 @@ export default function ChroniclePage() {
                         <CardTitle className="font-serif text-lg leading-snug truncate flex-1 min-w-0 tracking-tight group-hover:text-on-surface transition-colors">
                           {chr.name}
                         </CardTitle>
+                        {isFavCard && (
+                          <span
+                            className="shrink-0 mt-0.5 inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary"
+                            aria-label={strings.favorite_indicator || "Favorite"}
+                            title={strings.favorite_indicator || "Favorite"}
+                            data-testid={`card-fav-indicator-chronicle-${chr.id}`}
+                          >
+                            <Heart className="w-3 h-3 fill-current" aria-hidden />
+                          </span>
+                        )}
                         <span className={`shrink-0 mt-0.5 uppercase text-[9px] tracking-wider border px-1.5 py-0.5 rounded ${
                           isArchived
                             ? "border-zinc-700 bg-zinc-900 text-zinc-500"
@@ -1364,17 +1378,13 @@ export default function ChroniclePage() {
                     </span>
                   </div>
 
-                  {/* Footer with a subtle hairline above. The "Open"
-                      affordance brightens and animates a trailing
-                      arrow on hover so the card reads as actionable
-                      even when no stats are present. */}
-                  <div className="flex items-center justify-between pt-2 border-t border-zinc-800/60">
+                  {/* Footer hairline keeps the date visually anchored. The
+                      "Open →" call-to-action was removed in Batch AK review
+                      polish — the whole card is already a click target and
+                      the redundant text added clutter. */}
+                  <div className="pt-2 border-t border-zinc-800/60">
                     <span className="text-[10px] text-muted-foreground/50 font-sans tracking-wide">
                       {strings.chr_updated_at || "Updated"} {formatUpdatedAt(chr.updatedAt)}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground/50 group-hover:text-primary/80 transition-colors">
-                      {strings.chr_open_manage || "Open"}
-                      <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
                     </span>
                   </div>
                 </CardContent>

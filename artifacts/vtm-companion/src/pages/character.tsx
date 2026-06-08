@@ -316,6 +316,17 @@ export default function CharacterPage() {
     refreshChronicles();
   }, [boundaryKey, refreshChronicles]);
 
+  // Batch AK — scroll the window to the top whenever we open a character
+  // sheet. Without this, creating a new character (or opening one from a
+  // scrolled list) lands the user mid-page, since switching `activeView`
+  // does not implicitly reset scroll. Including `activeChar?.id` in the
+  // deps so jumping between different sheets also resets scroll.
+  useEffect(() => {
+    if (activeView === 'sheet' && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [activeView, activeChar?.id]);
+
   // Cross-page deep-link: chronicle page sets `vtm-open-character-id` in
   // sessionStorage and navigates here; we consume it once on mount.
   useEffect(() => {
@@ -1064,10 +1075,22 @@ export default function CharacterPage() {
                   // every clan; we reuse it as a 3px left accent strip
                   // and a faint radial glow in the top-right corner.
                   // All CSS-only — no new assets and no image loads.
+                  //
+                  // Batch AK follow-up (deferred): the chronicle card carries
+                  // a faded ScrollText watermark in its corner. A matching
+                  // clan-symbol watermark on the character card would balance
+                  // them visually, but it pulls in clan-asset / licensing /
+                  // responsive concerns the polish batch isn't scoped for —
+                  // tracked for a dedicated batch.
                   const clanData = clans.find(c => c.id === char.clan);
                   const clanColor = clanData?.colorTheme || '#8B0000';
                   const isV5 = char.edition === 'V5';
                   const isSelected = selection.isSelected(char.id);
+                  // Batch AK — visible favorite indicator. The More-menu
+                  // toggle already exists; this just mirrors that state
+                  // on the card itself so favorited characters are
+                  // recognisable from the list without opening a menu.
+                  const isFavCard = isFavoriteTyped('character', char.id);
                   return (
                   <Card
                     key={char.id}
@@ -1205,7 +1228,23 @@ export default function CharacterPage() {
                             hover:hover) keep the original reveal-on-hover
                             behaviour. The `focus:opacity-100` line still covers
                             keyboard users on desktop. */}
-                        <div onClick={e => e.stopPropagation()} className={selection.active ? "hidden" : ""}>
+                        {/* Batch AK — top-right action cluster: the favourite
+                            pip sits to the left of the ⋯ menu so a favourited
+                            character reads as such from the corner of the
+                            card, matching the chronicle card's corner-aligned
+                            indicator. Always-visible (never tied to hover) so
+                            touch users get the same affordance as desktop. */}
+                        <div onClick={e => e.stopPropagation()} className={`flex items-center gap-1 -mt-1 -mr-1 ${selection.active ? "hidden" : ""}`}>
+                          {isFavCard && (
+                            <span
+                              className="inline-flex items-center justify-center w-5 h-5 rounded-full border border-primary/30 bg-primary/10 text-primary shrink-0"
+                              aria-label={strings.favorite_indicator || "Favorite"}
+                              title={strings.favorite_indicator || "Favorite"}
+                              data-testid={`card-fav-indicator-character-${char.id}`}
+                            >
+                              <Heart className="w-3 h-3 fill-current" aria-hidden />
+                            </span>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

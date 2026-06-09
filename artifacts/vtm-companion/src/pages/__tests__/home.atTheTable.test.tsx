@@ -68,13 +68,13 @@ describe('Home — At the Table (Batch AU rework)', () => {
   describe('V5 edition', () => {
     beforeEach(() => setEdition('V5'));
 
-    it('shows Dice & Rouse Check plus Hunger / Willpower / Humanity / Health & Damage', () => {
+    it('shows Dice & Rouse Check plus Hunger / Willpower / Humanity / Health', () => {
       renderHome();
       expect(screen.getByTestId('home-at-dice-rouse')).toBeInTheDocument();
       expect(screen.getByTestId('home-at-hunger')).toBeInTheDocument();
       expect(screen.getByTestId('home-at-willpower')).toBeInTheDocument();
       expect(screen.getByTestId('home-at-humanity')).toBeInTheDocument();
-      expect(screen.getByTestId('home-at-health-damage')).toBeInTheDocument();
+      expect(screen.getByTestId('home-at-health')).toBeInTheDocument();
     });
 
     it('does not show Blood Pool as a primary card on V5', () => {
@@ -103,7 +103,7 @@ describe('Home — At the Table (Batch AU rework)', () => {
       expect(screen.queryByTestId('home-at-hunger')).not.toBeInTheDocument();
       expect(screen.getByTestId('home-at-willpower')).toBeInTheDocument();
       expect(screen.getByTestId('home-at-humanity')).toBeInTheDocument();
-      expect(screen.getByTestId('home-at-health-damage')).toBeInTheDocument();
+      expect(screen.getByTestId('home-at-health')).toBeInTheDocument();
     });
 
     it('on REVISED still shows Blood Pool and never Rouse Check or Hunger', () => {
@@ -114,11 +114,29 @@ describe('Home — At the Table (Batch AU rework)', () => {
       expect(screen.queryByTestId('home-at-hunger')).not.toBeInTheDocument();
     });
 
-    it('renders "Humanity / Path" as the classic-edition humanity card title', () => {
+    it('renders a short "Humanity" title on classic and surfaces Path/morality in the subtitle', () => {
+      // Polish pass: titles are kept short to avoid mid-row truncation on
+      // the 5-up grid; classic-edition Path / morality flavor lives in the
+      // subtitle now. The card's <h4> holds the title element directly so
+      // we check it separately from the broader card textContent (which
+      // also includes the icon glyph name and the subtitle).
       setEdition('V20');
       renderHome();
       const card = screen.getByTestId('home-at-humanity');
-      expect(card).toHaveTextContent(/humanity\s*\/\s*path/i);
+      const title = card.querySelector('h4');
+      expect(title?.textContent?.trim()).toBe('Humanity');
+      expect(card).not.toHaveTextContent(/humanity\s*\/\s*path/i);
+      expect(card).toHaveTextContent(/path|morality/i);
+    });
+
+    it('renders a short "Health" title on classic and surfaces damage/soak in the subtitle', () => {
+      setEdition('V20');
+      renderHome();
+      const card = screen.getByTestId('home-at-health');
+      const title = card.querySelector('h4');
+      expect(title?.textContent?.trim()).toBe('Health');
+      expect(card).not.toHaveTextContent(/health\s*&\s*damage/i);
+      expect(card).toHaveTextContent(/damage|soak|healing/i);
     });
   });
 

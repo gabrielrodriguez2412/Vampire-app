@@ -109,8 +109,12 @@ export default function Home() {
   // a section that complements (not repeats) the rest of Home, so this
   // bottom row is now a fixed set of edition-aware rules/play references:
   //
-  //   • V5:       Dice & Rouse Check, Hunger, Willpower, Humanity, Health & Damage
-  //   • Classic:  Dice,               Blood Pool, Willpower, Humanity / Path, Health & Damage
+  //   • V5:       Dice & Rouse Check, Hunger, Willpower, Humanity, Health
+  //   • Classic:  Dice,               Blood Pool, Willpower, Humanity, Health
+  //
+  // Card titles are kept short to avoid mid-row truncation on the 5-up
+  // desktop grid; the longer concepts ("Path", "damage tracks", "soak")
+  // live in the subtitle, which is line-clamped to 2 lines.
   //
   // No character/chronicle/session data flows through these cards on
   // purpose — the top of Home already covers "continue / resume" via the
@@ -163,10 +167,10 @@ export default function Home() {
           onClick: () => setLocation('/compendium/reglas/humanity-loss'),
         },
         {
-          key: 'health-damage',
+          key: 'health',
           icon: 'healing',
-          title: strings.home_at_health_damage_title || 'Health & Damage',
-          subtitle: strings.home_at_health_damage_subtitle || 'Soak, healing, and damage tracks.',
+          title: strings.health || 'Health',
+          subtitle: strings.home_at_health_subtitle || 'Damage tracks, soak, and healing.',
           onClick: () => setLocation('/compendium/reglas/healing-v5'),
         },
       ] satisfies AtCard[];
@@ -201,15 +205,15 @@ export default function Home() {
       {
         key: 'humanity',
         icon: 'heart_broken',
-        title: strings.home_at_humanity_path_title || 'Humanity / Path',
-        subtitle: strings.home_at_humanity_subtitle || 'Tracking conscience and stains.',
+        title: strings.humanity || 'Humanity',
+        subtitle: strings.home_at_humanity_classic_subtitle || 'Conscience, morality, or the chosen Path.',
         onClick: () => setLocation('/compendium/reglas/humanity-classic'),
       },
       {
-        key: 'health-damage',
+        key: 'health',
         icon: 'healing',
-        title: strings.home_at_health_damage_title || 'Health & Damage',
-        subtitle: strings.home_at_health_damage_subtitle || 'Soak, healing, and damage tracks.',
+        title: strings.health || 'Health',
+        subtitle: strings.home_at_health_subtitle || 'Damage tracks, soak, and healing.',
         onClick: () => setLocation('/compendium/reglas/healing-classic'),
       },
     ] satisfies AtCard[];

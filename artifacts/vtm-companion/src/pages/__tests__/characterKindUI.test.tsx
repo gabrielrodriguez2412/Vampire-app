@@ -135,3 +135,70 @@ describe('Character cards — non-vampire kind pill (Batch AX)', () => {
     expect(screen.queryByTestId(`card-kind-${vampire.id}`)).not.toBeInTheDocument();
   });
 });
+
+describe('Character cards — non-vampire visuals (Batch AX polish)', () => {
+  it('Vampire card still renders the existing clan watermark and clan-row visuals', () => {
+    const vampire = saveCharacter(createEmptyCharacter('V5', 'brujah', 'Alice'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.getByTestId(`char-card-watermark-${vampire.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-watermark-${vampire.id}-mortal`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-clan-row-${vampire.id}`)).toBeInTheDocument();
+  });
+
+  it('Human card replaces the clan watermark with a neutral mortal glyph and hides the clan row', () => {
+    const human = saveCharacter(createEmptyCharacter('V5', '', 'Mortal', 'human'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    // Vampire-style watermark gone; mortal watermark present.
+    expect(screen.queryByTestId(`char-card-watermark-${human.id}`)).not.toBeInTheDocument();
+    const mortalWatermark = screen.getByTestId(`char-card-watermark-${human.id}-mortal`);
+    expect(mortalWatermark).toBeInTheDocument();
+    expect(mortalWatermark).toHaveAttribute('data-kind', 'human');
+    expect(mortalWatermark).toHaveAttribute('aria-hidden');
+    // The clan icon + clan name row is suppressed entirely so the card
+    // doesn't read as "a Brujah named Mortal".
+    expect(screen.queryByTestId(`char-card-clan-row-${human.id}`)).not.toBeInTheDocument();
+    // Kind pill still surfaces the character's nature.
+    expect(screen.getByTestId(`card-kind-${human.id}`)).toHaveTextContent(/human/i);
+  });
+
+  it('Ghoul card WITHOUT a Regnant clan uses the neutral mortal watermark and hides the clan row', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', '', 'Anonymous Ghoul', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}`)).not.toBeInTheDocument();
+    const watermark = screen.getByTestId(`char-card-watermark-${ghoul.id}-mortal`);
+    expect(watermark).toBeInTheDocument();
+    expect(watermark).toHaveAttribute('data-kind', 'ghoul');
+    expect(screen.queryByTestId(`char-card-clan-row-${ghoul.id}`)).not.toBeInTheDocument();
+    // Kind pill still surfaces "Ghoul".
+    expect(screen.getByTestId(`card-kind-${ghoul.id}`)).toHaveTextContent(/ghoul/i);
+  });
+
+  it('Ghoul card WITH a Regnant clan keeps the clan-themed watermark and clan-row visuals', () => {
+    // Intentional: when the user selected a regnant clan, surfacing that
+    // clan's visuals on the card communicates the bond at a glance.
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.getByTestId(`char-card-watermark-${ghoul.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}-mortal`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-clan-row-${ghoul.id}`)).toBeInTheDocument();
+    // Kind pill is still present so the card never reads as "just another
+    // Tremere vampire".
+    expect(screen.getByTestId(`card-kind-${ghoul.id}`)).toHaveTextContent(/ghoul/i);
+  });
+});

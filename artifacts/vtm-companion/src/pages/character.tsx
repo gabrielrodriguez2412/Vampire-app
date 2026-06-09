@@ -1266,7 +1266,21 @@ export default function CharacterPage() {
                   // responsive concerns the polish batch isn't scoped for —
                   // tracked for a dedicated batch.
                   const clanData = clans.find(c => c.id === char.clan);
-                  const clanColor = clanData?.colorTheme || '#8B0000';
+                  // Batch AX Phase 1 polish — non-vampire cards should not
+                  // imply a vampire clan. Humans always suppress clan visuals;
+                  // ghouls suppress them unless a Regnant clan was actually
+                  // selected (in which case the regnant's clan visuals are
+                  // intentional). Vampires (and legacy characters with kind
+                  // absent) keep the existing behavior unchanged.
+                  const kind = char.kind ?? 'vampire';
+                  const hasClanVisuals =
+                    kind === 'vampire' || (kind === 'ghoul' && !!clanData);
+                  // Neutral zinc tone for non-clan cards so the left accent
+                  // and radial glow do not bleed the default crimson onto
+                  // mortals / unbound ghouls.
+                  const clanColor = hasClanVisuals
+                    ? (clanData?.colorTheme || '#8B0000')
+                    : '#52525b';
                   const isV5 = char.edition === 'V5';
                   const isSelected = selection.isSelected(char.id);
                   // Batch AK — visible favorite indicator. The More-menu
@@ -1302,23 +1316,39 @@ export default function CharacterPage() {
                         VTM clan symbols, no licensed artwork. The
                         watermark is `aria-hidden` and `pointer-events-none`
                         so screen readers skip it and clicks pass
-                        through to the underlying card. */}
-                    <span
-                      aria-hidden
-                      data-testid={`char-card-watermark-${char.id}`}
-                      data-clan={char.clan}
-                      className="pointer-events-none select-none absolute right-2 bottom-0 text-5xl sm:text-6xl md:text-7xl leading-none opacity-[0.08] group-hover:opacity-[0.12] transition-opacity"
-                      style={{
-                        // Soft glow keyed off the clan colour so the
-                        // watermark feels of-a-piece with the existing
-                        // left-edge accent and the top-right radial
-                        // glow. Subtle enough that on phones the icon
-                        // still reads as a faded glyph, not a halo.
-                        textShadow: `0 0 12px ${clanColor}55`,
-                      }}
-                    >
-                      {getClanIcon(char.clan)}
-                    </span>
+                        through to the underlying card.
+
+                        Batch AX Phase 1 polish — non-vampires get a
+                        neutral person glyph instead of the clan-themed
+                        bat fallback so a human card is never confused
+                        for a clanless vampire. */}
+                    {hasClanVisuals ? (
+                      <span
+                        aria-hidden
+                        data-testid={`char-card-watermark-${char.id}`}
+                        data-clan={char.clan}
+                        className="pointer-events-none select-none absolute right-2 bottom-0 text-5xl sm:text-6xl md:text-7xl leading-none opacity-[0.08] group-hover:opacity-[0.12] transition-opacity"
+                        style={{
+                          // Soft glow keyed off the clan colour so the
+                          // watermark feels of-a-piece with the existing
+                          // left-edge accent and the top-right radial
+                          // glow. Subtle enough that on phones the icon
+                          // still reads as a faded glyph, not a halo.
+                          textShadow: `0 0 12px ${clanColor}55`,
+                        }}
+                      >
+                        {getClanIcon(char.clan)}
+                      </span>
+                    ) : (
+                      <span
+                        aria-hidden
+                        data-testid={`char-card-watermark-${char.id}-mortal`}
+                        data-kind={kind}
+                        className="pointer-events-none select-none absolute right-2 bottom-1 leading-none opacity-[0.08] group-hover:opacity-[0.12] transition-opacity text-zinc-400"
+                      >
+                        <User className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24" />
+                      </span>
+                    )}
 
                     <CardHeader className="pb-3 pl-5 relative">
                       <div className="flex justify-between items-start gap-2">
@@ -1359,17 +1389,30 @@ export default function CharacterPage() {
                           {/* Identity row: bigger clan icon + clan name,
                               with the icon visually anchored by the
                               clan color so the card reads as "a Brujah"
-                              before the eye even reaches the badges. */}
-                          <div className="flex items-center gap-2 text-sm text-foreground/80 mb-2">
-                            <span
-                              aria-hidden
-                              className="text-base leading-none shrink-0"
-                              style={{ color: clanColor, textShadow: `0 0 6px ${clanColor}55` }}
+                              before the eye even reaches the badges.
+
+                              Batch AX Phase 1 polish — the clan icon+name
+                              line is suppressed entirely for humans and
+                              for ghouls without a Regnant clan. The
+                              kind pill in the badge row below already
+                              identifies the character, so the row would
+                              otherwise be an empty bat icon next to a
+                              blank clan name. */}
+                          {hasClanVisuals && (
+                            <div
+                              className="flex items-center gap-2 text-sm text-foreground/80 mb-2"
+                              data-testid={`char-card-clan-row-${char.id}`}
                             >
-                              {getClanIcon(char.clan)}
-                            </span>
-                            <span className="truncate">{getClanName(char.clan, char.edition as EditionId)}</span>
-                          </div>
+                              <span
+                                aria-hidden
+                                className="text-base leading-none shrink-0"
+                                style={{ color: clanColor, textShadow: `0 0 6px ${clanColor}55` }}
+                              >
+                                {getClanIcon(char.clan)}
+                              </span>
+                              <span className="truncate">{getClanName(char.clan, char.edition as EditionId)}</span>
+                            </div>
+                          )}
                           {/* Badge row: edition, PC/NPC, optional
                               chronicle link. Edition tint follows the
                               same V5 / classic split the rest of the

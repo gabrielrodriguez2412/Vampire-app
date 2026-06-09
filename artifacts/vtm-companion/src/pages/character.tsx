@@ -1313,19 +1313,22 @@ export default function CharacterPage() {
                   // responsive concerns the polish batch isn't scoped for —
                   // tracked for a dedicated batch.
                   const clanData = clans.find(c => c.id === char.clan);
-                  // Batch AX Phase 1 polish — non-vampire cards should not
-                  // imply a vampire clan. Humans always suppress clan visuals;
-                  // ghouls suppress them unless a Regnant clan was actually
-                  // selected (in which case the regnant's clan visuals are
-                  // intentional). Vampires (and legacy characters with kind
-                  // absent) keep the existing behavior unchanged.
+                  // Batch BD — ghoul cards no longer wear the regnant clan's
+                  // watermark or accent color. Those visuals were
+                  // unlabelled and made a ghoul card look identical to a
+                  // vampire card. The regnant clan stays surfaced — but
+                  // only via the labelled identity row below — so the
+                  // bond can never read as "this character belongs to
+                  // this clan". Vampires (and legacy characters with kind
+                  // absent) keep the existing visuals unchanged.
                   const kind = char.kind ?? 'vampire';
-                  const hasClanVisuals =
+                  const hasClanWatermarkAndColor = kind === 'vampire';
+                  const hasClanIdentityRow =
                     kind === 'vampire' || (kind === 'ghoul' && !!clanData);
-                  // Neutral zinc tone for non-clan cards so the left accent
-                  // and radial glow do not bleed the default crimson onto
-                  // mortals / unbound ghouls.
-                  const clanColor = hasClanVisuals
+                  // Neutral zinc tone for non-vampire cards so the left
+                  // accent and radial glow do not bleed the default
+                  // crimson onto mortals / ghouls (regnant or not).
+                  const clanColor = hasClanWatermarkAndColor
                     ? (clanData?.colorTheme || '#8B0000')
                     : '#52525b';
                   const isV5 = char.edition === 'V5';
@@ -1369,7 +1372,7 @@ export default function CharacterPage() {
                         neutral person glyph instead of the clan-themed
                         bat fallback so a human card is never confused
                         for a clanless vampire. */}
-                    {hasClanVisuals ? (
+                    {hasClanWatermarkAndColor ? (
                       <span
                         aria-hidden
                         data-testid={`char-card-watermark-${char.id}`}
@@ -1445,7 +1448,7 @@ export default function CharacterPage() {
                               identifies the character, so the row would
                               otherwise be an empty bat icon next to a
                               blank clan name. */}
-                          {hasClanVisuals && (
+                          {hasClanIdentityRow && (
                             <div
                               className="flex items-center gap-2 text-sm text-foreground/80 mb-2"
                               data-testid={`char-card-clan-row-${char.id}`}

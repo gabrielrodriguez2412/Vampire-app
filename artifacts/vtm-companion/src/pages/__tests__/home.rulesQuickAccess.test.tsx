@@ -85,14 +85,14 @@ describe('Home — Rules Quick Access (Batch AT)', () => {
     expect(memory.history[memory.history.length - 1]).toBe('/compendium/herramientas');
   });
 
-  it('replaces the prior static quick-topic chip row with the Recommended Next section', () => {
-    // Batch AU rework: the static Combat / Dice / Health / Hunger / Willpower
-    // / Humanity / Blood Pool chip row was removed in favor of dynamic
-    // "Recommended Next" cards. The recommendations section must render in
-    // its place; the old `home-rules-topics` container must be gone.
+  it('replaces the prior static quick-topic chip row with the At the Table section', () => {
+    // Batch AU (post-review): the static Combat / Dice / Health / Hunger /
+    // Willpower / Humanity / Blood Pool chip row was removed in favor of
+    // the edition-aware "At the Table" play-support row. The new section
+    // must render in its place; the old `home-rules-topics` container is gone.
     renderHome();
     expect(screen.queryByTestId('home-rules-topics')).not.toBeInTheDocument();
-    expect(screen.getByTestId('home-recommended')).toBeInTheDocument();
+    expect(screen.getByTestId('home-at-table')).toBeInTheDocument();
   });
 
   it('keeps the Core Rules description short and original (no long rulebook prose)', () => {

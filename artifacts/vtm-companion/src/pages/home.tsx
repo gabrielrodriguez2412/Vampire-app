@@ -102,157 +102,118 @@ export default function Home() {
     return clans.find(c => c.id === clanId)?.icon || '🦇';
   };
 
-  // Batch AU — dynamic "Recommended Next" recommendations.
+  // Batch AU (post-review rework) — "At the Table" play-support helpers.
   //
-  // Built as an ordered slot list so the layout stays predictable across
-  // empty / populated states and across editions. Each slot resolves to at
-  // most one card; the array is rendered in order.
+  // The earlier Recommended-Next iteration duplicated the Continue card,
+  // Recent Activity rows, and the Tools nav card. Manual review asked for
+  // a section that complements (not repeats) the rest of Home, so this
+  // bottom row is now a fixed set of edition-aware rules/play references:
   //
-  // No usage tracking is involved — recommendations are derived purely from
-  // (a) which collections already have data, (b) the most-recent entry per
-  // collection, and (c) the active edition. The user explicitly asked us
-  // NOT to add new localStorage counters or analytics in this batch.
-  const recommendations = useMemo(() => {
-    const recentChronicle = recentChronicles[0];
-    const recentSession = recentSessions[0];
+  //   • V5:       Dice & Rouse Check, Hunger, Willpower, Humanity, Health & Damage
+  //   • Classic:  Dice,               Blood Pool, Willpower, Humanity / Path, Health & Damage
+  //
+  // No character/chronicle/session data flows through these cards on
+  // purpose — the top of Home already covers "continue / resume" via the
+  // hero card and Recent Activity columns. The Tools/Rules/Disciplines
+  // secondary rail above still owns broad navigation; this row is for the
+  // specific rules a Storyteller or player reaches for during a session.
+  //
+  // Rule-id deep links exist for everything except the dice cards (the
+  // Tools page itself is the play surface for dice and the V5 Rouse Check
+  // card), which is the routing the brief asked us to use.
+  const atTheTable = useMemo(() => {
     const isV5 = activeEdition === 'V5';
 
-    type Rec = {
+    type AtCard = {
       key: string;
       icon: string;
       title: string;
       subtitle: string;
       onClick: () => void;
     };
-    const out: Rec[] = [];
 
-    // Slot 1 — character context.
-    if (characters.length === 0) {
-      out.push({
-        key: 'create-character',
-        icon: 'person_add',
-        title: strings.home_rec_create_character_title || 'Create your first character',
-        subtitle: strings.home_rec_create_character_subtitle || 'Build a kindred from scratch.',
-        onClick: () => {
-          try { sessionStorage.removeItem('vtm-open-character-id'); } catch { /* ignore */ }
-          setLocation('/personaje');
-        },
-      });
-    } else if (continueCharacter) {
-      out.push({
-        key: 'continue-character',
-        icon: 'play_circle',
-        title: strings.home_rec_continue_character || 'Continue character',
-        subtitle: continueCharacter.name?.trim() || (strings.unnamed_character || 'Unnamed Character'),
-        onClick: () => openCharacter(continueCharacter.id),
-      });
-    }
-
-    // Slot 2 — chronicle context. Prefer "open last session" when sessions
-    // exist (more specific than the parent chronicle), then fall back to
-    // resuming the latest chronicle, then to the empty-state create card.
-    if (chronicles.length === 0) {
-      out.push({
-        key: 'create-chronicle',
-        icon: 'auto_stories',
-        title: strings.home_rec_create_chronicle_title || 'Create your first chronicle',
-        subtitle: strings.home_rec_create_chronicle_subtitle || 'Track your stories and sessions.',
-        onClick: () => {
-          try {
-            sessionStorage.removeItem('vtm-open-chronicle-id');
-            sessionStorage.removeItem('vtm-open-chronicle-tab');
-          } catch { /* ignore */ }
-          setLocation('/cronica');
-        },
-      });
-    } else if (recentSession) {
-      const chrName = chronicleNameById.get(recentSession.chronicleId) || '';
-      // Per-session deep links don't exist yet — routing into the parent
-      // chronicle's "sessions" tab is the closest the app currently
-      // supports. Per-session anchors are reported as deferred in the PR
-      // notes.
-      out.push({
-        key: 'open-session',
-        icon: 'event_note',
-        title: strings.home_rec_open_session || 'Open last session',
-        subtitle: chrName
-          ? `${recentSession.title} · ${chrName}`
-          : recentSession.title,
-        onClick: () => openChronicle(recentSession.chronicleId, 'sessions'),
-      });
-    } else if (recentChronicle) {
-      out.push({
-        key: 'resume-chronicle',
-        icon: 'auto_stories',
-        title: strings.home_rec_resume_chronicle || 'Resume chronicle',
-        subtitle: recentChronicle.name,
-        onClick: () => openChronicle(recentChronicle.id, 'overview'),
-      });
-    }
-
-    // Slot 3 — dice/tools. Always present; this is the most common play-time
-    // jump-off across both editions.
-    out.push({
-      key: 'dice-tools',
-      icon: 'casino',
-      title: strings.home_rec_dice_tools_title || 'Dice & tools',
-      subtitle: strings.home_rec_dice_tools_subtitle || 'Quick rolls, counters, and references.',
-      onClick: () => setLocation('/compendium/herramientas'),
-    });
-
-    // Slot 4 — edition-aware tip. Rouse Check is V5-only by design (it does
-    // not exist in V20/Revised/2nd/1st); classic editions get the Blood
-    // Pool reference instead.
     if (isV5) {
-      out.push({
-        key: 'rouse-check',
-        icon: 'bloodtype',
-        title: strings.home_rec_rouse_title || 'Rouse Check',
-        subtitle: strings.home_rec_rouse_subtitle || 'Test the Blood when calling on V5 powers.',
+      return [
+        {
+          key: 'dice-rouse',
+          icon: 'casino',
+          title: strings.home_at_dice_rouse_title || 'Dice & Rouse Check',
+          subtitle: strings.home_at_dice_subtitle || 'Open the dice roller and play helpers.',
+          onClick: () => setLocation('/compendium/herramientas'),
+        },
+        {
+          key: 'hunger',
+          icon: 'bloodtype',
+          title: strings.hunger || 'Hunger',
+          subtitle: strings.home_at_hunger_subtitle || 'How V5 Hunger feeds the Beast.',
+          onClick: () => setLocation('/compendium/reglas/hunger-dice'),
+        },
+        {
+          key: 'willpower',
+          icon: 'psychology',
+          title: strings.willpower || 'Willpower',
+          subtitle: strings.home_at_willpower_subtitle || 'Resolve, resisting frenzy, rerolls.',
+          onClick: () => setLocation('/compendium/reglas/willpower'),
+        },
+        {
+          key: 'humanity',
+          icon: 'heart_broken',
+          title: strings.humanity || 'Humanity',
+          subtitle: strings.home_at_humanity_subtitle || 'Tracking conscience and stains.',
+          onClick: () => setLocation('/compendium/reglas/humanity-loss'),
+        },
+        {
+          key: 'health-damage',
+          icon: 'healing',
+          title: strings.home_at_health_damage_title || 'Health & Damage',
+          subtitle: strings.home_at_health_damage_subtitle || 'Soak, healing, and damage tracks.',
+          onClick: () => setLocation('/compendium/reglas/healing-v5'),
+        },
+      ] satisfies AtCard[];
+    }
+
+    // V20 / REVISED / 2ND / 1ST — classic play support set. Rouse Check is
+    // omitted by design (it does not exist outside V5), Hunger swaps to
+    // Blood Pool, and Willpower / Humanity / Health route to the classic
+    // rule splits.
+    return [
+      {
+        key: 'dice',
+        icon: 'casino',
+        title: strings.home_topic_dice || 'Dice',
+        subtitle: strings.home_at_dice_subtitle || 'Open the dice roller and play helpers.',
         onClick: () => setLocation('/compendium/herramientas'),
-      });
-    } else {
-      out.push({
+      },
+      {
         key: 'blood-pool',
         icon: 'bloodtype',
-        title: strings.home_rec_blood_pool_title || 'Blood Pool',
-        subtitle: strings.home_rec_blood_pool_subtitle || 'How Blood points are spent in classic editions.',
+        title: strings.home_topic_blood_pool || 'Blood Pool',
+        subtitle: strings.home_at_blood_pool_subtitle || 'How classic Blood points are spent.',
         onClick: () => setLocation('/compendium/reglas/blood-pool'),
-      });
-    }
-
-    // Slot 5 — empty-state bonus. Only fires when the install has zero
-    // player data; otherwise the four slots above already cover the row
-    // (and the Clans card in the secondary rail is one click away).
-    if (characters.length === 0 && chronicles.length === 0) {
-      out.push({
-        key: 'explore-clans',
-        icon: 'groups',
-        title: strings.home_rec_explore_clans_title || 'Explore clans',
-        subtitle: strings.home_rec_explore_clans_subtitle || 'Tour the lineages and their gifts.',
-        onClick: () => setLocation('/compendium/clanes'),
-      });
-    }
-
-    return out;
-    // The `strings` object is rebuilt on every render but its identity is
-    // not used as a dep here — we want recommendations to refresh when the
-    // underlying data, edition, or active language change, all of which
-    // are captured by the listed deps. `activeLanguage` flows through
-    // `strings` and is included via that proxy through the parent render.
-  }, [
-    characters,
-    chronicles,
-    recentChronicles,
-    recentSessions,
-    continueCharacter,
-    activeEdition,
-    strings,
-    chronicleNameById,
-    openCharacter,
-    openChronicle,
-    setLocation,
-  ]);
+      },
+      {
+        key: 'willpower',
+        icon: 'psychology',
+        title: strings.willpower || 'Willpower',
+        subtitle: strings.home_at_willpower_subtitle || 'Resolve, resisting frenzy, rerolls.',
+        onClick: () => setLocation('/compendium/reglas/willpower-classic'),
+      },
+      {
+        key: 'humanity',
+        icon: 'heart_broken',
+        title: strings.home_at_humanity_path_title || 'Humanity / Path',
+        subtitle: strings.home_at_humanity_subtitle || 'Tracking conscience and stains.',
+        onClick: () => setLocation('/compendium/reglas/humanity-classic'),
+      },
+      {
+        key: 'health-damage',
+        icon: 'healing',
+        title: strings.home_at_health_damage_title || 'Health & Damage',
+        subtitle: strings.home_at_health_damage_subtitle || 'Soak, healing, and damage tracks.',
+        onClick: () => setLocation('/compendium/reglas/healing-classic'),
+      },
+    ] satisfies AtCard[];
+  }, [activeEdition, strings, setLocation]);
 
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-col gap-8">
@@ -622,37 +583,28 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Batch AU — dynamic "Recommended Next" cards replace the previous
-            fixed quick-topic chip row.
-
-            Slot model (each slot yields exactly one card or is skipped):
-              1. Character slot — Continue last character, OR Create-first.
-              2. Chronicle slot — Open last session (if sessions exist), OR
-                 Resume last chronicle, OR Create-first chronicle.
-              3. Tools slot — always present (Dice & tools).
-              4. Edition slot — V5 → Rouse Check; classic → Blood Pool ref.
-              5. Empty-state bonus — only when no characters AND no chronicles
-                 exist, surface an "Explore clans" card so a brand-new install
-                 still shows useful next steps.
-
-            The slot order keeps the section balanced between 3 and 5 cards
-            and adapts to both empty and populated states without churn. */}
-        <div className="mt-5" data-testid="home-recommended">
+        {/* Batch AU (post-review) — "At the Table" play-support row.
+            Replaces the prior Recommended-Next cards (which duplicated
+            Continue / Recent Activity / Tools). This row is a fixed set
+            of edition-aware rules and play helpers — five cards, no data
+            duplication, no usage tracking. See `atTheTable` above for
+            per-edition card composition. */}
+        <div className="mt-5" data-testid="home-at-table">
           <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-primary-container mb-1">
-            {strings.home_recommended_title || 'Recommended Next'}
+            {strings.home_at_table_title || 'At the Table'}
           </p>
           <p className="text-zinc-400 font-sans text-xs mb-3">
-            {strings.home_recommended_subtitle || 'Pick up where you left off, or explore something new.'}
+            {strings.home_at_table_subtitle || 'Fast references and play helpers for the current edition.'}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {recommendations.map(rec => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {atTheTable.map(card => (
               <RecommendationCard
-                key={rec.key}
-                icon={rec.icon}
-                title={rec.title}
-                subtitle={rec.subtitle}
-                onClick={rec.onClick}
-                testId={`home-rec-${rec.key}`}
+                key={card.key}
+                icon={card.icon}
+                title={card.title}
+                subtitle={card.subtitle}
+                onClick={card.onClick}
+                testId={`home-at-${card.key}`}
               />
             ))}
           </div>

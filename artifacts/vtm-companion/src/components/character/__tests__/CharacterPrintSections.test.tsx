@@ -628,3 +628,118 @@ describe('print/PDF — Human / Ghoul kind parity (Batch BA)', () => {
     expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
   });
 });
+
+describe('print/PDF — vampire-only identity rows are gated by kind (Batch BA polish)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V20 Human print does NOT render Sire or Generation even when set on the record', () => {
+    // The exact reported issue: a V20 Human with dormant Sire +
+    // Generation fields (e.g. created before Batch BA, or imported)
+    // must not surface them in Basic Info.
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '', sire: 'Some Sire', generation: 13 }),
+      kind: 'human',
+    } as ClassicCharacter;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_sire);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+    expect(text).not.toContain('Some Sire');
+    // Spot-check: the Human label is in the header in place of the clan.
+    expect(text).toContain(UI_STRINGS.en.char_kind_human);
+  });
+
+  it('V20 Ghoul print does NOT render Sire or Generation even when set on the record', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere', sire: 'Vampiric Sire', generation: 11 }),
+      kind: 'ghoul',
+    } as ClassicCharacter;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_sire);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+    expect(text).not.toContain('Vampiric Sire');
+    expect(text).toContain(UI_STRINGS.en.char_kind_ghoul);
+  });
+
+  it('V5 Human print does NOT render Ambition / Desire / Predator Type / Sire / Generation', () => {
+    // Same dormant-data scenario for V5.
+    const human: V5Character = {
+      ...makeV5({
+        clan: '',
+        ambition: 'Old ambition',
+        desire: 'Old desire',
+        predatorType: 'Bagger',
+        sire: 'Some Sire',
+        generation: 12,
+      }),
+      kind: 'human',
+    } as V5Character;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_ambition);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_desire);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_predator_type);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_sire);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+    expect(text).not.toContain('Old ambition');
+    expect(text).not.toContain('Old desire');
+    expect(text).not.toContain('Bagger');
+    expect(text).not.toContain('Some Sire');
+  });
+
+  it('V5 Ghoul print does NOT render Predator Type / Sire / Resonance even when set', () => {
+    const ghoul: V5Character = {
+      ...makeV5({
+        clan: 'tremere',
+        predatorType: 'Sandman',
+        sire: 'Famuli\'s Sire',
+        resonance: 'Phlegmatic',
+      }),
+      kind: 'ghoul',
+    } as V5Character;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_predator_type);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_sire);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_resonance);
+    expect(text).not.toContain('Sandman');
+    expect(text).not.toContain('Phlegmatic');
+  });
+
+  it('Vampire print still renders Sire / Generation / Ambition / Desire / Predator Type as before', () => {
+    // Regression guard — vampires must keep every identity row.
+    const v5 = makeV5({
+      ambition: 'Outshine my sire',
+      desire: 'A safe night',
+      predatorType: 'Bagger',
+      sire: 'Sire Name',
+      generation: 12,
+      resonance: 'Choleric',
+    });
+    const v5Text = renderPrint(v5, 'en');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_ambition);
+    expect(v5Text).toContain('Outshine my sire');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_desire);
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_predator_type);
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_sire);
+    expect(v5Text).toContain('Sire Name');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_generation);
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_resonance);
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    const v20 = makeClassic({ sire: 'V20 Sire', generation: 10 });
+    const v20Text = renderPrint(v20, 'en');
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_sire);
+    expect(v20Text).toContain('V20 Sire');
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_generation);
+  });
+
+  it('V5 Human print does NOT render dormant disciplines even when stored', () => {
+    const human: V5Character = {
+      ...makeV5({ clan: '', disciplines: { auspex: 2 } as Record<string, number> }),
+      kind: 'human',
+    } as V5Character;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+});

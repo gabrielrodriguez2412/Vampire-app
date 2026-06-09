@@ -275,3 +275,53 @@ describe('Character cards — non-vampire visuals (Batch AX polish)', () => {
     expect(screen.getByTestId(`card-kind-${ghoul.id}`)).toHaveTextContent(/ghoul/i);
   });
 });
+
+describe('Character sheet header — kind-aware clan visuals (Batch BA polish)', () => {
+  function openSheet(character: { id: string }) {
+    // Use the session-storage handoff that the character page consumes
+    // on mount to open a specific character directly into the sheet view.
+    window.sessionStorage.setItem('vtm-open-character-id', character.id);
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    setLanguage('en');
+  });
+
+  it('Vampire sheet header renders the clan icon + clan name span', () => {
+    const vampire = saveCharacter(createEmptyCharacter('V5', 'brujah', 'V'));
+    openSheet(vampire);
+    expect(screen.getByTestId('sheet-header-clan')).toBeInTheDocument();
+    // Vampire-shaped card should NOT carry a kind pill in the header.
+    expect(screen.queryByTestId('sheet-header-kind')).not.toBeInTheDocument();
+  });
+
+  it('Human sheet header does NOT render the clan icon span, surfaces a Human pill instead', () => {
+    const human = saveCharacter(createEmptyCharacter('V5', '', 'Mortal', 'human'));
+    openSheet(human);
+    expect(screen.queryByTestId('sheet-header-clan')).not.toBeInTheDocument();
+    const kindPill = screen.getByTestId('sheet-header-kind');
+    expect(kindPill).toHaveTextContent(/human/i);
+  });
+
+  it('Ghoul sheet header WITHOUT a regnant clan does NOT render the clan icon span', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', '', 'Unbound Ghoul', 'ghoul'));
+    openSheet(ghoul);
+    expect(screen.queryByTestId('sheet-header-clan')).not.toBeInTheDocument();
+    expect(screen.getByTestId('sheet-header-kind')).toHaveTextContent(/ghoul/i);
+  });
+
+  it('Ghoul sheet header WITH a regnant clan keeps the clan icon span', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    openSheet(ghoul);
+    expect(screen.getByTestId('sheet-header-clan')).toBeInTheDocument();
+    // Ghoul pill still surfaces so the header never reads as a vampire.
+    expect(screen.getByTestId('sheet-header-kind')).toHaveTextContent(/ghoul/i);
+  });
+});

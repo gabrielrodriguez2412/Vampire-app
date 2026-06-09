@@ -369,20 +369,27 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   const identityRows: Row[] = [];
   if (character.concept) identityRows.push({ label: strings.sheet_concept || "Concept", value: character.concept });
   if (character.chronicle) identityRows.push({ label: strings.sheet_chronicle || "Chronicle", value: character.chronicle });
-  if (character.sire) identityRows.push({ label: strings.sheet_sire || "Sire", value: character.sire });
   if (character.playerName) identityRows.push({ label: strings.sheet_player || "Player", value: character.playerName });
-  if (isV5 && v5?.ambition) identityRows.push({ label: strings.sheet_ambition || "Ambition", value: v5.ambition });
-  if (isV5 && v5?.desire) identityRows.push({ label: strings.sheet_desire || "Desire", value: v5.desire });
-  if (isV5 && v5?.predatorType) identityRows.push({ label: strings.sheet_predator_type || "Predator Type", value: v5.predatorType });
+  // Batch BA polish — vampire-only identity rows are gated by `isVampire`.
+  // Dormant Sire / Generation / Ambition / Desire / Predator Type /
+  // Resonance values on legacy human / ghoul records (saved before
+  // Batch BA cleaned up the factory defaults, or imported from older
+  // backups) must not leak into the printed Basic Info section.
+  if (isVampire && character.sire) identityRows.push({ label: strings.sheet_sire || "Sire", value: character.sire });
+  if (isVampire && isV5 && v5?.ambition) identityRows.push({ label: strings.sheet_ambition || "Ambition", value: v5.ambition });
+  if (isVampire && isV5 && v5?.desire) identityRows.push({ label: strings.sheet_desire || "Desire", value: v5.desire });
+  if (isVampire && isV5 && v5?.predatorType) identityRows.push({ label: strings.sheet_predator_type || "Predator Type", value: v5.predatorType });
   // Batch W: resonance is a short V5-specific Vampire Trait that was
   // missing from print. Rendered as an identity row (single short value).
-  if (isV5 && v5?.resonance) identityRows.push({ label: strings.sheet_resonance || "Resonance", value: v5.resonance });
+  if (isVampire && isV5 && v5?.resonance) identityRows.push({ label: strings.sheet_resonance || "Resonance", value: v5.resonance });
+  // Nature / Demeanor are general Storyteller personality prompts — kept
+  // for every classic kind (vampire, human, ghoul).
   if (!isV5 && cl?.nature) identityRows.push({ label: strings.sheet_nature || "Nature", value: cl.nature });
   if (!isV5 && cl?.demeanor) identityRows.push({ label: strings.sheet_demeanor || "Demeanor", value: cl.demeanor });
-  if (!isV5 && typeof cl?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(cl.generation) });
+  if (isVampire && !isV5 && typeof cl?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(cl.generation) });
   // Batch AV — V5 Generation is optional on V5 characters. Mirror the classic
   // print row: only emit when the player has actually filled it in.
-  if (isV5 && typeof v5?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(v5.generation) });
+  if (isVampire && isV5 && typeof v5?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(v5.generation) });
 
   // Tracker rows — these are always meaningful (created with defaults).
   const trackerRows: Row[] = [];
@@ -523,7 +530,10 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   }
 
   const hasIdentity = identityRows.length > 0;
-  const hasBackgrounds = backgroundEntries.length > 0;
+  // Backgrounds are a classic-vampire schema feature; the mortal schemas
+  // don't expose them, so suppress the section for non-vampires even if
+  // legacy data still carries entries.
+  const hasBackgrounds = isVampire && backgroundEntries.length > 0;
   const hasVirtues = !isV5 && !!cl?.virtues;
 
   // Batch W: free-text "Social & Moral" (V5) and "Merits & Flaws"
@@ -534,8 +544,12 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   type TextRow = { label: string; value: string };
   const socialMoralRows: TextRow[] = [];
   if (isV5) {
-    if (nonEmpty(v5?.touchstones)) socialMoralRows.push({ label: strings.sheet_touchstones || "Touchstones", value: v5!.touchstones! });
-    if (nonEmpty(v5?.convictions)) socialMoralRows.push({ label: strings.sheet_convictions || "Convictions", value: v5!.convictions! });
+    // Batch BA polish — Touchstones / Convictions are V5-vampire-only
+    // concepts; humans / ghouls do not surface them in print even if
+    // dormant values survive on a legacy record. Advantages / Flaws are
+    // generic merit-style text on the mortal schema, so they stay.
+    if (isVampire && nonEmpty(v5?.touchstones)) socialMoralRows.push({ label: strings.sheet_touchstones || "Touchstones", value: v5!.touchstones! });
+    if (isVampire && nonEmpty(v5?.convictions)) socialMoralRows.push({ label: strings.sheet_convictions || "Convictions", value: v5!.convictions! });
     if (nonEmpty(v5?.advantages))  socialMoralRows.push({ label: strings.sheet_advantages || "Advantages", value: v5!.advantages! });
     if (nonEmpty(v5?.flaws))       socialMoralRows.push({ label: strings.sheet_flaws || "Flaws", value: v5!.flaws! });
   }
@@ -630,7 +644,7 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
 
       {/* Disciplines — only when populated. Each discipline row is the atomic
           break-inside unit so name and its powers stay together. */}
-      {disciplineEntries.length > 0 && (
+      {isVampire && disciplineEntries.length > 0 && (
         <section>
           <SectionHeading>{strings.sheet_section_disciplines || "Disciplines"}</SectionHeading>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-0">

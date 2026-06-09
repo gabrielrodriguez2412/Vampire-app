@@ -2246,12 +2246,28 @@ export default function CharacterPage() {
                       )}
 
                       {/* Metadata pill row — clan, edition, PC/NPC, chronicle.
-                          All inline, pill-styled, mobile-friendly via flex-wrap. */}
+                          All inline, pill-styled, mobile-friendly via flex-wrap.
+
+                          Batch BA polish — the clan icon + clan name span is
+                          gated by kind, mirroring the card watermark fix:
+                          vampires always show clan, ghouls with a regnant
+                          clan show it, humans / regnant-less ghouls suppress
+                          it entirely. A non-vampire Kind pill is added next
+                          to the PC/NPC pill so the header always identifies
+                          the character even when no clan is shown. */}
                       <div className="mt-2 short-landscape:mt-1 flex flex-wrap items-center gap-2 short-landscape:gap-1.5 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
-                          <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
-                        </span>
+                        {(() => {
+                          const sheetKind = activeChar.kind ?? 'vampire';
+                          const sheetClanData = clans.find(c => c.id === activeChar.clan);
+                          const sheetHasClanVisuals =
+                            sheetKind === 'vampire' || (sheetKind === 'ghoul' && !!sheetClanData);
+                          return sheetHasClanVisuals ? (
+                            <span className="inline-flex items-center gap-1" data-testid="sheet-header-clan">
+                              <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
+                              <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
+                            </span>
+                          ) : null;
+                        })()}
                         <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
                           {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
                         </span>
@@ -2265,6 +2281,20 @@ export default function CharacterPage() {
                         >
                           {getTypeShortLabel(activeChar.characterType)}
                         </span>
+                        {/* Batch BA polish — Kind pill mirrors the card pill so a
+                            non-vampire is identified at a glance, even when the
+                            clan icon+name section is suppressed. Vampires get
+                            no pill — that's the dominant case and the rest of
+                            the header is already vampire-shaped. */}
+                        {activeChar.kind && activeChar.kind !== 'vampire' && (
+                          <span
+                            className="uppercase text-[10px] tracking-wider border px-1.5 rounded border-amber-700/40 bg-amber-950/30 text-amber-200"
+                            title={activeChar.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                            data-testid="sheet-header-kind"
+                          >
+                            {activeChar.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                          </span>
+                        )}
                         {/* Chronicle pill — click to assign/change. Always visible
                             (management metadata, not gated on Edit Mode). */}
                         <button

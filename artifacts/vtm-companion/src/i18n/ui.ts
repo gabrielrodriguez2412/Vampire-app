@@ -158,6 +158,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     char_kind_ghoul: "Gul",
     char_kind_regnant_clan_label: "Clan del regente",
     char_kind_regnant_clan_none: "Ninguno / desconocido",
+    // Batch BB — short inline prefix used in the sheet header / card /
+    // print header so a ghoul's stored `clan` reads as the regnant's
+    // clan, not the ghoul's own clan. Rendered as "Regente: <clan>".
+    char_kind_regnant_prefix: "Regente",
     name_required: "Se requiere un nombre.",
     char_mark_as_npc: "Marcar como PNJ", char_mark_as_player: "Marcar como Personaje",
     char_marked_npc: "Marcado como PNJ", char_marked_player: "Marcado como Personaje de Jugador",
@@ -671,6 +675,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     char_kind_ghoul: "Ghoul",
     char_kind_regnant_clan_label: "Regnant clan",
     char_kind_regnant_clan_none: "None / unknown",
+    // Batch BB — short inline prefix used in the sheet header / card /
+    // print header so a ghoul's stored `clan` reads as the regnant's
+    // clan, not the ghoul's own clan. Rendered as "Regnant: <clan>".
+    char_kind_regnant_prefix: "Regnant",
     name_required: "Name required.",
     char_mark_as_npc: "Mark as NPC", char_mark_as_player: "Mark as Player Character",
     char_marked_npc: "Marked as NPC", char_marked_player: "Marked as Player Character",

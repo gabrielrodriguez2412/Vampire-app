@@ -584,8 +584,17 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
                   ? (strings.char_kind_ghoul || 'Ghoul')
                   : (strings.char_kind_human || 'Human')}
               </span>
+              {/* Batch BB — non-vampire clan names render with the
+                  "Regnant: " prefix so a printed ghoul sheet never
+                  reads as a vampire of the regnant's clan. */}
               {showClanInHeader && (
-                <>{" "}· {clanName}</>
+                <>
+                  {" "}·{" "}
+                  <span data-testid="print-header-regnant-prefix" className="uppercase tracking-wider">
+                    {strings.char_kind_regnant_prefix || 'Regnant'}:
+                  </span>{" "}
+                  {clanName}
+                </>
               )}
               {" "}· <span className="uppercase">{character.edition}</span>
             </>

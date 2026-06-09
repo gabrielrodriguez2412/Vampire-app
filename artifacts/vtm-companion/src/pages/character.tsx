@@ -1447,7 +1447,24 @@ export default function CharacterPage() {
                               >
                                 {getClanIcon(char.clan)}
                               </span>
-                              <span className="truncate">{getClanName(char.clan, char.edition as EditionId)}</span>
+                              <span className="truncate">
+                                {kind === 'ghoul' ? (
+                                  <>
+                                    {/* Batch BB — surface the regnant
+                                        clan as the regnant's, not the
+                                        ghoul's own clan. */}
+                                    <span
+                                      data-testid={`char-card-regnant-prefix-${char.id}`}
+                                      className="uppercase tracking-wider text-[10px] opacity-70 mr-1"
+                                    >
+                                      {strings.char_kind_regnant_prefix || 'Regnant'}:
+                                    </span>
+                                    {getClanName(char.clan, char.edition as EditionId)}
+                                  </>
+                                ) : (
+                                  getClanName(char.clan, char.edition as EditionId)
+                                )}
+                              </span>
                             </div>
                           )}
                           {/* Badge row: edition, PC/NPC, optional
@@ -2264,7 +2281,25 @@ export default function CharacterPage() {
                           return sheetHasClanVisuals ? (
                             <span className="inline-flex items-center gap-1" data-testid="sheet-header-clan">
                               <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
-                              <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
+                              <span className="text-foreground/80">
+                                {sheetKind === 'ghoul' ? (
+                                  <>
+                                    {/* Batch BB — label the regnant clan
+                                        explicitly so a ghoul's stored
+                                        `clan` never reads as the ghoul's
+                                        own clan. */}
+                                    <span
+                                      data-testid="sheet-header-regnant-prefix"
+                                      className="uppercase tracking-wider text-[10px] opacity-70 mr-1"
+                                    >
+                                      {strings.char_kind_regnant_prefix || 'Regnant'}:
+                                    </span>
+                                    {getClanName(activeChar.clan, activeChar.edition as EditionId)}
+                                  </>
+                                ) : (
+                                  getClanName(activeChar.clan, activeChar.edition as EditionId)
+                                )}
+                              </span>
                             </span>
                           ) : null;
                         })()}

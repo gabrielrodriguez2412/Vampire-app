@@ -742,4 +742,24 @@ describe('print/PDF — vampire-only identity rows are gated by kind (Batch BA p
     const text = renderPrint(human, 'en');
     expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
   });
+
+  it('Ghoul print header surfaces the "Regnant:" prefix before the regnant clan name (Batch BB)', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+    } as ClassicCharacter;
+    const text = renderPrint(ghoul, 'en');
+    // Both the prefix label and the regnant clan name appear in the
+    // printed header line.
+    expect(text).toContain('Regnant');
+    expect(text).toMatch(/Tremere/i);
+    // Kind label is also still in the header.
+    expect(text).toContain(UI_STRINGS.en.char_kind_ghoul);
+  });
+
+  it('Vampire print header does NOT render the regnant prefix (Batch BB regression)', () => {
+    const vampire = makeClassic({ clan: 'tremere' });
+    const text = renderPrint(vampire, 'en');
+    expect(text).not.toMatch(/\bRegnant\b/);
+  });
 });

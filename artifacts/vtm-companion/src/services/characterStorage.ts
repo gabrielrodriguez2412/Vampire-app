@@ -1,7 +1,20 @@
-import { Character, EditionId, V5Character, ClassicCharacter, ClassicHealth, CharacterType, CharacterStatus, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
+import { Character, EditionId, V5Character, ClassicCharacter, ClassicHealth, CharacterType, CharacterKind, CharacterStatus, InventoryItem, InventoryCategory, CharacterNote, CharacterNoteCategory } from '../types';
 import { normalizeEditionId } from '../utils/content';
 
 /** Coerce any value to a valid CharacterStatus. Unknown values default to 'active'. */
+/**
+ * Batch AX — coerce a stored character `kind` value into a `CharacterKind`.
+ *
+ * Anything other than the literal strings `'human'` or `'ghoul'` resolves
+ * to `'vampire'`, including `undefined`, an empty string, a number, or a
+ * future kind we don't recognize yet. This is the rule that lets every
+ * pre-Batch-AX saved character load identically — and lets a backup made
+ * on a newer build degrade gracefully when opened on an older client.
+ */
+export function normalizeCharacterKind(raw: unknown): CharacterKind {
+  return raw === 'human' || raw === 'ghoul' ? raw : 'vampire';
+}
+
 export function normalizeCharacterStatus(raw: unknown): CharacterStatus {
   return raw === 'archived' ? 'archived' : 'active';
 }
@@ -213,6 +226,11 @@ export function getCharacters(): Character[] {
         // Default unknown/missing/garbage characterType to 'player' so legacy
         // saved characters (and any malformed entries) load safely.
         characterType: (c?.characterType === 'npc' ? 'npc' : 'player') as CharacterType,
+        // Batch AX — Phase 1 character-kind normalization. Defaults missing
+        // / invalid / unknown values to 'vampire' so every existing saved
+        // character keeps its current shape on first load after the
+        // upgrade. Only 'human' / 'ghoul' pass through unchanged.
+        kind: normalizeCharacterKind(c?.kind),
         // Default unknown/missing archive status to 'active' so legacy saved
         // characters (created before archiving existed) always load as active.
         status: normalizeCharacterStatus(c?.status),
@@ -309,12 +327,33 @@ export function deleteCharacter(id: string): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 }
 
-export function createEmptyCharacter(edition: EditionId, clan: string, name: string): Character {
+/**
+ * Construct a brand-new character with safe defaults.
+ *
+ * Batch AX — `kind` is a new optional positional argument that tags the
+ * character as `'vampire' | 'human' | 'ghoul'`. Defaults to `'vampire'`
+ * so existing call sites (every test and the create dialog before this
+ * batch) keep behaving identically — they call `createEmptyCharacter(edition,
+ * clan, name)` and get a vampire back, same as before.
+ *
+ * Phase 1 explicitly does NOT branch the field set by kind: a human and a
+ * ghoul get the same V5 / classic shape a vampire does. The sheet schema
+ * change for non-vampire kinds is deferred to Phase 2. Clan, however, is
+ * allowed to be empty (`''`) for humans and ghouls — the caller decides
+ * whether to require it.
+ */
+export function createEmptyCharacter(
+  edition: EditionId,
+  clan: string,
+  name: string,
+  kind: CharacterKind = 'vampire',
+): Character {
   const base = {
     id: crypto.randomUUID(),
     name,
     clan,
     edition,
+    kind,
     characterType: 'player' as CharacterType,
     status: 'active' as CharacterStatus,
     inventory: [] as InventoryItem[],
@@ -506,7 +545,18 @@ export function validateCharacterExport(data: any): string | null {
   const char = data.character;
   if (typeof char.name !== 'string' || !char.name.trim()) return 'Invalid file: character has no name.';
   if (typeof char.edition !== 'string') return 'Invalid file: character has no edition.';
-  if (typeof char.clan !== 'string') return 'Invalid file: character has no clan.';
+  // Batch AX — clan is only required for vampire characters. A human or
+  // ghoul export may legitimately omit clan (or carry an empty string
+  // sentinel for "Regnant clan unknown"). Anything that's not literally
+  // `'human'` or `'ghoul'` falls back to the strict pre-AX rule so a
+  // legacy export that's missing both `kind` and `clan` still fails the
+  // same way it always has.
+  const kind = char.kind;
+  const clanRequired = kind !== 'human' && kind !== 'ghoul';
+  if (clanRequired && typeof char.clan !== 'string') return 'Invalid file: character has no clan.';
+  if (!clanRequired && char.clan != null && typeof char.clan !== 'string') {
+    return 'Invalid file: clan must be a string when present.';
+  }
 
   return null; // valid
 }
@@ -593,7 +643,15 @@ export function validateCharacterBackup(data: any): string | null {
     if (!c || typeof c !== 'object') return `Invalid character at index ${i}: not an object.`;
     if (typeof c.name !== 'string' || !c.name.trim()) return `Invalid character at index ${i}: missing name.`;
     if (typeof c.edition !== 'string') return `Invalid character at index ${i}: missing edition.`;
-    if (typeof c.clan !== 'string') return `Invalid character at index ${i}: missing clan.`;
+    // Batch AX — clan is required only for vampire entries. Mirrors the
+    // relaxed rule in `validateCharacterExport`; see that comment for
+    // backward-compat reasoning.
+    const kind = c.kind;
+    const clanRequired = kind !== 'human' && kind !== 'ghoul';
+    if (clanRequired && typeof c.clan !== 'string') return `Invalid character at index ${i}: missing clan.`;
+    if (!clanRequired && c.clan != null && typeof c.clan !== 'string') {
+      return `Invalid character at index ${i}: clan must be a string when present.`;
+    }
   }
 
   return null;

@@ -220,6 +220,19 @@ export type DisciplineValue = number | { rating: number; powers?: string[] };
 export type CharacterType = 'player' | 'npc';
 
 /**
+ * Batch AX — coarse character "kind" discriminator, orthogonal to both
+ * `edition` and `characterType`. Phase 1 only introduces the data model
+ * and creation option; sheet rendering still uses the existing vampire
+ * schemas for every kind. Future phases will route schemas through
+ * `kind` as well.
+ *
+ * Defaults to `'vampire'` on read for any legacy or missing/invalid value
+ * — see `normalizeCharacterKind` in `services/characterStorage.ts`. This
+ * means every character saved before this batch loads identically.
+ */
+export type CharacterKind = 'vampire' | 'human' | 'ghoul';
+
+/**
  * Coarse categories used to tag inventory items.
  *
  * Phase 2 (Inventory specialization) added: `document`, `vehicle`, `occult`,
@@ -307,6 +320,14 @@ export interface BaseCharacter {
   characterNotes?: CharacterNote[];
   /** 'player' or 'npc'. Defaults to 'player' on load via getCharacters normalization. */
   characterType?: CharacterType;
+  /**
+   * Batch AX — 'vampire' | 'human' | 'ghoul'. Optional and backward-compatible:
+   * a character saved before this batch is missing the field and is
+   * normalized to `'vampire'` on load. Phase 1 does NOT change sheet
+   * rendering by kind — humans and ghouls render with the existing
+   * vampire-shaped sheet plus a visible Kind label.
+   */
+  kind?: CharacterKind;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

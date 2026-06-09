@@ -12,7 +12,7 @@ import {
 } from "@/data/characterGenerator";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId, LangCode, CharacterType, CharacterStatus, Chronicle } from "@/types";
+import { Character, EditionId, LangCode, CharacterType, CharacterKind, CharacterStatus, Chronicle } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
@@ -187,6 +187,8 @@ export default function CharacterPage() {
   const [newClan, setNewClan] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
   const [newCharacterType, setNewCharacterType] = useState<CharacterType>('player');
+  // Batch AX Phase 1 — vampire / human / ghoul.
+  const [newKind, setNewKind] = useState<CharacterKind>('vampire');
   const [newChronicleId, setNewChronicleId] = useState<string>("");
   // Optional identity fields (saved only if non-empty)
   const [newConcept, setNewConcept] = useState("");
@@ -219,6 +221,7 @@ export default function CharacterPage() {
     setNewName("");
     setNewClan("");
     setNewCharacterType('player');
+    setNewKind('vampire');
     setNewChronicleId("");
     setNewConcept("");
     setNewChronicle("");
@@ -522,15 +525,27 @@ export default function CharacterPage() {
   };
 
   const handleCreate = () => {
-    if (!newName.trim() || !newClan) {
+    // Batch AX Phase 1 — clan is required only for vampire characters.
+    // Humans never have a clan; ghouls keep an optional "Regnant clan"
+    // dropdown but can leave it blank.
+    const clanRequired = newKind === 'vampire';
+    const missingName = !newName.trim();
+    const missingClan = clanRequired && !newClan;
+    if (missingName || missingClan) {
       toast({
         title: strings.missingData,
-        description: strings.nameAndClanRequired,
+        description: clanRequired
+          ? strings.nameAndClanRequired
+          : (strings.name_required || 'Name required.'),
         variant: "destructive"
       });
       return;
     }
-    const char = createEmptyCharacter(newEdition, newClan, newName);
+    // For humans the clan field is hidden — pass an empty string so the
+    // factory stores `clan: ''` (the audit's "soft assumption" — the rest
+    // of the app already tolerates an empty clan via the 🦇 fallback).
+    const clanForFactory = clanRequired ? newClan : (newClan || '');
+    const char = createEmptyCharacter(newEdition, clanForFactory, newName, newKind);
 
     // Apply selected character type (createEmptyCharacter defaults to 'player';
     // override here if the user picked NPC).
@@ -1081,6 +1096,7 @@ export default function CharacterPage() {
                 <Button
                   onClick={() => { refreshChronicles(); setActiveView('create'); }}
                   className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 ml-auto sm:ml-0"
+                  data-testid="open-create-character"
                 >
                   <Plus className="w-4 h-4" /> {strings.createCharacter}
                 </Button>
@@ -1388,6 +1404,18 @@ export default function CharacterPage() {
                             >
                               {getTypeShortLabel(char.characterType)}
                             </span>
+                            {/* Batch AX Phase 1 — surface non-vampire kinds
+                                on the card. Vampires get no pill (it would
+                                be redundant on every existing card). */}
+                            {char.kind && char.kind !== 'vampire' && (
+                              <span
+                                className="uppercase text-[10px] tracking-wider border px-1.5 rounded border-amber-700/40 bg-amber-950/30 text-amber-200"
+                                title={char.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                                data-testid={`card-kind-${char.id}`}
+                              >
+                                {char.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                              </span>
+                            )}
                             {char.chronicleId && (() => {
                               const linkedChr = chronicleById.get(char.chronicleId);
                               const label = linkedChr ? linkedChr.name : (strings.char_chronicle_missing || "Unknown chronicle");
@@ -1654,6 +1682,48 @@ export default function CharacterPage() {
                   </div>
                 </div>
 
+                {/* Batch AX Phase 1 — character kind (vampire / human / ghoul).
+                    Selecting Human hides the clan select; selecting Ghoul keeps
+                    the clan select but relabels it "Regnant clan" and lets the
+                    user leave it blank. The sheet itself still uses the
+                    existing vampire schema in Phase 1 — dedicated human/ghoul
+                    schemas are Phase 2. */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{strings.char_kind_label || "Kind"}</label>
+                  <div className="flex gap-2" role="radiogroup" aria-label={strings.char_kind_label || "Kind"} data-testid="create-kind-group">
+                    {(['vampire', 'human', 'ghoul'] as CharacterKind[]).map(k => {
+                      const label =
+                        k === 'vampire' ? (strings.char_kind_vampire || 'Vampire') :
+                        k === 'human'   ? (strings.char_kind_human   || 'Human') :
+                                          (strings.char_kind_ghoul   || 'Ghoul');
+                      const selected = newKind === k;
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => {
+                            setNewKind(k);
+                            // When the user switches to Human, drop any clan
+                            // they previously selected so we never quietly
+                            // ship a "Brujah human" to storage.
+                            if (k === 'human') setNewClan('');
+                          }}
+                          data-testid={`create-kind-${k}`}
+                          className={`flex-1 px-3 py-2 rounded text-sm border transition-colors ${
+                            selected
+                              ? "bg-primary/20 border-primary text-foreground"
+                              : "bg-background border-border text-muted-foreground hover:border-zinc-700"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">{strings.sheet_select_edition}</label>
                   <select 
@@ -1670,19 +1740,35 @@ export default function CharacterPage() {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">{strings.sheet_select_clan}</label>
-                  <select
-                    value={newClan}
-                    onChange={e => setNewClan(e.target.value)}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
-                  >
-                    <option value="" disabled>{strings.selectClan}</option>
-                    {availableClans.map(clan => (
-                      <option key={clan.id} value={clan.id}>{getClanDisplayName(clan, newEdition, activeLanguage)}</option>
-                    ))}
-                  </select>
-                </div>
+                {/* Batch AX Phase 1 — clan field visibility:
+                      vampire → required, blank disabled placeholder.
+                      ghoul   → optional, relabelled "Regnant clan", with a
+                                "None" sentinel option so the player can opt
+                                out of recording a regnant.
+                      human   → hidden entirely. */}
+                {newKind !== 'human' && (
+                  <div className="space-y-2" data-testid="create-clan-row">
+                    <label className="text-sm font-medium">
+                      {newKind === 'ghoul'
+                        ? (strings.char_kind_regnant_clan_label || 'Regnant clan')
+                        : strings.sheet_select_clan}
+                    </label>
+                    <select
+                      value={newClan}
+                      onChange={e => setNewClan(e.target.value)}
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                    >
+                      {newKind === 'ghoul' ? (
+                        <option value="">{strings.char_kind_regnant_clan_none || 'None / unknown'}</option>
+                      ) : (
+                        <option value="" disabled>{strings.selectClan}</option>
+                      )}
+                      {availableClans.map(clan => (
+                        <option key={clan.id} value={clan.id}>{getClanDisplayName(clan, newEdition, activeLanguage)}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Linked Chronicle — primary section, distinct from the legacy
                     free-text "Chronicle" note below. Sets `character.chronicleId`. */}

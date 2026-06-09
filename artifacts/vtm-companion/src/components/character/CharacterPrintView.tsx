@@ -335,6 +335,15 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS["en"];
   const isV5 = character.edition === "V5";
+  // Batch BA — kind awareness for the print view. Vampires keep the
+  // existing print shape byte-for-byte. Humans drop the vampire-only
+  // tracker rows (Hunger / Blood Pool / Blood Potency / Humanity) and
+  // the clan name from the header. Ghouls behave like vampires for
+  // anything tied to the regnant clan (clan name in header stays when
+  // a regnant is set) but still drop the V5/blood-pool/etc. trackers.
+  const kind = character.kind ?? 'vampire';
+  const isVampire = kind === 'vampire';
+  const showClanInHeader = isVampire || (kind === 'ghoul' && !!character.clan);
 
   const clanName = getClanDisplayNameById(
     character.clan,
@@ -462,12 +471,16 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       ),
     });
   }
-  if (isV5) {
+  // Batch BA — Hunger / Blood Pool are vampire-only print rows. Humans
+  // and ghouls do not get a Hunger drops row even on V5; classic
+  // mortals do not get a Blood Pool row even when stale data is still
+  // in storage from before Batch BA's createEmptyCharacter cleanup.
+  if (isV5 && isVampire) {
     trackerRows.push({
       label: strings.sheet_hunger || "Hunger",
       value: <span className="font-mono">{dotsString(v5?.hunger || 0, 5)}</span>,
     });
-  } else if (cl?.bloodPool) {
+  } else if (!isV5 && isVampire && cl?.bloodPool) {
     // Batch AO follow-up — V20/classic Blood Pool prints as a row of
     // filled / outlined blood drops (vector SVG via lucide Droplet).
     // Filled = available; outline = spent.
@@ -486,11 +499,17 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       ),
     });
   }
-  trackerRows.push({
-    label: strings.sheet_humanity || "Humanity",
-    value: <span className="font-mono">{dotsString((character as any).humanity || 0, 10)}</span>,
-  });
-  if (isV5 && typeof v5?.bloodPotency === "number") {
+  // Batch BA — Humanity / Blood Potency are vampire-only print rows.
+  // Mortal sheets explicitly omit Humanity (see audit §5.9 — humanity
+  // for mortals is a deferred opt-in toggle); Blood Potency never
+  // applies to non-vampires.
+  if (isVampire) {
+    trackerRows.push({
+      label: strings.sheet_humanity || "Humanity",
+      value: <span className="font-mono">{dotsString((character as { humanity?: number }).humanity || 0, 10)}</span>,
+    });
+  }
+  if (isV5 && isVampire && typeof v5?.bloodPotency === "number") {
     trackerRows.push({
       label: strings.sheet_blood_potency || "Blood Potency",
       value: <span className="font-mono">{dotsString(v5.bloodPotency, 10)}</span>,
@@ -528,13 +547,36 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
 
   return (
     <article className="text-black font-serif leading-snug text-[10px]">
-      {/* Header — compact, two short lines. */}
+      {/* Header — compact, two short lines.
+          Batch BA — non-vampires always get a Kind label in the print
+          header. Ghouls with a Regnant clan also keep the clan name
+          (the bond is meaningful enough to surface); ghouls without a
+          regnant and all humans show only the kind label so the
+          header never reads as "[blank clan] · V5". Vampires keep
+          their pre-BA header byte-for-byte. */}
       <header className="mb-2 pb-1 border-b border-zinc-700">
         <h1 className="text-xl font-bold tracking-tight leading-tight" style={{ color: '#5a1217' }}>
           {character.name}
         </h1>
-        <p className="text-[11px] text-zinc-700">
-          {clanName} · <span className="uppercase">{character.edition}</span> ·{" "}
+        <p className="text-[11px] text-zinc-700" data-testid="print-header-line">
+          {isVampire ? (
+            <>
+              {clanName} · <span className="uppercase">{character.edition}</span>
+            </>
+          ) : (
+            <>
+              <span className="uppercase tracking-wider" data-testid="print-header-kind">
+                {kind === 'ghoul'
+                  ? (strings.char_kind_ghoul || 'Ghoul')
+                  : (strings.char_kind_human || 'Human')}
+              </span>
+              {showClanInHeader && (
+                <>{" "}· {clanName}</>
+              )}
+              {" "}· <span className="uppercase">{character.edition}</span>
+            </>
+          )}
+          {" "}·{" "}
           <span className="uppercase tracking-wider">
             {character.characterType === 'npc'
               ? (strings.char_type_short_npc || "NPC")

@@ -20,6 +20,7 @@ import {
   sortAndFilterCharacters,
   CharacterSortKey,
   CharacterTypeFilter,
+  CharacterKindFilter,
   CharacterEditionFilter,
   CharacterClanFilter,
   CharacterChronicleFilter,
@@ -304,6 +305,8 @@ export default function CharacterPage() {
   const [filterType, setFilterType] = useState<CharacterTypeFilter>('all');
   const [filterEdition, setFilterEdition] = useState<CharacterEditionFilter>('all');
   const [filterClan, setFilterClan] = useState<CharacterClanFilter>('all');
+  // Batch BA — Kind filter (All / Vampire / Human / Ghoul).
+  const [filterKind, setFilterKind] = useState<CharacterKindFilter>('all');
   const [filterChronicle, setFilterChronicle] = useState<CharacterChronicleFilter>('all');
   // Archive status tab. Defaults to 'active' (mirrors the Chronicle list) so
   // archived characters are tucked away until the user switches tabs.
@@ -341,18 +344,20 @@ export default function CharacterPage() {
         filterType,
         filterEdition,
         filterClan,
+        filterKind,
         filterChronicle,
         filterStatus,
         validChronicleIds,
         language: activeLanguage,
       }),
-    [characters, sortBy, filterType, filterEdition, filterClan, filterChronicle, filterStatus, validChronicleIds, activeLanguage]
+    [characters, sortBy, filterType, filterEdition, filterClan, filterKind, filterChronicle, filterStatus, validChronicleIds, activeLanguage]
   );
 
   const clearListFilters = () => {
     setFilterType('all');
     setFilterEdition('all');
     setFilterClan('all');
+    setFilterKind('all');
     setFilterChronicle('all');
     setFilterStatus('active');
   };
@@ -1144,6 +1149,25 @@ export default function CharacterPage() {
                     <option value="all">{strings.list_filter_all || "All"}</option>
                     <option value="player">{strings.char_type_player || "Player Character"}</option>
                     <option value="npc">{strings.char_type_npc || "NPC"}</option>
+                  </select>
+                </label>
+
+                {/* Batch BA — Kind filter (Vampire / Human / Ghoul). Mirrors the
+                    PC/NPC Type filter shape: always-visible, four-way select.
+                    Legacy characters with no `kind` field count under
+                    "Vampire" per `sortAndFilterCharacters`. */}
+                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  {strings.list_filter_kind_label || strings.char_kind_label || "Kind"}
+                  <select
+                    value={filterKind}
+                    onChange={e => setFilterKind(e.target.value as CharacterKindFilter)}
+                    data-testid="list-filter-kind"
+                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                  >
+                    <option value="all">{strings.list_filter_all || "All"}</option>
+                    <option value="vampire">{strings.char_kind_vampire || "Vampire"}</option>
+                    <option value="human">{strings.char_kind_human || "Human"}</option>
+                    <option value="ghoul">{strings.char_kind_ghoul || "Ghoul"}</option>
                   </select>
                 </label>
 

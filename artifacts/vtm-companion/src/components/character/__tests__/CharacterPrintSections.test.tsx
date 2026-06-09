@@ -517,3 +517,114 @@ describe('print/PDF — V5 Generation row (Batch AV)', () => {
     expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
   });
 });
+
+describe('print/PDF — Human / Ghoul kind parity (Batch BA)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V5 Human print drops Hunger / Blood Potency / Humanity / clan-in-header rows', () => {
+    // Simulate a human created post-BA — no Hunger / BP / Humanity
+    // seeded. Empty clan because Human creation hides the clan select.
+    const human: V5Character = {
+      ...makeV5({ clan: '' }),
+      kind: 'human',
+    } as V5Character;
+    // Drop dormant vampire-only fields the makeV5 default seeds.
+    delete (human as { hunger?: number }).hunger;
+    delete (human as { bloodPotency?: number }).bloodPotency;
+    delete (human as { humanity?: number }).humanity;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_hunger);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_potency);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    // The header pill surfaces the Human kind in place of the clan name.
+    expect(text).toContain(UI_STRINGS.en.char_kind_human);
+  });
+
+  it('V20 Human print drops Blood Pool / Humanity / Generation / clan-in-header rows', () => {
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'human',
+    } as ClassicCharacter;
+    delete (human as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (human as { humanity?: number }).humanity;
+    delete (human as { generation?: number }).generation;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+    expect(text).toContain(UI_STRINGS.en.char_kind_human);
+  });
+
+  it('V5 Ghoul print drops Hunger / Blood Potency / Humanity', () => {
+    const ghoul: V5Character = {
+      ...makeV5({ clan: 'tremere' }),
+      kind: 'ghoul',
+    } as V5Character;
+    delete (ghoul as { hunger?: number }).hunger;
+    delete (ghoul as { bloodPotency?: number }).bloodPotency;
+    delete (ghoul as { humanity?: number }).humanity;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_hunger);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_potency);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    // Ghoul with a regnant clan keeps the clan name in the header.
+    // The kind pill should still appear so the printed sheet reads as
+    // "Ghoul" rather than "vampire of clan X". We assert both.
+    expect(text).toContain(UI_STRINGS.en.char_kind_ghoul);
+  });
+
+  it('V20 Ghoul WITH regnant clan keeps clan name in header but drops vampire-only trackers', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+    } as ClassicCharacter;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+  });
+
+  it('V20 Ghoul WITHOUT regnant clan replaces the clan with a Ghoul kind label in the header', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'ghoul',
+    } as ClassicCharacter;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.char_kind_ghoul);
+  });
+
+  it('Vampire print behavior is unchanged — Hunger / Humanity / Blood Pool / Blood Potency still render', () => {
+    const v5 = makeV5({ hunger: 2, bloodPotency: 3, humanity: 6 });
+    const v5Text = renderPrint(v5, 'en');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_hunger);
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_blood_potency);
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_humanity);
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    const v20 = makeClassic({ bloodPool: { current: 5, max: 10 }, humanity: 6, generation: 12 });
+    const v20Text = renderPrint(v20, 'en');
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_blood_pool);
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_humanity);
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_generation);
+  });
+
+  it('Print does NOT leak dormant Hunger / Humanity on a legacy human that still has them in storage', () => {
+    // A pre-BA human still carries `hunger: 1` etc. in its stored JSON.
+    // The print view's `kind === 'vampire'` gate must keep those rows
+    // from rendering regardless of what's on disk.
+    const dormantHuman: V5Character = {
+      ...makeV5({ clan: '', hunger: 1, bloodPotency: 1, humanity: 7 }),
+      kind: 'human',
+    } as V5Character;
+    const text = renderPrint(dormantHuman, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_hunger);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_potency);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+  });
+});

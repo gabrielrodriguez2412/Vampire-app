@@ -255,6 +255,15 @@ export function getCharacters(): Character[] {
         // branch does: V5 characters were saved without the field for
         // months, and an auto-injected number would silently appear on
         // every sheet on first reload after the upgrade.
+        //
+        // Batch BA — `bloodPotency`, `hunger`, `humanity` are vampire-only.
+        // Defaults are only injected when the character's kind is vampire;
+        // for humans / ghouls we preserve a numeric value already present
+        // on disk (legacy dormant data from AX/AY survives) but never seed
+        // a fresh default. This is what stops "Hunger 1" from re-appearing
+        // on a brand-new human reloaded from storage.
+        const v5Kind = normalizeCharacterKind(c?.kind);
+        const isV5Vampire = v5Kind === 'vampire';
         const v5: V5Character = {
           ...base,
           attributes: typeof base.attributes === 'object' && base.attributes !== null ? base.attributes : {},
@@ -262,10 +271,22 @@ export function getCharacters(): Character[] {
           disciplines: typeof base.disciplines === 'object' && base.disciplines !== null ? base.disciplines : {},
           health: typeof base.health === 'object' && base.health !== null ? base.health : { damage: 0, aggravated: 0, max: 5 },
           willpower: typeof base.willpower === 'object' && base.willpower !== null ? base.willpower : { damage: 0, aggravated: 0, max: 5 },
-          bloodPotency: typeof base.bloodPotency === 'number' ? base.bloodPotency : 1,
-          hunger: typeof base.hunger === 'number' ? base.hunger : 1,
-          humanity: typeof base.humanity === 'number' ? base.humanity : 7,
         } as V5Character;
+        if (typeof base.bloodPotency === 'number') {
+          v5.bloodPotency = base.bloodPotency;
+        } else if (isV5Vampire) {
+          v5.bloodPotency = 1;
+        }
+        if (typeof base.hunger === 'number') {
+          v5.hunger = base.hunger;
+        } else if (isV5Vampire) {
+          v5.hunger = 1;
+        }
+        if (typeof base.humanity === 'number') {
+          v5.humanity = base.humanity;
+        } else if (isV5Vampire) {
+          v5.humanity = 7;
+        }
         if (typeof base.generation === 'number' && Number.isFinite(base.generation)) {
           v5.generation = base.generation;
         } else {
@@ -276,19 +297,38 @@ export function getCharacters(): Character[] {
         }
         return v5;
       } else {
-        return {
+        // Batch BA — classic mortals (human / ghoul) skip vampire-only
+        // defaults the same way V5 mortals do. Saved classic vampires
+        // keep their pre-AX shape (generation 13, humanity 7, blood
+        // pool 10/10); newly created mortals carry none of those keys.
+        const classicKind = normalizeCharacterKind(c?.kind);
+        const isClassicVampire = classicKind === 'vampire';
+        const classic: ClassicCharacter = {
           ...base,
           attributes: typeof base.attributes === 'object' && base.attributes !== null ? base.attributes : {},
           abilities: typeof base.abilities === 'object' && base.abilities !== null ? base.abilities : {},
           disciplines: typeof base.disciplines === 'object' && base.disciplines !== null ? base.disciplines : {},
           backgrounds: typeof base.backgrounds === 'object' && base.backgrounds !== null ? base.backgrounds : {},
           virtues: typeof base.virtues === 'object' && base.virtues !== null ? base.virtues : { conscience: 1, selfControl: 1, courage: 1 },
-          bloodPool: typeof base.bloodPool === 'object' && base.bloodPool !== null ? base.bloodPool : { current: 10, max: 10 },
           willpower: typeof base.willpower === 'object' && base.willpower !== null ? base.willpower : { current: 5, max: 5 },
           health: normalizeClassicHealth(base.health),
-          generation: typeof base.generation === 'number' ? base.generation : 13,
-          humanity: typeof base.humanity === 'number' ? base.humanity : 7,
         } as ClassicCharacter;
+        if (typeof base.bloodPool === 'object' && base.bloodPool !== null) {
+          classic.bloodPool = base.bloodPool;
+        } else if (isClassicVampire) {
+          classic.bloodPool = { current: 10, max: 10 };
+        }
+        if (typeof base.generation === 'number') {
+          classic.generation = base.generation;
+        } else if (isClassicVampire) {
+          classic.generation = 13;
+        }
+        if (typeof base.humanity === 'number') {
+          classic.humanity = base.humanity;
+        } else if (isClassicVampire) {
+          classic.humanity = 7;
+        }
+        return classic;
       }
     });
   } catch (e) {
@@ -365,30 +405,45 @@ export function createEmptyCharacter(
     experience: 0,
   };
 
+  // Batch BA — vampire-only defaults are only seeded on `kind === 'vampire'`.
+  // Humans and ghouls keep the universal trackers (Health + Willpower) and
+  // the edition-appropriate attribute / skill / ability shape, but drop
+  // Hunger / Blood Potency / Humanity (V5) and Blood Pool / Generation /
+  // Humanity (classic). Ghoul Blood Pool is deferred (see audit §5.5) —
+  // a future batch will seed a small ghoul-sized pool when it ships the
+  // accompanying rules-aware tracker.
+  const isVampire = kind === 'vampire';
+
   if (edition === 'V5') {
-    return {
+    const v5: V5Character = {
       ...base,
       edition: 'V5',
-      bloodPotency: 1,
-      hunger: 1,
-      humanity: 7,
       health: { damage: 0, aggravated: 0, max: 5 },
       willpower: { damage: 0, aggravated: 0, max: 5 },
       skills: {},
     } as V5Character;
+    if (isVampire) {
+      v5.bloodPotency = 1;
+      v5.hunger = 1;
+      v5.humanity = 7;
+    }
+    return v5;
   } else {
-    return {
+    const classic: ClassicCharacter = {
       ...base,
       edition: edition as Exclude<EditionId, 'V5'>,
-      generation: 13,
-      humanity: 7,
       health: { bashing: 0, lethal: 0, aggravated: 0, max: CLASSIC_HEALTH_MAX },
-      bloodPool: { current: 10, max: 10 },
       willpower: { current: 5, max: 5 },
       virtues: { conscience: 1, selfControl: 1, courage: 1 },
       abilities: {},
       backgrounds: {},
     } as ClassicCharacter;
+    if (isVampire) {
+      classic.generation = 13;
+      classic.humanity = 7;
+      classic.bloodPool = { current: 10, max: 10 };
+    }
+    return classic;
   }
 }
 

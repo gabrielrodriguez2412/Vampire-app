@@ -20,6 +20,7 @@ import {
   sortAndFilterCharacters,
   CharacterSortKey,
   CharacterTypeFilter,
+  CharacterKindFilter,
   CharacterEditionFilter,
   CharacterClanFilter,
   CharacterChronicleFilter,
@@ -304,6 +305,8 @@ export default function CharacterPage() {
   const [filterType, setFilterType] = useState<CharacterTypeFilter>('all');
   const [filterEdition, setFilterEdition] = useState<CharacterEditionFilter>('all');
   const [filterClan, setFilterClan] = useState<CharacterClanFilter>('all');
+  // Batch BA — Kind filter (All / Vampire / Human / Ghoul).
+  const [filterKind, setFilterKind] = useState<CharacterKindFilter>('all');
   const [filterChronicle, setFilterChronicle] = useState<CharacterChronicleFilter>('all');
   // Archive status tab. Defaults to 'active' (mirrors the Chronicle list) so
   // archived characters are tucked away until the user switches tabs.
@@ -341,18 +344,20 @@ export default function CharacterPage() {
         filterType,
         filterEdition,
         filterClan,
+        filterKind,
         filterChronicle,
         filterStatus,
         validChronicleIds,
         language: activeLanguage,
       }),
-    [characters, sortBy, filterType, filterEdition, filterClan, filterChronicle, filterStatus, validChronicleIds, activeLanguage]
+    [characters, sortBy, filterType, filterEdition, filterClan, filterKind, filterChronicle, filterStatus, validChronicleIds, activeLanguage]
   );
 
   const clearListFilters = () => {
     setFilterType('all');
     setFilterEdition('all');
     setFilterClan('all');
+    setFilterKind('all');
     setFilterChronicle('all');
     setFilterStatus('active');
   };
@@ -1144,6 +1149,25 @@ export default function CharacterPage() {
                     <option value="all">{strings.list_filter_all || "All"}</option>
                     <option value="player">{strings.char_type_player || "Player Character"}</option>
                     <option value="npc">{strings.char_type_npc || "NPC"}</option>
+                  </select>
+                </label>
+
+                {/* Batch BA — Kind filter (Vampire / Human / Ghoul). Mirrors the
+                    PC/NPC Type filter shape: always-visible, four-way select.
+                    Legacy characters with no `kind` field count under
+                    "Vampire" per `sortAndFilterCharacters`. */}
+                <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                  {strings.list_filter_kind_label || strings.char_kind_label || "Kind"}
+                  <select
+                    value={filterKind}
+                    onChange={e => setFilterKind(e.target.value as CharacterKindFilter)}
+                    data-testid="list-filter-kind"
+                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary-container"
+                  >
+                    <option value="all">{strings.list_filter_all || "All"}</option>
+                    <option value="vampire">{strings.char_kind_vampire || "Vampire"}</option>
+                    <option value="human">{strings.char_kind_human || "Human"}</option>
+                    <option value="ghoul">{strings.char_kind_ghoul || "Ghoul"}</option>
                   </select>
                 </label>
 
@@ -2222,12 +2246,28 @@ export default function CharacterPage() {
                       )}
 
                       {/* Metadata pill row — clan, edition, PC/NPC, chronicle.
-                          All inline, pill-styled, mobile-friendly via flex-wrap. */}
+                          All inline, pill-styled, mobile-friendly via flex-wrap.
+
+                          Batch BA polish — the clan icon + clan name span is
+                          gated by kind, mirroring the card watermark fix:
+                          vampires always show clan, ghouls with a regnant
+                          clan show it, humans / regnant-less ghouls suppress
+                          it entirely. A non-vampire Kind pill is added next
+                          to the PC/NPC pill so the header always identifies
+                          the character even when no clan is shown. */}
                       <div className="mt-2 short-landscape:mt-1 flex flex-wrap items-center gap-2 short-landscape:gap-1.5 text-sm text-muted-foreground">
-                        <span className="inline-flex items-center gap-1">
-                          <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
-                          <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
-                        </span>
+                        {(() => {
+                          const sheetKind = activeChar.kind ?? 'vampire';
+                          const sheetClanData = clans.find(c => c.id === activeChar.clan);
+                          const sheetHasClanVisuals =
+                            sheetKind === 'vampire' || (sheetKind === 'ghoul' && !!sheetClanData);
+                          return sheetHasClanVisuals ? (
+                            <span className="inline-flex items-center gap-1" data-testid="sheet-header-clan">
+                              <span aria-hidden="true">{getClanIcon(activeChar.clan)}</span>
+                              <span className="text-foreground/80">{getClanName(activeChar.clan, activeChar.edition as EditionId)}</span>
+                            </span>
+                          ) : null;
+                        })()}
                         <span className="uppercase text-[10px] tracking-wider border border-border px-1.5 rounded bg-zinc-900">
                           {typeof activeChar.edition === 'string' ? activeChar.edition : 'Unknown'}
                         </span>
@@ -2241,6 +2281,20 @@ export default function CharacterPage() {
                         >
                           {getTypeShortLabel(activeChar.characterType)}
                         </span>
+                        {/* Batch BA polish — Kind pill mirrors the card pill so a
+                            non-vampire is identified at a glance, even when the
+                            clan icon+name section is suppressed. Vampires get
+                            no pill — that's the dominant case and the rest of
+                            the header is already vampire-shaped. */}
+                        {activeChar.kind && activeChar.kind !== 'vampire' && (
+                          <span
+                            className="uppercase text-[10px] tracking-wider border px-1.5 rounded border-amber-700/40 bg-amber-950/30 text-amber-200"
+                            title={activeChar.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                            data-testid="sheet-header-kind"
+                          >
+                            {activeChar.kind === 'ghoul' ? (strings.char_kind_ghoul || 'Ghoul') : (strings.char_kind_human || 'Human')}
+                          </span>
+                        )}
                         {/* Chronicle pill — click to assign/change. Always visible
                             (management metadata, not gated on Edit Mode). */}
                         <button

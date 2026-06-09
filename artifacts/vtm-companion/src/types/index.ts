@@ -336,9 +336,18 @@ export interface BaseCharacter {
 
 export interface V5Character extends BaseCharacter {
   edition: 'V5';
-  bloodPotency: number;
-  hunger: number;
-  humanity: number;
+  /**
+   * Batch BA — vampire-only V5 traits. Made optional so newly created
+   * humans / ghouls (kind !== 'vampire') no longer carry seeded defaults
+   * that surface in print. Existing saved V5 vampires keep all three
+   * fields exactly as before — `getCharacters` only injects the legacy
+   * defaults (1 / 1 / 7) when the underlying character is a vampire.
+   * Readers should treat `undefined` as "trait not applicable to this
+   * character" rather than "zero".
+   */
+  bloodPotency?: number;
+  hunger?: number;
+  humanity?: number;
   /**
    * Batch AV — Generation is shown as a basic-info field on the V5 sheet.
    * Kept optional (and intentionally NOT defaulted to 13 like the classic
@@ -379,7 +388,16 @@ export interface ClassicHealth {
 
 export interface ClassicCharacter extends BaseCharacter {
   edition: Exclude<EditionId, 'V5'>;
-  generation: number;
+  /**
+   * Batch BA — `generation`, `humanity`, and `bloodPool` are vampire-only
+   * traits on classic editions. They are now optional so newly created
+   * humans / ghouls do not carry seeded defaults that surface in print.
+   * Saved classic vampires keep their existing shape: `getCharacters`
+   * still injects the legacy defaults (13 / 7 / 10-10) but only when
+   * the underlying character is a vampire. Readers should treat
+   * `undefined` as "trait not applicable" rather than "zero".
+   */
+  generation?: number;
   nature?: string;
   demeanor?: string;
   attributes: Record<string, number>;
@@ -391,8 +409,8 @@ export interface ClassicCharacter extends BaseCharacter {
     selfControl: number;
     courage: number;
   };
-  humanity: number;
-  bloodPool: { current: number, max: number };
+  humanity?: number;
+  bloodPool?: { current: number, max: number };
   willpower: { current: number, max: number };
   health: ClassicHealth;
   merits?: string;

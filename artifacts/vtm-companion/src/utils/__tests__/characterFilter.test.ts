@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { sortAndFilterCharacters } from '../characterFilter';
-import { Character, EditionId, CharacterType, CharacterStatus } from '../../types';
+import { Character, CharacterKind, EditionId, CharacterType, CharacterStatus } from '../../types';
 
 // Minimal character fixtures — the helper only reads name, clan, edition,
 // characterType, status and updatedAt. Cast to Character to satisfy the call site.
@@ -12,6 +12,7 @@ function fixture(props: {
   status?: CharacterStatus;
   updatedAt?: string;
   chronicleId?: string;
+  kind?: CharacterKind;
 }): Character {
   return {
     id: `id-${props.name}`,
@@ -21,6 +22,7 @@ function fixture(props: {
     characterType: props.characterType,
     status: props.status,
     chronicleId: props.chronicleId,
+    kind: props.kind,
     createdAt: '2020-01-01T00:00:00.000Z',
     updatedAt: props.updatedAt ?? '2020-01-01T00:00:00.000Z',
   } as unknown as Character;
@@ -266,6 +268,79 @@ describe('sortAndFilterCharacters', () => {
 
     it('returns an empty array for empty input', () => {
       expect(sortAndFilterCharacters([], { sortBy: 'updated', language: 'en' })).toEqual([]);
+    });
+  });
+
+  describe('filter: kind (Batch BA)', () => {
+    function mixedRoster(): Character[] {
+      return [
+        fixture({ name: 'V-vampire', clan: 'brujah', edition: 'V5', kind: 'vampire' }),
+        fixture({ name: 'V-legacy', clan: 'tremere', edition: 'V20' /* no kind */ }),
+        fixture({ name: 'H-mortal', clan: '', edition: 'V5', kind: 'human' }),
+        fixture({ name: 'G-bound', clan: 'tremere', edition: 'V20', kind: 'ghoul' }),
+        fixture({ name: 'G-unbound', clan: '', edition: 'V5', kind: 'ghoul' }),
+      ];
+    }
+
+    it("'all' returns every character regardless of kind", () => {
+      const result = sortAndFilterCharacters(mixedRoster(), {
+        sortBy: 'name', language: 'en', filterKind: 'all',
+      });
+      expect(result.map(c => c.name).sort()).toEqual(
+        ['G-bound', 'G-unbound', 'H-mortal', 'V-legacy', 'V-vampire']
+      );
+    });
+
+    it("'vampire' includes legacy characters with missing kind", () => {
+      const result = sortAndFilterCharacters(mixedRoster(), {
+        sortBy: 'name', language: 'en', filterKind: 'vampire',
+      });
+      expect(result.map(c => c.name).sort()).toEqual(['V-legacy', 'V-vampire']);
+    });
+
+    it("'human' returns only humans", () => {
+      const result = sortAndFilterCharacters(mixedRoster(), {
+        sortBy: 'name', language: 'en', filterKind: 'human',
+      });
+      expect(result.map(c => c.name)).toEqual(['H-mortal']);
+    });
+
+    it("'ghoul' returns only ghouls regardless of regnant clan presence", () => {
+      const result = sortAndFilterCharacters(mixedRoster(), {
+        sortBy: 'name', language: 'en', filterKind: 'ghoul',
+      });
+      expect(result.map(c => c.name).sort()).toEqual(['G-bound', 'G-unbound']);
+    });
+
+    it('combines with filterEdition / filterClan / filterType (intersection semantics)', () => {
+      const roster = [
+        fixture({ name: 'V20 vampire tremere', clan: 'tremere', edition: 'V20', kind: 'vampire' }),
+        fixture({ name: 'V20 ghoul tremere',   clan: 'tremere', edition: 'V20', kind: 'ghoul' }),
+        fixture({ name: 'V5 ghoul tremere',    clan: 'tremere', edition: 'V5',  kind: 'ghoul' }),
+        fixture({ name: 'V5 ghoul brujah',     clan: 'brujah',  edition: 'V5',  kind: 'ghoul' }),
+      ];
+
+      // Filter to V5 ghouls with clan tremere → exactly one match.
+      const result = sortAndFilterCharacters(roster, {
+        sortBy: 'name', language: 'en',
+        filterKind: 'ghoul', filterEdition: 'V5', filterClan: 'tremere',
+      });
+      expect(result.map(c => c.name)).toEqual(['V5 ghoul tremere']);
+    });
+
+    it('treats an unrecognized stored kind value as vampire', () => {
+      const odd = fixture({ name: 'odd', clan: 'brujah', edition: 'V20' });
+      (odd as unknown as { kind: string }).kind = 'werewolf';
+
+      const vampiresOnly = sortAndFilterCharacters([odd], {
+        sortBy: 'name', language: 'en', filterKind: 'vampire',
+      });
+      expect(vampiresOnly.map(c => c.name)).toEqual(['odd']);
+
+      const humansOnly = sortAndFilterCharacters([odd], {
+        sortBy: 'name', language: 'en', filterKind: 'human',
+      });
+      expect(humansOnly).toEqual([]);
     });
   });
 });

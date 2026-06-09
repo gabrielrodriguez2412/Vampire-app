@@ -939,7 +939,7 @@ describe('DynamicSheet Hybrid View/Edit Mode', () => {
     // single Blood point in one tap without leaving the row).
     fireEvent.click(screen.getByTestId('blood-pool-cell-5'));
     const updated = mockOnChange.mock.calls[0][0] as ClassicCharacter;
-    expect(updated.bloodPool.current).toBe(4);
+    expect(updated.bloodPool?.current).toBe(4);
   });
 
   it('V5 Hunger blood drops are unaffected by the Batch AN classic tracker (regression check)', () => {

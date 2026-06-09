@@ -7,6 +7,14 @@ export type CharacterTypeFilter = 'all' | 'player' | 'npc';
 export type CharacterEditionFilter = 'all' | EditionId;
 export type CharacterClanFilter = 'all' | string;
 /**
+ * Batch BA — Character-kind filter (vampire / human / ghoul).
+ * `'all'` means "no filter". A character whose `kind` is missing or
+ * unrecognized counts as `'vampire'` so legacy saved characters
+ * (pre-Batch-AX) appear under the Vampire filter exactly as they
+ * always did.
+ */
+export type CharacterKindFilter = 'all' | 'vampire' | 'human' | 'ghoul';
+/**
  * Chronicle filter:
  *   - 'all'        — no filter
  *   - 'unassigned' — characters with no `chronicleId` (or whose id no longer resolves)
@@ -21,6 +29,8 @@ export interface CharacterListOptions {
   filterType?: CharacterTypeFilter;
   filterEdition?: CharacterEditionFilter;
   filterClan?: CharacterClanFilter;
+  /** Batch BA — kind filter. Defaults to 'all'. */
+  filterKind?: CharacterKindFilter;
   filterChronicle?: CharacterChronicleFilter;
   /**
    * Archive-status filter. Defaults to 'all' (no filtering) so existing callers
@@ -63,6 +73,7 @@ export function sortAndFilterCharacters(
     filterType = 'all',
     filterEdition = 'all',
     filterClan = 'all',
+    filterKind = 'all',
     filterChronicle = 'all',
     filterStatus = 'all',
     validChronicleIds,
@@ -81,6 +92,12 @@ export function sortAndFilterCharacters(
     }
     if (filterEdition !== 'all' && c.edition !== filterEdition) return false;
     if (filterClan !== 'all' && c.clan !== filterClan) return false;
+    if (filterKind !== 'all') {
+      // Missing / unrecognized kind → treated as 'vampire' so legacy
+      // characters appear under the Vampire facet.
+      const k = c.kind === 'human' || c.kind === 'ghoul' ? c.kind : 'vampire';
+      if (k !== filterKind) return false;
+    }
     if (filterChronicle !== 'all') {
       const linkedId = typeof c.chronicleId === 'string' && c.chronicleId ? c.chronicleId : undefined;
       // Treat dangling ids (not in validChronicleIds, when provided) as unassigned.

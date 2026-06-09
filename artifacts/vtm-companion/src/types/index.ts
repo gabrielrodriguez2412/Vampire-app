@@ -328,6 +328,17 @@ export interface BaseCharacter {
    * vampire-shaped sheet plus a visible Kind label.
    */
   kind?: CharacterKind;
+  /**
+   * Batch BE-1 — opt-in morality tracker visibility for Human / Ghoul
+   * sheets. Defaults to `false` (or absent → treated as `false`). When
+   * `true` and `kind` is `'human'` or `'ghoul'`, the sheet exposes the
+   * existing optional `humanity` field as a Humanity / Path dots-10
+   * tracker. Has no effect when `kind === 'vampire'` — vampire sheets
+   * always show Humanity per their schemas, regardless of this flag.
+   * Additive and backward-compatible: legacy characters that lack the
+   * field continue to render exactly as before.
+   */
+  trackMorality?: boolean;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

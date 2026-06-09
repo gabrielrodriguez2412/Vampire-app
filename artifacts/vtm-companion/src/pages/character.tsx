@@ -12,7 +12,7 @@ import {
 } from "@/data/characterGenerator";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId, CharacterType, CharacterStatus, Chronicle } from "@/types";
+import { Character, EditionId, LangCode, CharacterType, CharacterStatus, Chronicle } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
@@ -59,18 +59,21 @@ import {
 interface SuggestButtonProps {
   field: GeneratorField;
   edition: EditionId;
-  onGenerate: (field: GeneratorField, value: string) => void;
+  /** The active app language. Drives both edition gating and the
+   *  pool the suggestion is drawn from (Batch AQ review polish). */
+  language: LangCode;
+  onGenerate: (field: GeneratorField) => void;
   strings: Record<string, string>;
   fieldLabel: string;
 }
 
-function SuggestButton({ field, edition, onGenerate, strings, fieldLabel }: SuggestButtonProps) {
-  if (!isFieldAvailable(field, edition)) return null;
+function SuggestButton({ field, edition, language, onGenerate, strings, fieldLabel }: SuggestButtonProps) {
+  if (!isFieldAvailable(field, edition, language)) return null;
   const aria = (strings.gen_suggest_for || 'Suggest {field}').replace('{field}', fieldLabel);
   return (
     <button
       type="button"
-      onClick={() => onGenerate(field, generateSuggestion(field, edition))}
+      onClick={() => onGenerate(field)}
       aria-label={aria}
       title={aria}
       data-testid={`gen-suggest-${field}`}
@@ -202,6 +205,11 @@ export default function CharacterPage() {
   // field. The form input itself is NEVER mutated until the user
   // explicitly clicks "Use", so partially-typed entries are safe.
   const [suggestions, setSuggestions] = useState<Partial<Record<GeneratorField, string>>>({});
+  // Batch AQ review polish — remember the last value handed to each
+  // field so the picker can avoid handing the user the exact same
+  // string twice in a row for the same field. Session-local; cleared
+  // by resetCreateForm.
+  const [lastSuggestions, setLastSuggestions] = useState<Partial<Record<GeneratorField, string>>>({});
   // Inspiration panel — short prompts not tied to a specific form
   // input. Defaults to a fresh bundle on first render of the create
   // view; users can refresh with the on-panel button.
@@ -223,6 +231,7 @@ export default function CharacterPage() {
     setNewGeneration("");
     // Batch AQ — also clear any pending generator suggestions / inspiration.
     setSuggestions({});
+    setLastSuggestions({});
     setInspiration(null);
   };
 
@@ -244,8 +253,17 @@ export default function CharacterPage() {
     personality: undefined,
   };
 
-  const handleGenerateField = (field: GeneratorField, value: string) => {
-    setSuggestions(prev => ({ ...prev, [field]: value }));
+  /**
+   * Batch AQ review polish — the per-field generator now threads the
+   * active app language so Spanish users see Spanish prompts, and the
+   * last value handed to this field is excluded from the candidate
+   * pool so the user never sees the same string twice in a row.
+   */
+  const handleGenerateField = (field: GeneratorField) => {
+    const next = generateSuggestion(field, newEdition, activeLanguage, undefined, lastSuggestions[field]);
+    if (!next) return;
+    setSuggestions(prev => ({ ...prev, [field]: next }));
+    setLastSuggestions(prev => ({ ...prev, [field]: next }));
   };
   const handleUseSuggestion = (field: GeneratorField) => {
     const value = suggestions[field];
@@ -266,7 +284,7 @@ export default function CharacterPage() {
     });
   };
   const handleRefreshInspiration = () => {
-    setInspiration(generateInspirationBundle());
+    setInspiration(prev => generateInspirationBundle(activeLanguage, undefined, prev || undefined));
   };
 
   // Character management state
@@ -1554,6 +1572,7 @@ export default function CharacterPage() {
                     <SuggestButton
                       field="name"
                       edition={newEdition}
+                      language={activeLanguage}
                       onGenerate={handleGenerateField}
                       strings={strings}
                       fieldLabel={strings.sheet_name || 'Name'}
@@ -1717,6 +1736,7 @@ export default function CharacterPage() {
                       <SuggestButton
                         field="concept"
                         edition={newEdition}
+                        language={activeLanguage}
                         onGenerate={handleGenerateField}
                         strings={strings}
                         fieldLabel={strings.sheet_concept || 'Concept'}
@@ -1748,7 +1768,7 @@ export default function CharacterPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
-                          <SuggestButton field="ambition" edition={newEdition} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
+                          <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
                         </div>
                         <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
                         {suggestions.ambition && (
@@ -1758,7 +1778,7 @@ export default function CharacterPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
-                          <SuggestButton field="desire" edition={newEdition} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
+                          <SuggestButton field="desire" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
                         </div>
                         <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
                         {suggestions.desire && (
@@ -1768,7 +1788,7 @@ export default function CharacterPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
-                          <SuggestButton field="predator" edition={newEdition} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
+                          <SuggestButton field="predator" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
                         </div>
                         <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
                         {suggestions.predator && (
@@ -1781,7 +1801,7 @@ export default function CharacterPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
-                          <SuggestButton field="nature" edition={newEdition} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
+                          <SuggestButton field="nature" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
                         </div>
                         <Input value={newNature} onChange={e => setNewNature(e.target.value)} className="bg-background border-border" />
                         {suggestions.nature && (
@@ -1791,7 +1811,7 @@ export default function CharacterPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
-                          <SuggestButton field="demeanor" edition={newEdition} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
+                          <SuggestButton field="demeanor" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
                         </div>
                         <Input value={newDemeanor} onChange={e => setNewDemeanor(e.target.value)} className="bg-background border-border" />
                         {suggestions.demeanor && (

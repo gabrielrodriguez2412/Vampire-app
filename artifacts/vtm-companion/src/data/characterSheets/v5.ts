@@ -727,9 +727,10 @@ export const v5Schema: SheetSchema = {
         { id: 'predatorType', labelKey: 'sheet_predator_type', type: 'text' },
         // Batch AV — Generation is a basic-info field on the V5 sheet, mirroring
         // the classic schema layout. The underlying `V5Character.generation` is
-        // optional (see `types/index.ts`); the number-input control here will
-        // accept any integer the player enters and persists it as-is.
-        { id: 'generation', labelKey: 'sheet_generation', type: 'number' },
+        // optional (see `types/index.ts`); `optional: true` tells the number
+        // renderer to display a blank input (not a coerced `0`) for unset
+        // values and to clear back to `undefined` when emptied.
+        { id: 'generation', labelKey: 'sheet_generation', type: 'number', optional: true },
         { id: 'sire', labelKey: 'sheet_sire', type: 'text' },
       ]
     },

@@ -1174,19 +1174,49 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
             />
           </div>
         );
-      case 'number':
+      case 'number': {
+        // Batch AV — optional numeric fields (currently V5 Generation) render
+        // as a blank input when the underlying value is undefined / NaN /
+        // garbage, and write `undefined` back when the player clears the
+        // input. Every other number field keeps the legacy "coerce to 0"
+        // behavior so existing trackers (Experience, classic Generation)
+        // continue to display 0 / their stored default rather than blank.
+        const isOptional = field.optional === true;
+        const numericValue =
+          typeof value === 'number' && Number.isFinite(value)
+            ? value
+            : isOptional
+              ? null
+              : parseInt(String(value)) || 0;
+        const inputValue = numericValue == null ? '' : numericValue;
+        const onChangeFor = (raw: string) => {
+          if (isOptional) {
+            const trimmed = raw.trim();
+            if (trimmed === '') {
+              handleUpdate(field.id, undefined, field);
+              return;
+            }
+            const parsed = parseInt(trimmed, 10);
+            handleUpdate(field.id, Number.isFinite(parsed) ? parsed : undefined, field);
+            return;
+          }
+          handleUpdate(field.id, parseInt(raw) || 0, field);
+        };
         return (
           <div key={field.id} className="flex flex-col gap-1">
             <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
-            <Input 
+            <Input
               type="number"
-              value={typeof value === 'number' ? value : parseInt(String(value)) || 0} 
-              onChange={e => handleUpdate(field.id, parseInt(e.target.value) || 0, field)} 
+              value={inputValue}
+              onChange={e => onChangeFor(e.target.value)}
               readOnly={isFieldReadOnly(field)}
+              placeholder={isOptional ? '—' : undefined}
+              data-testid={`sheet-number-${field.id}`}
               className="bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary-container w-20"
             />
           </div>
         );
+      }
       case 'dots-5':
       case 'dots-10':
         const max = field.type === 'dots-10' ? 10 : 5;

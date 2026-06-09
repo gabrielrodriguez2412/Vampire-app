@@ -10,6 +10,16 @@ export interface FieldDef {
   special?: 'health' | 'willpower' | 'bloodPool' | 'hunger';
   /** If true, this field stays editable even in View Mode (gameplay trackers). */
   gameplay?: boolean;
+  /**
+   * Batch AV — opt-in for optional numeric fields. When `true` on a
+   * `type: 'number'` field, the renderer displays a blank input (not a
+   * forced `0`) for undefined / non-numeric values, and writes back
+   * `undefined` when the input is cleared. Used for V5 Generation, which
+   * is intentionally not defaulted at the storage layer. Default behavior
+   * (omitted / `false`) preserves the legacy "coerce to 0" rendering used
+   * by every existing number field.
+   */
+  optional?: boolean;
 }
 
 export interface SectionDef {

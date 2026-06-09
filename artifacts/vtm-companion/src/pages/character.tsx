@@ -3,10 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart, HeartOff, Archive, ArchiveRestore, ListChecks, CheckSquare, Square } from "lucide-react";
+import { User, Trash2, Plus, Users, ChevronLeft, Check, Edit3, Copy, Pencil, X, Download, Upload, MoreHorizontal, Printer, Database, ScrollText, Heart, HeartOff, Archive, ArchiveRestore, ListChecks, CheckSquare, Square, Sparkles, RotateCcw } from "lucide-react";
+import {
+  generateSuggestion,
+  generateInspirationBundle,
+  isFieldAvailable,
+  GeneratorField,
+} from "@/data/characterGenerator";
 import { useAppContext } from "@/context/AppContext";
 import { UI_STRINGS } from "@/i18n/ui";
-import { Character, EditionId, CharacterType, CharacterStatus, Chronicle } from "@/types";
+import { Character, EditionId, LangCode, CharacterType, CharacterStatus, Chronicle } from "@/types";
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
@@ -39,6 +45,95 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+
+/**
+ * Batch AQ — Suggest button + preview chip used by the create-form
+ * generator. The trigger never mutates the underlying input; clicking
+ * "Generate" populates a `pendingValue` for the field, which the
+ * caller renders as a small chip below the input. The chip carries
+ * "Use" and "Dismiss" actions; "Use" is the only path that writes
+ * into the form input. If the input is non-empty when the user
+ * clicks "Use", a short warning is shown so the replacement is never
+ * silent.
+ */
+interface SuggestButtonProps {
+  field: GeneratorField;
+  edition: EditionId;
+  /** The active app language. Drives both edition gating and the
+   *  pool the suggestion is drawn from (Batch AQ review polish). */
+  language: LangCode;
+  onGenerate: (field: GeneratorField) => void;
+  strings: Record<string, string>;
+  fieldLabel: string;
+}
+
+function SuggestButton({ field, edition, language, onGenerate, strings, fieldLabel }: SuggestButtonProps) {
+  if (!isFieldAvailable(field, edition, language)) return null;
+  const aria = (strings.gen_suggest_for || 'Suggest {field}').replace('{field}', fieldLabel);
+  return (
+    <button
+      type="button"
+      onClick={() => onGenerate(field)}
+      aria-label={aria}
+      title={aria}
+      data-testid={`gen-suggest-${field}`}
+      className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+    >
+      <Sparkles className="w-3 h-3" aria-hidden />
+      {strings.gen_suggest || 'Suggest'}
+    </button>
+  );
+}
+
+interface SuggestionChipProps {
+  field: GeneratorField;
+  value: string;
+  inputHasContent: boolean;
+  onUse: () => void;
+  onDismiss: () => void;
+  strings: Record<string, string>;
+}
+
+function SuggestionChip({ field, value, inputHasContent, onUse, onDismiss, strings }: SuggestionChipProps) {
+  return (
+    <div
+      data-testid={`gen-chip-${field}`}
+      className="mt-1.5 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5"
+    >
+      <Sparkles className="w-3 h-3 mt-1 text-primary shrink-0" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs italic text-foreground/80 break-words">{value}</p>
+        {inputHasContent && (
+          <p className="text-[10px] text-amber-300/80 mt-0.5">
+            {strings.gen_replace_warning || 'This will replace your text.'}
+          </p>
+        )}
+      </div>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onUse}
+        className="h-6 px-2 text-[10px] uppercase tracking-wider"
+        data-testid={`gen-use-${field}`}
+      >
+        <Check className="w-3 h-3 mr-1" /> {strings.gen_use || 'Use'}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={onDismiss}
+        aria-label={strings.gen_dismiss || 'Dismiss'}
+        title={strings.gen_dismiss || 'Dismiss'}
+        className="h-6 w-6 shrink-0"
+        data-testid={`gen-dismiss-${field}`}
+      >
+        <X className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+}
 
 class CharacterErrorBoundary extends Component<{ onReset: () => void; children?: React.ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -104,6 +199,22 @@ export default function CharacterPage() {
   const [newSire, setNewSire] = useState("");
   const [newGeneration, setNewGeneration] = useState("");
 
+  // Batch AQ — pending random-generator suggestions, keyed by the
+  // GeneratorField id ('name', 'concept', 'ambition', ...). A null/
+  // missing value means no suggestion is currently shown for that
+  // field. The form input itself is NEVER mutated until the user
+  // explicitly clicks "Use", so partially-typed entries are safe.
+  const [suggestions, setSuggestions] = useState<Partial<Record<GeneratorField, string>>>({});
+  // Batch AQ review polish — remember the last value handed to each
+  // field so the picker can avoid handing the user the exact same
+  // string twice in a row for the same field. Session-local; cleared
+  // by resetCreateForm.
+  const [lastSuggestions, setLastSuggestions] = useState<Partial<Record<GeneratorField, string>>>({});
+  // Inspiration panel — short prompts not tied to a specific form
+  // input. Defaults to a fresh bundle on first render of the create
+  // view; users can refresh with the on-panel button.
+  const [inspiration, setInspiration] = useState<{ appearance: string; personality: string } | null>(null);
+
   const resetCreateForm = () => {
     setNewName("");
     setNewClan("");
@@ -118,6 +229,62 @@ export default function CharacterPage() {
     setNewDemeanor("");
     setNewSire("");
     setNewGeneration("");
+    // Batch AQ — also clear any pending generator suggestions / inspiration.
+    setSuggestions({});
+    setLastSuggestions({});
+    setInspiration(null);
+  };
+
+  // Batch AQ — generator helpers. Generation is read-only; applying a
+  // suggestion is the only path that writes into a form input, and the
+  // user has to click "Use" explicitly. Each setter list mirrors the
+  // useState pairs declared above.
+  const fieldSetters: Record<GeneratorField, ((next: string) => void) | undefined> = {
+    name: setNewName,
+    concept: setNewConcept,
+    ambition: setNewAmbition,
+    desire: setNewDesire,
+    predator: setNewPredatorType,
+    nature: setNewNature,
+    demeanor: setNewDemeanor,
+    // The inspiration-only fields don't have a target input — they live
+    // in the Inspiration panel and are never auto-applied.
+    appearance: undefined,
+    personality: undefined,
+  };
+
+  /**
+   * Batch AQ review polish — the per-field generator now threads the
+   * active app language so Spanish users see Spanish prompts, and the
+   * last value handed to this field is excluded from the candidate
+   * pool so the user never sees the same string twice in a row.
+   */
+  const handleGenerateField = (field: GeneratorField) => {
+    const next = generateSuggestion(field, newEdition, activeLanguage, undefined, lastSuggestions[field]);
+    if (!next) return;
+    setSuggestions(prev => ({ ...prev, [field]: next }));
+    setLastSuggestions(prev => ({ ...prev, [field]: next }));
+  };
+  const handleUseSuggestion = (field: GeneratorField) => {
+    const value = suggestions[field];
+    if (!value) return;
+    const setter = fieldSetters[field];
+    if (setter) setter(value);
+    setSuggestions(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+  const handleDismissSuggestion = (field: GeneratorField) => {
+    setSuggestions(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+  const handleRefreshInspiration = () => {
+    setInspiration(prev => generateInspirationBundle(activeLanguage, undefined, prev || undefined));
   };
 
   // Character management state
@@ -1400,8 +1567,28 @@ export default function CharacterPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{strings.sheet_name}</label>
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-sm font-medium">{strings.sheet_name}</label>
+                    <SuggestButton
+                      field="name"
+                      edition={newEdition}
+                      language={activeLanguage}
+                      onGenerate={handleGenerateField}
+                      strings={strings}
+                      fieldLabel={strings.sheet_name || 'Name'}
+                    />
+                  </div>
                   <Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-background border-border" placeholder="e.g. Jeanette Voerman" />
+                  {suggestions.name && (
+                    <SuggestionChip
+                      field="name"
+                      value={suggestions.name}
+                      inputHasContent={newName.trim().length > 0}
+                      onUse={() => handleUseSuggestion('name')}
+                      onDismiss={() => handleDismissSuggestion('name')}
+                      strings={strings}
+                    />
+                  )}
                 </div>
 
                 {/* Character type — Player Character vs NPC */}
@@ -1503,9 +1690,69 @@ export default function CharacterPage() {
                     {strings.sheet_optional_details || "Optional details"}
                   </p>
 
+                  {/* Batch AQ — Inspiration panel. Shows short evocative
+                      prompts (appearance + personality hook) that the user
+                      can read while filling out other fields. Nothing here
+                      auto-fills any input — the panel is pure inspiration. */}
+                  <div className="rounded-md border border-primary/20 bg-primary/5 p-3 space-y-2" data-testid="gen-inspiration-panel">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium uppercase tracking-wider text-primary/90 flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" aria-hidden />
+                        {strings.gen_inspiration_title || 'Inspiration'}
+                      </p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleRefreshInspiration}
+                        className="h-6 px-2 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+                        data-testid="gen-inspiration-refresh"
+                      >
+                        <RotateCcw className="w-3 h-3 mr-1" />
+                        {strings.gen_refresh || 'New suggestion'}
+                      </Button>
+                    </div>
+                    {inspiration ? (
+                      <div className="space-y-1 text-xs text-foreground/85">
+                        <p data-testid="gen-inspiration-appearance">
+                          <span className="text-muted-foreground italic">{strings.gen_appearance_label || 'Appearance'}: </span>
+                          {inspiration.appearance}
+                        </p>
+                        <p data-testid="gen-inspiration-personality">
+                          <span className="text-muted-foreground italic">{strings.gen_personality_label || 'Personal hook'}: </span>
+                          {inspiration.personality}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] italic text-muted-foreground" data-testid="gen-inspiration-subtitle">
+                        {strings.gen_inspiration_subtitle || 'Optional prompts — nothing fills in until you use it.'}
+                      </p>
+                    )}
+                  </div>
+
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{strings.sheet_concept || "Concept"}</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-sm font-medium">{strings.sheet_concept || "Concept"}</label>
+                      <SuggestButton
+                        field="concept"
+                        edition={newEdition}
+                        language={activeLanguage}
+                        onGenerate={handleGenerateField}
+                        strings={strings}
+                        fieldLabel={strings.sheet_concept || 'Concept'}
+                      />
+                    </div>
                     <Input value={newConcept} onChange={e => setNewConcept(e.target.value)} className="bg-background border-border" />
+                    {suggestions.concept && (
+                      <SuggestionChip
+                        field="concept"
+                        value={suggestions.concept}
+                        inputHasContent={newConcept.trim().length > 0}
+                        onUse={() => handleUseSuggestion('concept')}
+                        onDismiss={() => handleDismissSuggestion('concept')}
+                        strings={strings}
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -1519,27 +1766,57 @@ export default function CharacterPage() {
                   {newEdition === 'V5' ? (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
+                          <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
+                        </div>
                         <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
+                        {suggestions.ambition && (
+                          <SuggestionChip field="ambition" value={suggestions.ambition} inputHasContent={newAmbition.trim().length > 0} onUse={() => handleUseSuggestion('ambition')} onDismiss={() => handleDismissSuggestion('ambition')} strings={strings} />
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
+                          <SuggestButton field="desire" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
+                        </div>
                         <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
+                        {suggestions.desire && (
+                          <SuggestionChip field="desire" value={suggestions.desire} inputHasContent={newDesire.trim().length > 0} onUse={() => handleUseSuggestion('desire')} onDismiss={() => handleDismissSuggestion('desire')} strings={strings} />
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
+                          <SuggestButton field="predator" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
+                        </div>
                         <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
+                        {suggestions.predator && (
+                          <SuggestionChip field="predator" value={suggestions.predator} inputHasContent={newPredatorType.trim().length > 0} onUse={() => handleUseSuggestion('predator')} onDismiss={() => handleDismissSuggestion('predator')} strings={strings} />
+                        )}
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
+                          <SuggestButton field="nature" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
+                        </div>
                         <Input value={newNature} onChange={e => setNewNature(e.target.value)} className="bg-background border-border" />
+                        {suggestions.nature && (
+                          <SuggestionChip field="nature" value={suggestions.nature} inputHasContent={newNature.trim().length > 0} onUse={() => handleUseSuggestion('nature')} onDismiss={() => handleDismissSuggestion('nature')} strings={strings} />
+                        )}
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
+                          <SuggestButton field="demeanor" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
+                        </div>
                         <Input value={newDemeanor} onChange={e => setNewDemeanor(e.target.value)} className="bg-background border-border" />
+                        {suggestions.demeanor && (
+                          <SuggestionChip field="demeanor" value={suggestions.demeanor} inputHasContent={newDemeanor.trim().length > 0} onUse={() => handleUseSuggestion('demeanor')} onDismiss={() => handleDismissSuggestion('demeanor')} strings={strings} />
+                        )}
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">{strings.sheet_sire || "Sire"}</label>

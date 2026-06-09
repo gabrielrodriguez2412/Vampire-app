@@ -102,6 +102,123 @@ export default function Home() {
     return clans.find(c => c.id === clanId)?.icon || '🦇';
   };
 
+  // Batch AU (post-review rework) — "At the Table" play-support helpers.
+  //
+  // The earlier Recommended-Next iteration duplicated the Continue card,
+  // Recent Activity rows, and the Tools nav card. Manual review asked for
+  // a section that complements (not repeats) the rest of Home, so this
+  // bottom row is now a fixed set of edition-aware rules/play references:
+  //
+  //   • V5:       Dice & Rouse Check, Hunger, Willpower, Humanity, Health
+  //   • Classic:  Dice,               Blood Pool, Willpower, Humanity, Health
+  //
+  // Card titles are kept short to avoid mid-row truncation on the 5-up
+  // desktop grid; the longer concepts ("Path", "damage tracks", "soak")
+  // live in the subtitle, which is line-clamped to 2 lines.
+  //
+  // No character/chronicle/session data flows through these cards on
+  // purpose — the top of Home already covers "continue / resume" via the
+  // hero card and Recent Activity columns. The Tools/Rules/Disciplines
+  // secondary rail above still owns broad navigation; this row is for the
+  // specific rules a Storyteller or player reaches for during a session.
+  //
+  // Rule-id deep links exist for everything except the dice cards (the
+  // Tools page itself is the play surface for dice and the V5 Rouse Check
+  // card), which is the routing the brief asked us to use.
+  const atTheTable = useMemo(() => {
+    const isV5 = activeEdition === 'V5';
+
+    type AtCard = {
+      key: string;
+      icon: string;
+      title: string;
+      subtitle: string;
+      onClick: () => void;
+    };
+
+    if (isV5) {
+      return [
+        {
+          key: 'dice-rouse',
+          icon: 'casino',
+          title: strings.home_at_dice_rouse_title || 'Dice & Rouse Check',
+          subtitle: strings.home_at_dice_subtitle || 'Open the dice roller and play helpers.',
+          onClick: () => setLocation('/compendium/herramientas'),
+        },
+        {
+          key: 'hunger',
+          icon: 'bloodtype',
+          title: strings.hunger || 'Hunger',
+          subtitle: strings.home_at_hunger_subtitle || 'How V5 Hunger feeds the Beast.',
+          onClick: () => setLocation('/compendium/reglas/hunger-dice'),
+        },
+        {
+          key: 'willpower',
+          icon: 'psychology',
+          title: strings.willpower || 'Willpower',
+          subtitle: strings.home_at_willpower_subtitle || 'Resolve, resisting frenzy, rerolls.',
+          onClick: () => setLocation('/compendium/reglas/willpower'),
+        },
+        {
+          key: 'humanity',
+          icon: 'heart_broken',
+          title: strings.humanity || 'Humanity',
+          subtitle: strings.home_at_humanity_subtitle || 'Tracking conscience and stains.',
+          onClick: () => setLocation('/compendium/reglas/humanity-loss'),
+        },
+        {
+          key: 'health',
+          icon: 'healing',
+          title: strings.health || 'Health',
+          subtitle: strings.home_at_health_subtitle || 'Damage tracks, soak, and healing.',
+          onClick: () => setLocation('/compendium/reglas/healing-v5'),
+        },
+      ] satisfies AtCard[];
+    }
+
+    // V20 / REVISED / 2ND / 1ST — classic play support set. Rouse Check is
+    // omitted by design (it does not exist outside V5), Hunger swaps to
+    // Blood Pool, and Willpower / Humanity / Health route to the classic
+    // rule splits.
+    return [
+      {
+        key: 'dice',
+        icon: 'casino',
+        title: strings.home_topic_dice || 'Dice',
+        subtitle: strings.home_at_dice_subtitle || 'Open the dice roller and play helpers.',
+        onClick: () => setLocation('/compendium/herramientas'),
+      },
+      {
+        key: 'blood-pool',
+        icon: 'bloodtype',
+        title: strings.home_topic_blood_pool || 'Blood Pool',
+        subtitle: strings.home_at_blood_pool_subtitle || 'How classic Blood points are spent.',
+        onClick: () => setLocation('/compendium/reglas/blood-pool'),
+      },
+      {
+        key: 'willpower',
+        icon: 'psychology',
+        title: strings.willpower || 'Willpower',
+        subtitle: strings.home_at_willpower_subtitle || 'Resolve, resisting frenzy, rerolls.',
+        onClick: () => setLocation('/compendium/reglas/willpower-classic'),
+      },
+      {
+        key: 'humanity',
+        icon: 'heart_broken',
+        title: strings.humanity || 'Humanity',
+        subtitle: strings.home_at_humanity_classic_subtitle || 'Conscience, morality, or the chosen Path.',
+        onClick: () => setLocation('/compendium/reglas/humanity-classic'),
+      },
+      {
+        key: 'health',
+        icon: 'healing',
+        title: strings.health || 'Health',
+        subtitle: strings.home_at_health_subtitle || 'Damage tracks, soak, and healing.',
+        onClick: () => setLocation('/compendium/reglas/healing-classic'),
+      },
+    ] satisfies AtCard[];
+  }, [activeEdition, strings, setLocation]);
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-col gap-8">
 
@@ -470,38 +587,36 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick topic chips — frequent jump-offs into Rules. Edition-aware
-            ids mirror the existing `humanity-loss` vs `humanity-classic`
-            pattern from the prior bento card. */}
-        <div className="mt-5">
-          <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-2">
-            {strings.home_rules_quick_topics || 'Quick topics'}
+        {/* Batch AU (post-review) — "At the Table" play-support row.
+            Replaces the prior Recommended-Next cards (which duplicated
+            Continue / Recent Activity / Tools). This row is a fixed set
+            of edition-aware rules and play helpers — five cards, no data
+            duplication, no usage tracking. See `atTheTable` above for
+            per-edition card composition. */}
+        <div className="mt-5" data-testid="home-at-table">
+          <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-primary-container mb-1">
+            {strings.home_at_table_title || 'At the Table'}
           </p>
-          <div className="flex flex-wrap gap-2" data-testid="home-rules-topics">
-            {[
-              { id: 'combat-overview', label: strings.home_topic_combat || 'Combat' },
-              { id: 'dice-pools', label: strings.home_topic_dice || 'Dice' },
-              { id: activeEdition === 'V5' ? 'healing-v5' : 'healing-classic', label: strings.health || 'Health' },
-              { id: 'hunger-dice', label: strings.hunger || 'Hunger' },
-              { id: activeEdition === 'V5' ? 'willpower' : 'willpower-classic', label: strings.willpower || 'Willpower' },
-              { id: activeEdition === 'V5' ? 'humanity-loss' : 'humanity-classic', label: strings.humanity || 'Humanity' },
-              { id: 'blood-pool', label: strings.home_topic_blood_pool || 'Blood Pool' },
-            ].map(t => (
-              <button
-                key={t.label}
-                type="button"
-                onClick={() => setLocation(`/compendium/reglas/${t.id}`)}
-                className="text-xs font-sans uppercase tracking-widest border border-zinc-800 bg-zinc-950 hover:border-primary-container hover:text-primary-container text-zinc-300 px-3 py-1.5 transition-colors"
-              >
-                {t.label}
-              </button>
+          <p className="text-zinc-400 font-sans text-xs mb-3">
+            {strings.home_at_table_subtitle || 'Fast references and play helpers for the current edition.'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {atTheTable.map(card => (
+              <RecommendationCard
+                key={card.key}
+                icon={card.icon}
+                title={card.title}
+                subtitle={card.subtitle}
+                onClick={card.onClick}
+                testId={`home-at-${card.key}`}
+              />
             ))}
           </div>
         </div>
 
         {/* Mobile-only Open Compendium link — the header chip is hidden on
             narrow screens to keep the title/subtitle uncrowded, so we surface
-            it again below the chips. */}
+            it again at the bottom of this section. */}
         <button
           type="button"
           onClick={() => setLocation('/compendium')}
@@ -542,6 +657,39 @@ function SecondaryNavCard({ icon, title, description, onClick, testId }: Seconda
       <div className="min-w-0 flex-1">
         <h3 className="font-serif text-base sm:text-lg uppercase text-on-surface group-hover:text-primary-container transition-colors leading-tight">{title}</h3>
         <p className="text-zinc-400 font-sans text-xs mt-1 line-clamp-2">{description}</p>
+      </div>
+      <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-primary-container shrink-0 mt-1" aria-hidden="true" />
+    </button>
+  );
+}
+
+interface RecommendationCardProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+  testId?: string;
+}
+
+/**
+ * Compact recommendation card used by the Home "Recommended Next" row.
+ *
+ * Visually a sibling of `SecondaryNavCard` but lighter and tuned for the
+ * dense 4-up desktop grid; subtitles can carry a dynamic name (character /
+ * chronicle / session) and are clamped to two lines to keep the row even.
+ */
+function RecommendationCard({ icon, title, subtitle, onClick, testId }: RecommendationCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className="text-left bg-zinc-950 border border-zinc-900 p-3 hover:border-primary-container hover:bg-zinc-900/60 transition-colors group flex items-start gap-2.5 min-h-[68px]"
+    >
+      <span className="material-symbols-outlined text-primary-container text-xl shrink-0 mt-0.5" aria-hidden="true">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <h4 className="font-serif text-sm text-on-surface group-hover:text-primary-container transition-colors leading-tight truncate">{title}</h4>
+        <p className="text-zinc-400 font-sans text-[11px] mt-0.5 line-clamp-2">{subtitle}</p>
       </div>
       <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-primary-container shrink-0 mt-1" aria-hidden="true" />
     </button>

@@ -230,7 +230,14 @@ export function getCharacters(): Character[] {
 
       // Provide fallback for deeply nested structs
       if (edition === 'V5') {
-        return {
+        // Batch AV — V5 Generation is optional. Preserve a numeric value
+        // when present (including 0 — a valid edge from an import) and
+        // strip non-numeric / NaN / garbage so it stays `undefined`. We
+        // deliberately do NOT inject a 13 default the way the classic
+        // branch does: V5 characters were saved without the field for
+        // months, and an auto-injected number would silently appear on
+        // every sheet on first reload after the upgrade.
+        const v5: V5Character = {
           ...base,
           attributes: typeof base.attributes === 'object' && base.attributes !== null ? base.attributes : {},
           skills: typeof base.skills === 'object' && base.skills !== null ? base.skills : {},
@@ -241,6 +248,15 @@ export function getCharacters(): Character[] {
           hunger: typeof base.hunger === 'number' ? base.hunger : 1,
           humanity: typeof base.humanity === 'number' ? base.humanity : 7,
         } as V5Character;
+        if (typeof base.generation === 'number' && Number.isFinite(base.generation)) {
+          v5.generation = base.generation;
+        } else {
+          // Remove a NaN / string / null value that may have been spread in
+          // from `...c`. Without this, malformed storage could surface as
+          // `generation: NaN` on the sheet.
+          delete (v5 as unknown as Record<string, unknown>).generation;
+        }
+        return v5;
       } else {
         return {
           ...base,

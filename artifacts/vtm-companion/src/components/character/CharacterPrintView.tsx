@@ -371,6 +371,9 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   if (!isV5 && cl?.nature) identityRows.push({ label: strings.sheet_nature || "Nature", value: cl.nature });
   if (!isV5 && cl?.demeanor) identityRows.push({ label: strings.sheet_demeanor || "Demeanor", value: cl.demeanor });
   if (!isV5 && typeof cl?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(cl.generation) });
+  // Batch AV — V5 Generation is optional on V5 characters. Mirror the classic
+  // print row: only emit when the player has actually filled it in.
+  if (isV5 && typeof v5?.generation === "number") identityRows.push({ label: strings.sheet_generation || "Generation", value: String(v5.generation) });
 
   // Tracker rows — these are always meaningful (created with defaults).
   const trackerRows: Row[] = [];

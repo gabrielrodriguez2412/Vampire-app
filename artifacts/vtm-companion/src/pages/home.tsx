@@ -11,7 +11,7 @@ import { getAllChronicleSessions } from "@/services/chronicleSessionStorage";
 import { getClanImageSrc, getClanHeroObjectPosition } from "@/utils/clanImage";
 import type { Character, Chronicle, ChronicleSession, EditionId } from "@/types";
 import {
-  User, ScrollText, CalendarDays, BookOpen, Users, Flame, ArrowRight, ChevronLeft, ChevronRight,
+  User, ScrollText, CalendarDays, BookOpen, Flame, ArrowRight, ChevronLeft, ChevronRight,
 } from "lucide-react";
 
 /*
@@ -393,75 +393,122 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Dark Protocols Bento Grid — kept compact via shorter row height. */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-2xl md:text-3xl font-medium text-on-surface uppercase tracking-tight">{strings.rulesTitle}</h2>
+      {/* Batch AT — Rules Quick Access gateway.
+          Replaces the prior scattered bento grid (Combat Summary + Disciplines
+          + Clans + Humanity tiles) with a clearer hierarchy:
+            primary "Core Rules" card  →  secondary nav cards  →  topic chips.
+          The chips are edition-aware where the underlying rule is split
+          (Willpower/Humanity/Healing have V5 vs classic variants). */}
+      <section data-testid="home-rules-quick-access">
+        <div className="flex items-end justify-between mb-4 gap-4">
+          <div className="min-w-0">
+            <h2 className="font-serif text-2xl md:text-3xl font-medium text-on-surface uppercase tracking-tight">
+              {strings.home_rules_quick_title || 'Rules Quick Access'}
+            </h2>
+            <p className="text-zinc-400 font-sans text-xs sm:text-sm mt-1">
+              {strings.home_rules_quick_subtitle || 'Find the most used rules, references, and play tools.'}
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => setLocation('/compendium')}
-            className="text-primary-container font-sans text-xs font-semibold tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity uppercase"
+            className="text-primary-container font-sans text-xs font-semibold tracking-widest hidden sm:flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity uppercase whitespace-nowrap shrink-0"
           >
             {strings.home_action_open_compendium || 'Open compendium'} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:h-[320px]">
-          <div
-            className="md:col-span-2 md:row-span-2 bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group cursor-pointer"
-            onClick={() => setLocation('/compendium/reglas/combat-overview')}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Primary card — Core Rules. Spans 2/3 of the row on desktop so it
+              reads as the obvious entry point and the secondary cards form a
+              balanced rail on the side. */}
+          <button
+            type="button"
+            onClick={() => setLocation('/compendium/reglas')}
+            data-testid="home-rules-core"
+            className="md:col-span-2 text-left bg-gradient-to-br from-primary/15 via-zinc-900 to-zinc-900 border border-primary/30 hover:border-primary/60 transition-colors p-6 flex flex-col justify-between group relative overflow-hidden min-h-[180px]"
           >
-            <div className="absolute top-0 right-0 p-6 opacity-10 text-[80px] leading-none material-symbols-outlined">swords</div>
+            <div className="absolute top-0 right-0 p-6 opacity-10 text-[80px] leading-none material-symbols-outlined" aria-hidden="true">menu_book</div>
             <div>
-              <span className="material-symbols-outlined text-primary-container mb-3 text-2xl">swords</span>
-              <h3 className="font-serif text-2xl mb-2 uppercase">{strings.combatSummary}</h3>
-              <p className="text-zinc-400 font-sans text-sm max-w-sm">{strings.combatDesc}</p>
+              <span className="material-symbols-outlined text-primary-container mb-3 text-2xl" aria-hidden="true">menu_book</span>
+              <h3 className="font-serif text-2xl uppercase mb-2 text-on-surface">{strings.home_rules_core_title || 'Core Rules'}</h3>
+              <p className="text-zinc-400 font-sans text-sm max-w-md">
+                {strings.home_rules_core_desc || 'Combat, dice, damage, Hunger or Blood Pool, Willpower, and Humanity or Path.'}
+              </p>
             </div>
-            <button className="w-fit text-on-surface font-sans text-xs font-semibold uppercase tracking-widest border-b border-zinc-700 pb-1 mt-3 group-hover:border-primary-container transition-colors">
-              {strings.openProtocols}
-            </button>
-          </div>
+            <span className="w-fit text-on-surface font-sans text-xs font-semibold uppercase tracking-widest border-b border-zinc-700 pb-1 mt-4 group-hover:border-primary-container transition-colors flex items-center gap-2">
+              {strings.home_rules_core_action || 'Open rules'}
+              <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
+          </button>
 
-          <div
-            className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group cursor-pointer"
-            onClick={() => setLocation('/compendium/disciplinas')}
-          >
-            <div className="absolute top-0 right-0 p-3 opacity-10 text-4xl material-symbols-outlined">auto_fix_high</div>
-            <h3 className="font-serif text-xl uppercase">{strings.disciplinesTitle}</h3>
-            <span className="material-symbols-outlined text-primary-container text-2xl">auto_fix_high</span>
-          </div>
-
-          <div
-            className="bg-zinc-900 border border-zinc-800 p-6 flex flex-col justify-between hover:border-primary-container transition-colors relative overflow-hidden group cursor-pointer"
-            onClick={() => setLocation('/compendium/clanes')}
-          >
-            <div className="absolute top-0 right-0 p-3 opacity-10 text-4xl">
-              <Users className="w-10 h-10" />
-            </div>
-            <h3 className="font-serif text-xl uppercase">{strings.clansTitle}</h3>
-            <Users className="w-6 h-6 text-primary-container" aria-hidden="true" />
-          </div>
-
-          <div
-            className="md:col-span-2 bg-zinc-900 border border-zinc-800 p-6 flex items-center justify-between hover:border-primary-container transition-colors group cursor-pointer"
-            onClick={() => setLocation(
-              // After the Phase 2 rule split, humanity-loss is V5-only and
-              // humanity-classic covers V20/Revised/2nd/1st. Send the user to
-              // whichever rule actually applies to their selected edition.
-              activeEdition === 'V5'
-                ? '/compendium/reglas/humanity-loss'
-                : '/compendium/reglas/humanity-classic'
-            )}
-          >
-            <div className="flex items-center gap-4">
-              <span className="material-symbols-outlined text-3xl text-primary-container">heart_broken</span>
-              <div>
-                <h3 className="font-serif text-xl uppercase">{strings.humanity}</h3>
-                <p className="text-zinc-400 font-sans text-xs">{strings.humanityDesc}</p>
-              </div>
-            </div>
-            <span className="material-symbols-outlined text-zinc-700 group-hover:text-on-surface transition-colors">chevron_right</span>
+          {/* Secondary rail — three small nav cards. On mobile they stack to
+              three rows; on small tablets they go horizontal; on desktop they
+              return to a vertical column beside the primary card. */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-1 gap-3">
+            <SecondaryNavCard
+              icon="auto_fix_high"
+              title={strings.disciplinesTitle}
+              description={strings.home_rules_disciplines_desc || 'Mystical powers of the Blood.'}
+              onClick={() => setLocation('/compendium/disciplinas')}
+              testId="home-rules-disciplines"
+            />
+            <SecondaryNavCard
+              icon="groups"
+              title={strings.clansTitle}
+              description={strings.home_rules_clans_desc || 'Lineages and their gifts.'}
+              onClick={() => setLocation('/compendium/clanes')}
+              testId="home-rules-clans"
+            />
+            <SecondaryNavCard
+              icon="casino"
+              title={strings.toolsTitle}
+              description={strings.home_rules_tools_desc || 'Trackers, dice, and play helpers.'}
+              onClick={() => setLocation('/compendium/herramientas')}
+              testId="home-rules-tools"
+            />
           </div>
         </div>
+
+        {/* Quick topic chips — frequent jump-offs into Rules. Edition-aware
+            ids mirror the existing `humanity-loss` vs `humanity-classic`
+            pattern from the prior bento card. */}
+        <div className="mt-5">
+          <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-2">
+            {strings.home_rules_quick_topics || 'Quick topics'}
+          </p>
+          <div className="flex flex-wrap gap-2" data-testid="home-rules-topics">
+            {[
+              { id: 'combat-overview', label: strings.home_topic_combat || 'Combat' },
+              { id: 'dice-pools', label: strings.home_topic_dice || 'Dice' },
+              { id: activeEdition === 'V5' ? 'healing-v5' : 'healing-classic', label: strings.health || 'Health' },
+              { id: 'hunger-dice', label: strings.hunger || 'Hunger' },
+              { id: activeEdition === 'V5' ? 'willpower' : 'willpower-classic', label: strings.willpower || 'Willpower' },
+              { id: activeEdition === 'V5' ? 'humanity-loss' : 'humanity-classic', label: strings.humanity || 'Humanity' },
+              { id: 'blood-pool', label: strings.home_topic_blood_pool || 'Blood Pool' },
+            ].map(t => (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => setLocation(`/compendium/reglas/${t.id}`)}
+                className="text-xs font-sans uppercase tracking-widest border border-zinc-800 bg-zinc-950 hover:border-primary-container hover:text-primary-container text-zinc-300 px-3 py-1.5 transition-colors"
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile-only Open Compendium link — the header chip is hidden on
+            narrow screens to keep the title/subtitle uncrowded, so we surface
+            it again below the chips. */}
+        <button
+          type="button"
+          onClick={() => setLocation('/compendium')}
+          className="sm:hidden mt-4 text-primary-container font-sans text-xs font-semibold tracking-widest flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity uppercase"
+        >
+          {strings.home_action_open_compendium || 'Open compendium'} <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+        </button>
       </section>
 
       {/* Quote footer */}
@@ -472,6 +519,32 @@ export default function Home() {
       </div>
 
     </div>
+  );
+}
+
+interface SecondaryNavCardProps {
+  icon: string;
+  title: string;
+  description: string;
+  onClick: () => void;
+  testId?: string;
+}
+
+function SecondaryNavCard({ icon, title, description, onClick, testId }: SecondaryNavCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className="text-left bg-zinc-900 border border-zinc-800 p-4 hover:border-primary-container transition-colors group flex items-start gap-3 min-h-[88px]"
+    >
+      <span className="material-symbols-outlined text-primary-container text-2xl shrink-0" aria-hidden="true">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <h3 className="font-serif text-base sm:text-lg uppercase text-on-surface group-hover:text-primary-container transition-colors leading-tight">{title}</h3>
+        <p className="text-zinc-400 font-sans text-xs mt-1 line-clamp-2">{description}</p>
+      </div>
+      <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-primary-container shrink-0 mt-1" aria-hidden="true" />
+    </button>
   );
 }
 

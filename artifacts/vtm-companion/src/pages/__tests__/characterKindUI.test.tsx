@@ -46,6 +46,10 @@ function setLanguage(lang: 'en' | 'es') {
   window.localStorage.setItem('vtm-language', lang);
 }
 
+function setEdition(edition: 'V5' | 'V20' | 'REVISED' | '2ND' | '1ST') {
+  window.localStorage.setItem('vtm-edition', edition);
+}
+
 beforeEach(() => {
   window.localStorage.clear();
   setLanguage('en');
@@ -97,6 +101,75 @@ describe('Create dialog — Kind selector (Batch AX)', () => {
     const row = screen.getByTestId('create-clan-row');
     expect(row).toBeInTheDocument();
     expect(row).toHaveTextContent(/regnant clan/i);
+  });
+});
+
+describe('Create dialog — kind-aware optional fields (Batch AY)', () => {
+  it('V5 Vampire still shows Ambition / Desire / Predator Type', () => {
+    setEdition('V5');
+    openCreateForm();
+    expect(screen.getByTestId('create-field-ambition')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-desire')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-predator')).toBeInTheDocument();
+  });
+
+  it('V5 Human hides Predator Type, Ambition, and Desire', () => {
+    setEdition('V5');
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-human'));
+    expect(screen.queryByTestId('create-field-predator')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-ambition')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-desire')).not.toBeInTheDocument();
+  });
+
+  it('V5 Ghoul hides Predator Type, Ambition, and Desire', () => {
+    setEdition('V5');
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    expect(screen.queryByTestId('create-field-predator')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-ambition')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-desire')).not.toBeInTheDocument();
+  });
+
+  it('V20 Vampire still shows Nature / Demeanor / Sire / Generation', () => {
+    setEdition('V20');
+    openCreateForm();
+    expect(screen.getByTestId('create-field-nature')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-demeanor')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-sire')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-generation')).toBeInTheDocument();
+  });
+
+  it('V20 Human keeps Nature / Demeanor but hides Sire / Generation', () => {
+    setEdition('V20');
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-human'));
+    expect(screen.getByTestId('create-field-nature')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-demeanor')).toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-sire')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-generation')).not.toBeInTheDocument();
+  });
+
+  it('V20 Ghoul keeps Nature / Demeanor but hides Sire / Generation', () => {
+    setEdition('V20');
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    expect(screen.getByTestId('create-field-nature')).toBeInTheDocument();
+    expect(screen.getByTestId('create-field-demeanor')).toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-sire')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('create-field-generation')).not.toBeInTheDocument();
+  });
+
+  it('Generator Suggest buttons are absent for hidden V5 vampire-only fields (Human)', () => {
+    setEdition('V5');
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-human'));
+    // SuggestButton lives inside the field row container; hiding the
+    // row drops the Suggest control with it. The Suggest buttons for
+    // every vampire-only V5 field should be gone.
+    expect(document.querySelector('[data-testid="gen-suggest-predator"]')).toBeNull();
+    expect(document.querySelector('[data-testid="gen-suggest-ambition"]')).toBeNull();
+    expect(document.querySelector('[data-testid="gen-suggest-desire"]')).toBeNull();
   });
 });
 

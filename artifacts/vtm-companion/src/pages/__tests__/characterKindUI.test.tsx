@@ -258,20 +258,24 @@ describe('Character cards — non-vampire visuals (Batch AX polish)', () => {
     expect(screen.getByTestId(`card-kind-${ghoul.id}`)).toHaveTextContent(/ghoul/i);
   });
 
-  it('Ghoul card WITH a Regnant clan keeps the clan-themed watermark and clan-row visuals', () => {
-    // Intentional: when the user selected a regnant clan, surfacing that
-    // clan's visuals on the card communicates the bond at a glance.
+  it('Ghoul card WITH a Regnant clan uses the neutral mortal watermark and keeps a LABELLED clan-row', () => {
+    // Batch BD update — ghoul cards no longer wear the regnant clan's
+    // watermark or accent color (those were unlabelled and made a ghoul
+    // look identical to a vampire of the same clan). The regnant is
+    // still surfaced via the labelled identity row below.
     const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
     render(
       <AppContextProvider>
         <CharacterPage />
       </AppContextProvider>
     );
-    expect(screen.getByTestId(`char-card-watermark-${ghoul.id}`)).toBeInTheDocument();
-    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}-mortal`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-watermark-${ghoul.id}-mortal`)).toBeInTheDocument();
+    // The labelled identity row is still present (carries the "REGNANT:"
+    // prefix from Batch BB).
     expect(screen.getByTestId(`char-card-clan-row-${ghoul.id}`)).toBeInTheDocument();
-    // Kind pill is still present so the card never reads as "just another
-    // Tremere vampire".
+    expect(screen.getByTestId(`char-card-regnant-prefix-${ghoul.id}`)).toBeInTheDocument();
+    // Kind pill still surfaces "Ghoul".
     expect(screen.getByTestId(`card-kind-${ghoul.id}`)).toHaveTextContent(/ghoul/i);
   });
 });
@@ -407,5 +411,82 @@ describe('Character cards — regnant-clan labelling (Batch BB)', () => {
     );
     expect(screen.getByTestId(`char-card-clan-row-${vampire.id}`)).toBeInTheDocument();
     expect(screen.queryByTestId(`char-card-regnant-prefix-${vampire.id}`)).not.toBeInTheDocument();
+  });
+});
+
+describe('Character cards — ghoul regnant clean-up (Batch BD)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    setLanguage('en');
+  });
+
+  it('Ghoul with a Regnant clan does NOT show the vampire clan-themed watermark', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    // The vampire-shaped clan-icon watermark must be absent — replaced
+    // by the neutral mortal glyph watermark that humans get.
+    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}`)).not.toBeInTheDocument();
+    const mortalWatermark = screen.getByTestId(`char-card-watermark-${ghoul.id}-mortal`);
+    expect(mortalWatermark).toBeInTheDocument();
+    expect(mortalWatermark).toHaveAttribute('data-kind', 'ghoul');
+  });
+
+  it('Ghoul with a Regnant clan still surfaces a labelled "Regnant:" identity row', () => {
+    // The regnant clan stays visible — but only inside the labelled
+    // identity row, never as a bare watermark / accent color.
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    const row = screen.getByTestId(`char-card-clan-row-${ghoul.id}`);
+    expect(row).toBeInTheDocument();
+    expect(row).toHaveTextContent(/regnant:/i);
+    expect(row).toHaveTextContent(/tremere/i);
+  });
+
+  it('Ghoul WITHOUT a Regnant clan still suppresses the clan-row and watermark', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', '', 'Unbound', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.queryByTestId(`char-card-watermark-${ghoul.id}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-watermark-${ghoul.id}-mortal`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-clan-row-${ghoul.id}`)).not.toBeInTheDocument();
+  });
+
+  it('Vampire card behavior is unchanged — clan watermark and unlabelled clan row stay', () => {
+    const vampire = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Vampire'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.getByTestId(`char-card-watermark-${vampire.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-watermark-${vampire.id}-mortal`)).not.toBeInTheDocument();
+    const row = screen.getByTestId(`char-card-clan-row-${vampire.id}`);
+    expect(row).toBeInTheDocument();
+    // Vampires never get the "Regnant:" prefix.
+    expect(screen.queryByTestId(`char-card-regnant-prefix-${vampire.id}`)).not.toBeInTheDocument();
+  });
+
+  it('Human cards remain neutral — no clan visuals on either watermark or row', () => {
+    const human = saveCharacter(createEmptyCharacter('V20', '', 'Mortal', 'human'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.queryByTestId(`char-card-watermark-${human.id}`)).not.toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-watermark-${human.id}-mortal`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-clan-row-${human.id}`)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-regnant-prefix-${human.id}`)).not.toBeInTheDocument();
   });
 });

@@ -155,7 +155,11 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     char_kind_label: "Tipo de criatura",
     char_kind_vampire: "Vampiro",
     char_kind_human: "Humano",
-    char_kind_ghoul: "Gul",
+    // The Spanish VTM community keeps the English word "Ghoul" rather
+    // than the phonetic "Gul" — match that convention so every Spanish
+    // Ghoul label (kind pill, card filter, create form, sheet header,
+    // print header) reads as "Ghoul" in both locales.
+    char_kind_ghoul: "Ghoul",
     char_kind_regnant_clan_label: "Clan del regente",
     char_kind_regnant_clan_none: "Ninguno / desconocido",
     // Batch BB — short inline prefix used in the sheet header / card /

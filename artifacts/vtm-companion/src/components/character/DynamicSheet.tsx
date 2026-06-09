@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
-  Plus, X, ChevronDown, ExternalLink, Pencil, Trash2,
+  Plus, X, ChevronDown, ExternalLink, Pencil, Trash2, Check,
   Sword, Shield, Wrench, Backpack, FileText, Car, Sparkles, Heart, Coins, Package2, Package,
 } from "lucide-react";
 import { UI_STRINGS } from "@/i18n/ui";
@@ -19,6 +19,27 @@ import { disciplines } from "@/data/disciplines";
 import { clans } from "@/data/clans";
 import { getClanDisciplinesForEdition } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
+import {
+  generateSuggestion,
+  isFieldAvailable,
+  GeneratorField,
+} from "@/data/characterGenerator";
+
+/**
+ * Batch AR — map the sheet's text-field ids to the GeneratorField the
+ * inspiration generator understands. Fields not in the map (playerName,
+ * chronicle, sire, etc.) never see a Suggest control on the sheet, so
+ * the UI stays calm and we don't fan out generator buttons everywhere.
+ */
+const SHEET_FIELD_TO_GEN: Readonly<Record<string, GeneratorField>> = {
+  name: 'name',
+  concept: 'concept',
+  ambition: 'ambition',
+  desire: 'desire',
+  predatorType: 'predator',
+  nature: 'nature',
+  demeanor: 'demeanor',
+};
 
 /**
  * Normalize a stored discipline value into `{ rating, powers }`.
@@ -982,6 +1003,45 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
   /** Local-only collapsed state for sections. Not persisted; not in character data. */
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
+  // Batch AR — sheet-level generator state. Pending suggestion per
+  // schema field id (e.g. 'name', 'concept', 'ambition'). The chip is
+  // the only writer; the input itself is never auto-mutated. Cleared
+  // when the user dismisses, uses, or navigates away from /character.
+  const [sheetSuggestions, setSheetSuggestions] = useState<Record<string, string>>({});
+  const [sheetLastSuggestions, setSheetLastSuggestions] = useState<Record<string, string>>({});
+
+  const handleSuggestSheetField = (fieldId: string) => {
+    const genField = SHEET_FIELD_TO_GEN[fieldId];
+    if (!genField) return;
+    const value = generateSuggestion(
+      genField,
+      character.edition as EditionId,
+      activeLanguage,
+      undefined,
+      sheetLastSuggestions[fieldId],
+    );
+    if (!value) return;
+    setSheetSuggestions(prev => ({ ...prev, [fieldId]: value }));
+    setSheetLastSuggestions(prev => ({ ...prev, [fieldId]: value }));
+  };
+  const handleUseSheetSuggestion = (fieldId: string, field: FieldDef) => {
+    const value = sheetSuggestions[fieldId];
+    if (!value) return;
+    handleUpdate(fieldId, value, field);
+    setSheetSuggestions(prev => {
+      const next = { ...prev };
+      delete next[fieldId];
+      return next;
+    });
+  };
+  const handleDismissSheetSuggestion = (fieldId: string) => {
+    setSheetSuggestions(prev => {
+      const next = { ...prev };
+      delete next[fieldId];
+      return next;
+    });
+  };
+
   const toggleSection = (sectionId: string) => {
     setCollapsed(prev => ({ ...prev, [sectionId]: !prev[sectionId] }));
   };
@@ -1014,18 +1074,94 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
     const label = strings[field.labelKey] || field.labelKey;
 
     switch (field.type) {
-      case 'text':
+      case 'text': {
+        // Batch AR — inspiration generator (sheet integration).
+        //
+        // We only surface a Suggest control when:
+        //   1. The field id maps to a GeneratorField we support.
+        //   2. The pool for that field+edition+language is non-empty
+        //      (covers V5-vs-classic gating automatically).
+        //   3. The sheet is in Edit Mode (these are build-time
+        //      fields, not gameplay trackers). When the row is
+        //      readonly we render nothing — same calm View Mode UX.
+        // The generator never mutates the input; the chip is the
+        // only writer, and "Use" is the only action that writes.
+        const genField = SHEET_FIELD_TO_GEN[field.id];
+        const inputIsReadOnly = isFieldReadOnly(field);
+        const canSuggest =
+          !!genField &&
+          !inputIsReadOnly &&
+          isFieldAvailable(genField, character.edition as EditionId, activeLanguage);
+        const pendingSuggestion = sheetSuggestions[field.id];
+        const inputValue = field.id === 'chronicle'
+          ? resolveChronicleFieldValue(value, linkedChronicleName)
+          : (value != null ? String(value) : '');
+        const suggestAria = (strings.gen_suggest_for || 'Suggest {field}').replace('{field}', label);
         return (
           <div key={field.id} className="flex flex-col gap-1">
-            <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs uppercase tracking-wider text-muted-foreground font-sans">{label}</label>
+              {canSuggest && (
+                <button
+                  type="button"
+                  onClick={() => handleSuggestSheetField(field.id)}
+                  aria-label={suggestAria}
+                  title={suggestAria}
+                  data-testid={`sheet-gen-suggest-${field.id}`}
+                  className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Sparkles className="w-3 h-3" aria-hidden />
+                  {strings.gen_suggest || 'Suggest'}
+                </button>
+              )}
+            </div>
             <Input
-              value={field.id === 'chronicle' ? resolveChronicleFieldValue(value, linkedChronicleName) : (value != null ? String(value) : '')}
+              value={inputValue}
               onChange={e => handleUpdate(field.id, e.target.value, field)}
-              readOnly={isFieldReadOnly(field)}
+              readOnly={inputIsReadOnly}
               className="bg-transparent border-0 border-b border-zinc-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary-container"
             />
+            {canSuggest && pendingSuggestion && (
+              <div
+                data-testid={`sheet-gen-chip-${field.id}`}
+                className="mt-1 flex items-start gap-2 rounded-md border border-primary/20 bg-primary/5 px-2 py-1.5"
+              >
+                <Sparkles className="w-3 h-3 mt-1 text-primary shrink-0" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs italic text-foreground/80 break-words">{pendingSuggestion}</p>
+                  {String(value ?? '').trim().length > 0 && (
+                    <p className="text-[10px] text-amber-300/80 mt-0.5">
+                      {strings.gen_replace_warning || 'This will replace your text.'}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleUseSheetSuggestion(field.id, field)}
+                  className="h-6 px-2 text-[10px] uppercase tracking-wider"
+                  data-testid={`sheet-gen-use-${field.id}`}
+                >
+                  <Check className="w-3 h-3 mr-1" /> {strings.gen_use || 'Use'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDismissSheetSuggestion(field.id)}
+                  aria-label={strings.gen_dismiss || 'Dismiss'}
+                  title={strings.gen_dismiss || 'Dismiss'}
+                  className="h-6 w-6 shrink-0"
+                  data-testid={`sheet-gen-dismiss-${field.id}`}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
           </div>
         );
+      }
       case 'textarea':
         return (
           <div key={field.id} className="flex flex-col gap-1 col-span-full">

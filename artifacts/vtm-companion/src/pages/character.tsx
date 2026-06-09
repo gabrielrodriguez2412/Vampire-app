@@ -37,7 +37,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ModalPortal } from "@/components/ui/modal-portal";
 import { BulkActionBar } from "@/components/ui/bulk-action-bar";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { getSchemaForEdition } from "@/data/characterSheets/editions";
+import { getSchemaForCharacter } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -2240,7 +2240,12 @@ export default function CharacterPage() {
 
                 <DynamicSheet
                   character={activeChar}
-                  schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)}
+                  /* Batch AY — kind-aware schema selection. Vampires
+                     (and legacy characters with kind absent) still
+                     receive the existing V5 / classic vampire schema
+                     byte-for-byte; humans and ghouls get the Phase 2
+                     mortal schemas defined in `data/characterSheets/`. */
+                  schema={getSchemaForCharacter(activeChar)}
                   onChange={handleSheetUpdate}
                   readonly={!isEditing}
                   linkedChronicleName={activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId)?.name : undefined}

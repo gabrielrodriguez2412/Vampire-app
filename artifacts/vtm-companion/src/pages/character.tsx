@@ -37,7 +37,7 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { ModalPortal } from "@/components/ui/modal-portal";
 import { BulkActionBar } from "@/components/ui/bulk-action-bar";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { getSchemaForEdition } from "@/data/characterSheets/editions";
+import { getSchemaForCharacter } from "@/data/characterSheets/editions";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -562,23 +562,36 @@ export default function CharacterPage() {
       char.chronicleId = newChronicleId;
     }
 
+    // Batch AY (post-review) — vampire-only optional fields are only
+    // persisted when the user is actually creating a vampire. If they
+    // typed in (e.g.) Ambition and then switched the kind to Human, the
+    // input would be hidden by the JSX but the local state still has
+    // the value; this guard makes sure that value never lands on a
+    // mortal character record.
+    const isVampire = newKind === 'vampire';
     if (char.edition === 'V5') {
-      const ambition = newAmbition.trim();
-      const desire = newDesire.trim();
-      const predatorType = newPredatorType.trim();
-      if (ambition) char.ambition = ambition;
-      if (desire) char.desire = desire;
-      if (predatorType) char.predatorType = predatorType;
+      if (isVampire) {
+        const ambition = newAmbition.trim();
+        const desire = newDesire.trim();
+        const predatorType = newPredatorType.trim();
+        if (ambition) char.ambition = ambition;
+        if (desire) char.desire = desire;
+        if (predatorType) char.predatorType = predatorType;
+      }
     } else {
+      // Nature + Demeanor remain available to every classic kind — they
+      // are general personality prompts, not vampire-only mechanics.
       const nature = newNature.trim();
       const demeanor = newDemeanor.trim();
-      const sire = newSire.trim();
       if (nature) char.nature = nature;
       if (demeanor) char.demeanor = demeanor;
-      if (sire) char.sire = sire;
-      const gen = parseInt(newGeneration, 10);
-      if (Number.isFinite(gen) && gen >= 3 && gen <= 16) {
-        char.generation = gen;
+      if (isVampire) {
+        const sire = newSire.trim();
+        if (sire) char.sire = sire;
+        const gen = parseInt(newGeneration, 10);
+        if (Number.isFinite(gen) && gen >= 3 && gen <= 16) {
+          char.generation = gen;
+        }
       }
     }
 
@@ -1922,42 +1935,61 @@ export default function CharacterPage() {
                     </p>
                   </div>
 
+                  {/* Batch AY (post-review) — kind-aware optional fields.
+
+                      Vampire creation keeps every field it had before this
+                      batch: V5 vampires see Ambition / Desire / Predator
+                      Type; classic vampires see Nature / Demeanor / Sire /
+                      Generation. Humans and ghouls drop the vampire-only
+                      ones — Ambition / Desire / Predator Type on V5, Sire
+                      / Generation on classic — and keep only the generic
+                      personality / chronicle prompts. The Suggest chips
+                      and inline suggestion chips disappear with their
+                      fields because they're rendered inside the same
+                      conditional. */}
                   {newEdition === 'V5' ? (
                     <>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
-                          <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
-                        </div>
-                        <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
-                        {suggestions.ambition && (
-                          <SuggestionChip field="ambition" value={suggestions.ambition} inputHasContent={newAmbition.trim().length > 0} onUse={() => handleUseSuggestion('ambition')} onDismiss={() => handleDismissSuggestion('ambition')} strings={strings} />
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
-                          <SuggestButton field="desire" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
-                        </div>
-                        <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
-                        {suggestions.desire && (
-                          <SuggestionChip field="desire" value={suggestions.desire} inputHasContent={newDesire.trim().length > 0} onUse={() => handleUseSuggestion('desire')} onDismiss={() => handleDismissSuggestion('desire')} strings={strings} />
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                          <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
-                          <SuggestButton field="predator" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
-                        </div>
-                        <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
-                        {suggestions.predator && (
-                          <SuggestionChip field="predator" value={suggestions.predator} inputHasContent={newPredatorType.trim().length > 0} onUse={() => handleUseSuggestion('predator')} onDismiss={() => handleDismissSuggestion('predator')} strings={strings} />
-                        )}
-                      </div>
+                      {newKind === 'vampire' && (
+                        <>
+                          <div className="space-y-2" data-testid="create-field-ambition">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
+                              <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
+                            </div>
+                            <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
+                            {suggestions.ambition && (
+                              <SuggestionChip field="ambition" value={suggestions.ambition} inputHasContent={newAmbition.trim().length > 0} onUse={() => handleUseSuggestion('ambition')} onDismiss={() => handleDismissSuggestion('ambition')} strings={strings} />
+                            )}
+                          </div>
+                          <div className="space-y-2" data-testid="create-field-desire">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
+                              <SuggestButton field="desire" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
+                            </div>
+                            <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
+                            {suggestions.desire && (
+                              <SuggestionChip field="desire" value={suggestions.desire} inputHasContent={newDesire.trim().length > 0} onUse={() => handleUseSuggestion('desire')} onDismiss={() => handleDismissSuggestion('desire')} strings={strings} />
+                            )}
+                          </div>
+                          <div className="space-y-2" data-testid="create-field-predator">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
+                              <SuggestButton field="predator" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
+                            </div>
+                            <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
+                            {suggestions.predator && (
+                              <SuggestionChip field="predator" value={suggestions.predator} inputHasContent={newPredatorType.trim().length > 0} onUse={() => handleUseSuggestion('predator')} onDismiss={() => handleDismissSuggestion('predator')} strings={strings} />
+                            )}
+                          </div>
+                        </>
+                      )}
                     </>
                   ) : (
                     <>
-                      <div className="space-y-2">
+                      {/* Nature + Demeanor remain visible for every classic
+                          kind — they're general Storyteller-system personality
+                          prompts, not vampire-only. */}
+                      <div className="space-y-2" data-testid="create-field-nature">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
                           <SuggestButton field="nature" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
@@ -1967,7 +1999,7 @@ export default function CharacterPage() {
                           <SuggestionChip field="nature" value={suggestions.nature} inputHasContent={newNature.trim().length > 0} onUse={() => handleUseSuggestion('nature')} onDismiss={() => handleDismissSuggestion('nature')} strings={strings} />
                         )}
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-2" data-testid="create-field-demeanor">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
                           <SuggestButton field="demeanor" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
@@ -1977,22 +2009,26 @@ export default function CharacterPage() {
                           <SuggestionChip field="demeanor" value={suggestions.demeanor} inputHasContent={newDemeanor.trim().length > 0} onUse={() => handleUseSuggestion('demeanor')} onDismiss={() => handleDismissSuggestion('demeanor')} strings={strings} />
                         )}
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_sire || "Sire"}</label>
-                        <Input value={newSire} onChange={e => setNewSire(e.target.value)} className="bg-background border-border" />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">{strings.sheet_generation || "Generation"}</label>
-                        <Input
-                          type="number"
-                          min={3}
-                          max={16}
-                          value={newGeneration}
-                          onChange={e => setNewGeneration(e.target.value)}
-                          placeholder="13"
-                          className="bg-background border-border"
-                        />
-                      </div>
+                      {newKind === 'vampire' && (
+                        <>
+                          <div className="space-y-2" data-testid="create-field-sire">
+                            <label className="text-sm font-medium">{strings.sheet_sire || "Sire"}</label>
+                            <Input value={newSire} onChange={e => setNewSire(e.target.value)} className="bg-background border-border" />
+                          </div>
+                          <div className="space-y-2" data-testid="create-field-generation">
+                            <label className="text-sm font-medium">{strings.sheet_generation || "Generation"}</label>
+                            <Input
+                              type="number"
+                              min={3}
+                              max={16}
+                              value={newGeneration}
+                              onChange={e => setNewGeneration(e.target.value)}
+                              placeholder="13"
+                              className="bg-background border-border"
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                 </div>
@@ -2240,7 +2276,12 @@ export default function CharacterPage() {
 
                 <DynamicSheet
                   character={activeChar}
-                  schema={getSchemaForEdition(activeChar.edition ?? 'V5' as EditionId)}
+                  /* Batch AY — kind-aware schema selection. Vampires
+                     (and legacy characters with kind absent) still
+                     receive the existing V5 / classic vampire schema
+                     byte-for-byte; humans and ghouls get the Phase 2
+                     mortal schemas defined in `data/characterSheets/`. */
+                  schema={getSchemaForCharacter(activeChar)}
                   onChange={handleSheetUpdate}
                   readonly={!isEditing}
                   linkedChronicleName={activeChar.chronicleId ? chronicleById.get(activeChar.chronicleId)?.name : undefined}

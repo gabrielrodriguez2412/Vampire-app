@@ -63,13 +63,18 @@ interface SuggestButtonProps {
   /** The active app language. Drives both edition gating and the
    *  pool the suggestion is drawn from (Batch AQ review polish). */
   language: LangCode;
+  /** Batch BC — kind threads into `isFieldAvailable` so the button
+   *  disappears entirely for fields that have no pool for the selected
+   *  kind (e.g. predator on a human / ghoul). Defaults to 'vampire'
+   *  so any caller that doesn't pass kind keeps pre-BC behaviour. */
+  kind?: CharacterKind;
   onGenerate: (field: GeneratorField) => void;
   strings: Record<string, string>;
   fieldLabel: string;
 }
 
-function SuggestButton({ field, edition, language, onGenerate, strings, fieldLabel }: SuggestButtonProps) {
-  if (!isFieldAvailable(field, edition, language)) return null;
+function SuggestButton({ field, edition, language, kind = 'vampire', onGenerate, strings, fieldLabel }: SuggestButtonProps) {
+  if (!isFieldAvailable(field, edition, language, kind)) return null;
   const aria = (strings.gen_suggest_for || 'Suggest {field}').replace('{field}', fieldLabel);
   return (
     <button
@@ -264,7 +269,10 @@ export default function CharacterPage() {
    * pool so the user never sees the same string twice in a row.
    */
   const handleGenerateField = (field: GeneratorField) => {
-    const next = generateSuggestion(field, newEdition, activeLanguage, undefined, lastSuggestions[field]);
+    // Batch BC — pass the selected creation kind so non-vampire forms
+    // pull from the kind-appropriate pool (and so vampire-only fields
+    // like predator return empty rather than vampire-flavored strings).
+    const next = generateSuggestion(field, newEdition, activeLanguage, undefined, lastSuggestions[field], newKind);
     if (!next) return;
     setSuggestions(prev => ({ ...prev, [field]: next }));
     setLastSuggestions(prev => ({ ...prev, [field]: next }));
@@ -288,7 +296,9 @@ export default function CharacterPage() {
     });
   };
   const handleRefreshInspiration = () => {
-    setInspiration(prev => generateInspirationBundle(activeLanguage, undefined, prev || undefined));
+    // Batch BC — inspiration panel pulls ghoul-flavored personality
+    // entries when the user is creating a ghoul.
+    setInspiration(prev => generateInspirationBundle(activeLanguage, undefined, prev || undefined, newKind));
   };
 
   // Character management state
@@ -1728,6 +1738,7 @@ export default function CharacterPage() {
                       field="name"
                       edition={newEdition}
                       language={activeLanguage}
+                      kind={newKind}
                       onGenerate={handleGenerateField}
                       strings={strings}
                       fieldLabel={strings.sheet_name || 'Name'}
@@ -1950,6 +1961,7 @@ export default function CharacterPage() {
                         field="concept"
                         edition={newEdition}
                         language={activeLanguage}
+                        kind={newKind}
                         onGenerate={handleGenerateField}
                         strings={strings}
                         fieldLabel={strings.sheet_concept || 'Concept'}
@@ -1995,7 +2007,7 @@ export default function CharacterPage() {
                           <div className="space-y-2" data-testid="create-field-ambition">
                             <div className="flex items-center justify-between gap-2">
                               <label className="text-sm font-medium">{strings.sheet_ambition || "Ambition"}</label>
-                              <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
+                              <SuggestButton field="ambition" edition={newEdition} language={activeLanguage} kind={newKind} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_ambition || 'Ambition'} />
                             </div>
                             <Input value={newAmbition} onChange={e => setNewAmbition(e.target.value)} className="bg-background border-border" />
                             {suggestions.ambition && (
@@ -2005,7 +2017,7 @@ export default function CharacterPage() {
                           <div className="space-y-2" data-testid="create-field-desire">
                             <div className="flex items-center justify-between gap-2">
                               <label className="text-sm font-medium">{strings.sheet_desire || "Desire"}</label>
-                              <SuggestButton field="desire" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
+                              <SuggestButton field="desire" edition={newEdition} language={activeLanguage} kind={newKind} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_desire || 'Desire'} />
                             </div>
                             <Input value={newDesire} onChange={e => setNewDesire(e.target.value)} className="bg-background border-border" />
                             {suggestions.desire && (
@@ -2015,7 +2027,7 @@ export default function CharacterPage() {
                           <div className="space-y-2" data-testid="create-field-predator">
                             <div className="flex items-center justify-between gap-2">
                               <label className="text-sm font-medium">{strings.sheet_predator_type || "Predator Type"}</label>
-                              <SuggestButton field="predator" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
+                              <SuggestButton field="predator" edition={newEdition} language={activeLanguage} kind={newKind} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_predator_type || 'Predator Type'} />
                             </div>
                             <Input value={newPredatorType} onChange={e => setNewPredatorType(e.target.value)} className="bg-background border-border" />
                             {suggestions.predator && (
@@ -2033,7 +2045,7 @@ export default function CharacterPage() {
                       <div className="space-y-2" data-testid="create-field-nature">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_nature || "Nature"}</label>
-                          <SuggestButton field="nature" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
+                          <SuggestButton field="nature" edition={newEdition} language={activeLanguage} kind={newKind} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_nature || 'Nature'} />
                         </div>
                         <Input value={newNature} onChange={e => setNewNature(e.target.value)} className="bg-background border-border" />
                         {suggestions.nature && (
@@ -2043,7 +2055,7 @@ export default function CharacterPage() {
                       <div className="space-y-2" data-testid="create-field-demeanor">
                         <div className="flex items-center justify-between gap-2">
                           <label className="text-sm font-medium">{strings.sheet_demeanor || "Demeanor"}</label>
-                          <SuggestButton field="demeanor" edition={newEdition} language={activeLanguage} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
+                          <SuggestButton field="demeanor" edition={newEdition} language={activeLanguage} kind={newKind} onGenerate={handleGenerateField} strings={strings} fieldLabel={strings.sheet_demeanor || 'Demeanor'} />
                         </div>
                         <Input value={newDemeanor} onChange={e => setNewDemeanor(e.target.value)} className="bg-background border-border" />
                         {suggestions.demeanor && (

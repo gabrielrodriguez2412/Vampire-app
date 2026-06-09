@@ -212,9 +212,15 @@ describe('original-content guard — every pool in every language (Batch AQ)', (
     ];
     const editions = ['V5', 'V20'] as const;
     const langs = ['en', 'es'] as const;
+    const kinds = ['vampire', 'human', 'ghoul'] as const;
     const allPools = fields.flatMap(field =>
       editions.flatMap(ed =>
-        langs.map(lang => poolFor(field, ed, lang)),
+        langs.flatMap(lang =>
+          // Batch BC — also audit the kind-aware pools (vampire / human
+          // / ghoul) so the ghoul supplement entries cannot leak
+          // copyrighted strings either.
+          kinds.map(kind => poolFor(field, ed, lang, kind)),
+        ),
       ),
     );
     for (const pool of allPools) {
@@ -222,5 +228,118 @@ describe('original-content guard — every pool in every language (Batch AQ)', (
         expect(normalized.has(entry.toLowerCase().trim())).toBe(false);
       }
     }
+  });
+});
+
+describe('Batch BC — kind-aware pools', () => {
+  it('vampire keeps the V5 ambition / desire / predator pools', () => {
+    for (const lang of ['en', 'es'] as const) {
+      expect(isFieldAvailable('ambition', 'V5', lang, 'vampire')).toBe(true);
+      expect(isFieldAvailable('desire',   'V5', lang, 'vampire')).toBe(true);
+      expect(isFieldAvailable('predator', 'V5', lang, 'vampire')).toBe(true);
+      expect(poolFor('ambition', 'V5', lang, 'vampire').length).toBeGreaterThan(0);
+    }
+  });
+
+  it('human has no ambition / desire / predator suggestions on V5 OR classic', () => {
+    const langs = ['en', 'es'] as const;
+    const editions = ['V5', 'V20', 'REVISED', '2ND', '1ST'] as const;
+    for (const lang of langs) {
+      for (const ed of editions) {
+        expect(isFieldAvailable('ambition', ed, lang, 'human')).toBe(false);
+        expect(isFieldAvailable('desire',   ed, lang, 'human')).toBe(false);
+        expect(isFieldAvailable('predator', ed, lang, 'human')).toBe(false);
+        expect(generateSuggestion('ambition', ed, lang, () => 0.5, undefined, 'human')).toBe('');
+        expect(generateSuggestion('predator', ed, lang, () => 0.5, undefined, 'human')).toBe('');
+      }
+    }
+  });
+
+  it('ghoul has no ambition / desire / predator suggestions either', () => {
+    for (const lang of ['en', 'es'] as const) {
+      for (const ed of ['V5', 'V20'] as const) {
+        expect(isFieldAvailable('predator', ed, lang, 'ghoul')).toBe(false);
+        expect(isFieldAvailable('ambition', ed, lang, 'ghoul')).toBe(false);
+        expect(isFieldAvailable('desire',   ed, lang, 'ghoul')).toBe(false);
+      }
+    }
+  });
+
+  it('human keeps name / concept / appearance / personality available in EN and ES', () => {
+    for (const lang of ['en', 'es'] as const) {
+      for (const field of ['name', 'concept', 'appearance', 'personality'] as const) {
+        expect(isFieldAvailable(field, 'V5', lang, 'human')).toBe(true);
+        expect(isFieldAvailable(field, 'V20', lang, 'human')).toBe(true);
+      }
+    }
+  });
+
+  it('ghoul concept and personality pools are strict supersets of the vampire/human base pools', () => {
+    for (const lang of ['en', 'es'] as const) {
+      const baseConcept = poolFor('concept', 'V5', lang, 'vampire');
+      const ghoulConcept = poolFor('concept', 'V5', lang, 'ghoul');
+      // The ghoul pool contains every base entry...
+      for (const entry of baseConcept) {
+        expect(ghoulConcept).toContain(entry);
+      }
+      // ...plus at least one ghoul-flavored entry.
+      expect(ghoulConcept.length).toBeGreaterThan(baseConcept.length);
+
+      const basePers = poolFor('personality', 'V5', lang, 'vampire');
+      const ghoulPers = poolFor('personality', 'V5', lang, 'ghoul');
+      for (const entry of basePers) {
+        expect(ghoulPers).toContain(entry);
+      }
+      expect(ghoulPers.length).toBeGreaterThan(basePers.length);
+    }
+  });
+
+  it('ghoul-flavored entries lean into servitor / dependent themes (English)', () => {
+    // Spot-check that at least one ghoul-supplemental entry is present
+    // in each lang's concept / personality pool. We don't pin the
+    // exact wording — only that the ghoul pool truly differs from the
+    // base mortal pool.
+    const ghoulConcept = poolFor('concept', 'V5', 'en', 'ghoul');
+    const baseConcept = poolFor('concept', 'V5', 'en', 'vampire');
+    const extra = ghoulConcept.filter(e => !baseConcept.includes(e));
+    expect(extra.length).toBeGreaterThanOrEqual(8);
+
+    const ghoulPers = poolFor('personality', 'V5', 'en', 'ghoul');
+    const basePers = poolFor('personality', 'V5', 'en', 'vampire');
+    const extraPers = ghoulPers.filter(e => !basePers.includes(e));
+    expect(extraPers.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it('human suggestions do not include any vampire-only ambition / desire / predator text', () => {
+    // If a vampire-only field returns '' for a mortal, then the actual
+    // generated string can never come from the V5 vampire pool. This
+    // test is the contractual proof of that.
+    const vampireAmbitions = poolFor('ambition', 'V5', 'en', 'vampire');
+    for (let i = 0; i < 50; i++) {
+      const v = generateSuggestion('ambition', 'V5', 'en', () => i / 50, undefined, 'human');
+      expect(v).toBe('');
+      expect(vampireAmbitions).not.toContain(v); // double-defence
+    }
+  });
+
+  it('default kind (omitted) preserves pre-BC vampire behaviour for every call shape', () => {
+    // Ensures the backward-compat default — every existing 3- / 4- /
+    // 5-arg call site still routes to the vampire pool.
+    expect(poolFor('ambition', 'V5', 'en')).toEqual(poolFor('ambition', 'V5', 'en', 'vampire'));
+    expect(isFieldAvailable('predator', 'V5', 'en')).toBe(true);
+    const v = generateSuggestion('predator', 'V5', 'en', () => 0.123);
+    expect(v).not.toBe('');
+    expect(poolFor('predator', 'V5', 'en')).toContain(v);
+  });
+
+  it('generateInspirationBundle pulls ghoul-flavored personality for kind="ghoul"', () => {
+    // Drive the rng so the picked indices land inside the ghoul
+    // supplement (the supplement sits at the end of the merged pool).
+    const ghoulPers = poolFor('personality', 'V5', 'en', 'ghoul');
+    const basePers = poolFor('personality', 'V5', 'en', 'vampire');
+    const ghoulOnly = ghoulPers.filter(e => !basePers.includes(e));
+    // rng→1 hits the last entry, which is in the supplement.
+    const bundle = generateInspirationBundle('en', () => 0.999, undefined, 'ghoul');
+    expect(ghoulOnly).toContain(bundle.personality);
   });
 });

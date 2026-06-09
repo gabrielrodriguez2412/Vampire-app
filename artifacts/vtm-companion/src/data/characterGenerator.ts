@@ -29,7 +29,7 @@
  * The module is pure — every helper accepts an optional `rng` so tests
  * can drive the picker deterministically without touching Math.random.
  */
-import { EditionId, LangCode } from "../types";
+import { CharacterKind, EditionId, LangCode } from "../types";
 
 export type GeneratorField =
   | 'name'
@@ -509,6 +509,78 @@ const CLASSIC_DEMEANORS_ES: readonly string[] = [
 ];
 
 // ===========================================================================
+// Batch BC — Ghoul-flavored supplemental pools.
+//
+// Concept + personality lines that lean into the servitor / dependent /
+// loyal-conflicted themes the audit asked for. Appended to the base
+// (mortal-flavored) pools when `kind === 'ghoul'` so a ghoul player
+// sees both general mortal prompts and ghoul-specific ones without
+// repeating the same content twice. All entries are original short
+// prose — no Domitor / blood-bond / Renfield / Vinculum terms, no
+// rulebook archetype names, no copyrighted mechanics language.
+// ===========================================================================
+
+const GHOUL_CONCEPTS_EN: readonly string[] = [
+  "Driver who never asks where to",
+  "Estate caretaker who keeps unreasonable hours",
+  "Personal assistant with a midnight rule",
+  "Loyal nurse to a single patient",
+  "Courier who only delivers after dark",
+  "Apartment manager for residents nobody sees",
+  "Researcher under an indefinite contract",
+  "Devotee with no congregation",
+  "Auctioneer who never bids for themselves",
+  "Accountant with terrible questions",
+  "Confidant who learned how to forget",
+  "Doorkeeper of a building that doesn't sleep",
+];
+
+const GHOUL_PERSONALITIES_EN: readonly string[] = [
+  "Listens for footsteps long after they've stopped",
+  "Counts the hours since the last visit",
+  "Trusts one voice over their own judgment",
+  "Picks up the phone before it rings",
+  "Apologises for being late by hours, not minutes",
+  "Sleeps in shifts even when alone",
+  "Hides bruises before anyone can see",
+  "Defends a name they refuse to say aloud",
+  "Repeats instructions as if memorising them",
+  "Recoils from sunlight as if it were a debt",
+  "Counts every bottle in the cabinet without thinking",
+  "Forgets birthdays, never forgets a request",
+];
+
+const GHOUL_CONCEPTS_ES: readonly string[] = [
+  "Chófer que nunca pregunta a dónde",
+  "Cuidador de una propiedad con horas irrazonables",
+  "Asistente personal con la regla de medianoche",
+  "Enfermero leal a un único paciente",
+  "Mensajero que solo reparte de noche",
+  "Encargado de un edificio sin vecinos visibles",
+  "Investigador con contrato indefinido",
+  "Devoto sin congregación",
+  "Subastador que nunca puja para sí",
+  "Contable con preguntas incómodas",
+  "Confidente que aprendió a olvidar",
+  "Portero de un edificio que no duerme",
+];
+
+const GHOUL_PERSONALITIES_ES: readonly string[] = [
+  "Sigue escuchando pasos que ya se alejaron",
+  "Cuenta las horas desde la última visita",
+  "Confía en una voz por encima de su propio juicio",
+  "Levanta el teléfono antes de que suene",
+  "Se disculpa por llegar horas tarde, no minutos",
+  "Duerme por turnos aunque esté solo",
+  "Esconde los moretones antes de que se vean",
+  "Defiende un nombre que se niega a pronunciar",
+  "Repite las instrucciones como si las memorizara",
+  "Esquiva el sol como si fuera una deuda",
+  "Cuenta las botellas del armario sin pensar",
+  "Olvida cumpleaños; nunca un encargo",
+];
+
+// ===========================================================================
 // Pool selection.
 // ===========================================================================
 
@@ -538,22 +610,65 @@ const POOLS_ES_CLASSIC: PoolMap = {
 };
 
 /**
- * Pool that backs each field for the active edition + language. The
- * `lang` parameter is optional for backwards compatibility — callers
- * that don't pass it get the English pools, matching pre-review
- * behaviour.
+ * Pool that backs each field for the active edition + language + kind.
+ * The `lang` and `kind` parameters are optional for backwards
+ * compatibility — callers that don't pass them get the English vampire
+ * pools, matching pre-Batch-BC behaviour.
+ *
+ * Batch BC — kind awareness layered on top of the existing edition
+ * gate:
+ *   - V5 vampire-only fields (`ambition`, `desire`, `predator`) are
+ *     empty for humans and ghouls regardless of edition. This is what
+ *     gates the Suggest button off for those fields on a mortal sheet.
+ *   - `nature` / `demeanor` stay classic-only across every kind; the
+ *     create form's existing visibility rules already keep them off V5
+ *     forms.
+ *   - Shared base fields (`name`, `concept`, `appearance`,
+ *     `personality`) keep the existing mortal-coded base pool for every
+ *     kind. Ghouls additionally receive the GHOUL_* supplemental
+ *     entries appended to `concept` / `personality` so suggestions lean
+ *     into the servitor / dependent themes the audit calls for.
  */
 export function poolFor(
   field: GeneratorField,
   edition: EditionId,
   lang: LangCode = 'en',
+  kind: CharacterKind = 'vampire',
 ): readonly string[] {
-  const isV5 = edition === 'V5';
   const eff = resolveLang(lang);
-  const pools = eff === 'es'
-    ? (isV5 ? POOLS_ES_V5 : POOLS_ES_CLASSIC)
-    : (isV5 ? POOLS_EN_V5 : POOLS_EN_CLASSIC);
-  return pools[field];
+  const isV5 = edition === 'V5';
+  const isVampire = kind === 'vampire';
+  const isGhoul = kind === 'ghoul';
+
+  // V5-vampire-only chronicle/feeding prompts — empty pool for mortals.
+  if (field === 'ambition' || field === 'desire' || field === 'predator') {
+    if (!isVampire || !isV5) return [];
+    return eff === 'es' ? POOLS_ES_V5[field] : POOLS_EN_V5[field];
+  }
+
+  // Classic personality traits — available across every kind on classic
+  // editions, empty on V5 forms (which use ambition / desire instead).
+  if (field === 'nature' || field === 'demeanor') {
+    if (isV5) return [];
+    return eff === 'es' ? POOLS_ES_CLASSIC[field] : POOLS_EN_CLASSIC[field];
+  }
+
+  // Shared base fields: name, concept, appearance, personality.
+  // Pull the base pool out of the existing V5 maps (the V5 and classic
+  // base entries are identical for these fields — see POOLS_EN_V5 /
+  // POOLS_EN_CLASSIC above).
+  const baseMap = eff === 'es' ? POOLS_ES_V5 : POOLS_EN_V5;
+  const basePool = baseMap[field];
+
+  if (isGhoul && field === 'concept') {
+    const ghoulPool = eff === 'es' ? GHOUL_CONCEPTS_ES : GHOUL_CONCEPTS_EN;
+    return [...basePool, ...ghoulPool];
+  }
+  if (isGhoul && field === 'personality') {
+    const ghoulPool = eff === 'es' ? GHOUL_PERSONALITIES_ES : GHOUL_PERSONALITIES_EN;
+    return [...basePool, ...ghoulPool];
+  }
+  return basePool;
 }
 
 // ===========================================================================
@@ -580,19 +695,23 @@ export function pickRandom<T>(
   return candidates[idx];
 }
 
-/** Whether a field is available for the given edition / language. */
+/** Whether a field is available for the given edition / language / kind. */
 export function isFieldAvailable(
   field: GeneratorField,
   edition: EditionId,
   lang: LangCode = 'en',
+  kind: CharacterKind = 'vampire',
 ): boolean {
-  return poolFor(field, edition, lang).length > 0;
+  return poolFor(field, edition, lang, kind).length > 0;
 }
 
 /**
- * Generate a single suggestion for the given field, edition and
- * language. `lastValue` (when supplied) is excluded from the candidate
+ * Generate a single suggestion for the given field, edition, language
+ * and kind. `lastValue` (when supplied) is excluded from the candidate
  * pool so the same entry never repeats twice in a row for that field.
+ *
+ * `kind` is the last optional parameter so existing 3-, 4-, and 5-arg
+ * call sites keep compiling unchanged (they get the vampire pool).
  */
 export function generateSuggestion(
   field: GeneratorField,
@@ -600,8 +719,9 @@ export function generateSuggestion(
   lang: LangCode = 'en',
   rng: () => number = Math.random,
   lastValue?: string,
+  kind: CharacterKind = 'vampire',
 ): string {
-  const pool = poolFor(field, edition, lang);
+  const pool = poolFor(field, edition, lang, kind);
   if (pool.length === 0) return '';
   return pickRandom(pool, rng, lastValue);
 }
@@ -615,15 +735,23 @@ export interface InspirationBundle {
  * Generate the Inspiration-panel pair. `lastBundle` (when supplied) is
  * excluded line-by-line so the user never sees the exact same prompt
  * twice in a row.
+ *
+ * Batch BC — accepts an optional `kind` so the personality line on a
+ * ghoul-flagged create form draws from the ghoul-augmented pool. The
+ * appearance pool stays kind-neutral because the base entries already
+ * read as mortal sensory cues.
  */
 export function generateInspirationBundle(
   lang: LangCode = 'en',
   rng: () => number = Math.random,
   lastBundle?: InspirationBundle,
+  kind: CharacterKind = 'vampire',
 ): InspirationBundle {
-  const eff = resolveLang(lang);
-  const appearancePool = eff === 'es' ? APPEARANCES_ES : APPEARANCES_EN;
-  const personalityPool = eff === 'es' ? PERSONALITIES_ES : PERSONALITIES_EN;
+  // V5 is arbitrary here — the appearance / personality base pools are
+  // identical across V5 and classic, and `poolFor` already merges the
+  // ghoul supplement when `kind === 'ghoul'`.
+  const appearancePool = poolFor('appearance', 'V5', lang, kind);
+  const personalityPool = poolFor('personality', 'V5', lang, kind);
   return {
     appearance: pickRandom(appearancePool, rng, lastBundle?.appearance),
     personality: pickRandom(personalityPool, rng, lastBundle?.personality),

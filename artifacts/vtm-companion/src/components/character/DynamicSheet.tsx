@@ -1019,6 +1019,9 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
       activeLanguage,
       undefined,
       sheetLastSuggestions[fieldId],
+      // Batch BC — thread the character's kind so a mortal sheet's
+      // Suggest button draws from the kind-appropriate pool.
+      character.kind ?? 'vampire',
     );
     if (!value) return;
     setSheetSuggestions(prev => ({ ...prev, [fieldId]: value }));
@@ -1091,7 +1094,9 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
         const canSuggest =
           !!genField &&
           !inputIsReadOnly &&
-          isFieldAvailable(genField, character.edition as EditionId, activeLanguage);
+          // Batch BC — kind-aware Suggest gating so a human / ghoul sheet
+          // never offers a predator / ambition / desire suggestion.
+          isFieldAvailable(genField, character.edition as EditionId, activeLanguage, character.kind ?? 'vampire');
         const pendingSuggestion = sheetSuggestions[field.id];
         const inputValue = field.id === 'chronicle'
           ? resolveChronicleFieldValue(value, linkedChronicleName)

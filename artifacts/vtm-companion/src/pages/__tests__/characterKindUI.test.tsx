@@ -325,3 +325,87 @@ describe('Character sheet header — kind-aware clan visuals (Batch BA polish)',
     expect(screen.getByTestId('sheet-header-kind')).toHaveTextContent(/ghoul/i);
   });
 });
+
+describe('Character sheet header — regnant-clan labelling (Batch BB)', () => {
+  function openSheet(character: { id: string }) {
+    window.sessionStorage.setItem('vtm-open-character-id', character.id);
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    setLanguage('en');
+  });
+
+  it('Ghoul sheet header with a regnant clan renders a "Regnant:" prefix before the clan name', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    openSheet(ghoul);
+    const prefix = screen.getByTestId('sheet-header-regnant-prefix');
+    expect(prefix).toBeInTheDocument();
+    // Prefix reads as the localized label + a colon. The clan name
+    // ("Tremere") follows it inside the same span.
+    expect(prefix).toHaveTextContent(/regnant:/i);
+    const clanSpan = screen.getByTestId('sheet-header-clan');
+    expect(clanSpan).toHaveTextContent(/regnant:/i);
+    expect(clanSpan).toHaveTextContent(/tremere/i);
+  });
+
+  it('Vampire sheet header does NOT render the regnant prefix — clan stays the character\'s own', () => {
+    const vampire = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Vampire'));
+    openSheet(vampire);
+    expect(screen.getByTestId('sheet-header-clan')).toBeInTheDocument();
+    expect(screen.queryByTestId('sheet-header-regnant-prefix')).not.toBeInTheDocument();
+  });
+
+  it('Ghoul WITHOUT a regnant clan renders neither the clan span nor the regnant prefix', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', '', 'Unbound', 'ghoul'));
+    openSheet(ghoul);
+    expect(screen.queryByTestId('sheet-header-clan')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('sheet-header-regnant-prefix')).not.toBeInTheDocument();
+  });
+
+  it('Spanish locale renders "Regente:" instead of "Regnant:"', () => {
+    setLanguage('es');
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    openSheet(ghoul);
+    const prefix = screen.getByTestId('sheet-header-regnant-prefix');
+    expect(prefix).toHaveTextContent(/regente:/i);
+  });
+});
+
+describe('Character cards — regnant-clan labelling (Batch BB)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    setLanguage('en');
+  });
+
+  it('Ghoul card identity row renders "Regnant:" before the regnant clan name', () => {
+    const ghoul = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Famulus', 'ghoul'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    const prefix = screen.getByTestId(`char-card-regnant-prefix-${ghoul.id}`);
+    expect(prefix).toBeInTheDocument();
+    expect(prefix).toHaveTextContent(/regnant:/i);
+    const row = screen.getByTestId(`char-card-clan-row-${ghoul.id}`);
+    expect(row).toHaveTextContent(/tremere/i);
+  });
+
+  it('Vampire card identity row does NOT render the regnant prefix', () => {
+    const vampire = saveCharacter(createEmptyCharacter('V20', 'tremere', 'Vampire'));
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+    expect(screen.getByTestId(`char-card-clan-row-${vampire.id}`)).toBeInTheDocument();
+    expect(screen.queryByTestId(`char-card-regnant-prefix-${vampire.id}`)).not.toBeInTheDocument();
+  });
+});

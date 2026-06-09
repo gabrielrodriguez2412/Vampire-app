@@ -1274,7 +1274,37 @@ export default function CharacterPage() {
                       backgroundImage: `radial-gradient(circle at top right, ${clanColor}1a, transparent 55%)`,
                     }}
                   >
-                    <CardHeader className="pb-3 pl-5">
+                    {/* Batch AS — decorative clan-themed watermark in the
+                        bottom-right corner. Same spirit as the chronicle
+                        card's ScrollText watermark: gives a card with
+                        sparse data some visual weight without competing
+                        with the title or interactive controls.
+
+                        Source: the existing safe Unicode `clan.icon`
+                        emoji the card already renders in its small
+                        identity row. No new image assets, no official
+                        VTM clan symbols, no licensed artwork. The
+                        watermark is `aria-hidden` and `pointer-events-none`
+                        so screen readers skip it and clicks pass
+                        through to the underlying card. */}
+                    <span
+                      aria-hidden
+                      data-testid={`char-card-watermark-${char.id}`}
+                      data-clan={char.clan}
+                      className="pointer-events-none select-none absolute right-2 bottom-0 text-5xl sm:text-6xl md:text-7xl leading-none opacity-[0.08] group-hover:opacity-[0.12] transition-opacity"
+                      style={{
+                        // Soft glow keyed off the clan colour so the
+                        // watermark feels of-a-piece with the existing
+                        // left-edge accent and the top-right radial
+                        // glow. Subtle enough that on phones the icon
+                        // still reads as a faded glyph, not a halo.
+                        textShadow: `0 0 12px ${clanColor}55`,
+                      }}
+                    >
+                      {getClanIcon(char.clan)}
+                    </span>
+
+                    <CardHeader className="pb-3 pl-5 relative">
                       <div className="flex justify-between items-start gap-2">
                         {selection.active && (
                           <span

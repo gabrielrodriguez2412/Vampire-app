@@ -262,6 +262,100 @@ describe('Batch AK review polish — corner-aligned char pip and "Open" text rem
   });
 });
 
+describe('Character card — decorative clan watermark (Batch AS)', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    window.localStorage.clear();
+  });
+
+  it('renders an aria-hidden watermark span on every character card', () => {
+    const alice = saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    const bob = saveCharacter(createEmptyCharacter('V5', 'tremere', 'Bob'));
+    setLanguage('en');
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    const aliceMark = screen.getByTestId(`char-card-watermark-${alice.id}`);
+    const bobMark = screen.getByTestId(`char-card-watermark-${bob.id}`);
+    // Decorative-only contract: screen readers skip it and clicks
+    // never land on the watermark itself.
+    expect(aliceMark).toHaveAttribute('aria-hidden');
+    expect(bobMark).toHaveAttribute('aria-hidden');
+    expect(aliceMark.className).toMatch(/pointer-events-none/);
+    expect(bobMark.className).toMatch(/pointer-events-none/);
+    // Absolute positioning in the bottom-right corner.
+    expect(aliceMark.className).toMatch(/absolute/);
+    expect(aliceMark.className).toMatch(/right-/);
+    expect(aliceMark.className).toMatch(/bottom-/);
+    // Always faded — never reaches full opacity.
+    expect(aliceMark.className).toMatch(/opacity-\[0\.0\d+\]/);
+  });
+
+  it('watermark is clan-aware: data-clan attribute matches the character clan and the glyph matches the safe clan.icon', async () => {
+    const alice = saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    const bob = saveCharacter(createEmptyCharacter('V5', 'tremere', 'Bob'));
+    setLanguage('en');
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    const aliceMark = screen.getByTestId(`char-card-watermark-${alice.id}`);
+    const bobMark = screen.getByTestId(`char-card-watermark-${bob.id}`);
+    expect(aliceMark).toHaveAttribute('data-clan', 'brujah');
+    expect(bobMark).toHaveAttribute('data-clan', 'tremere');
+
+    // The rendered glyph matches the existing safe Unicode clan.icon
+    // metadata (no new asset, no official VTM artwork).
+    const { clans } = await import('@/data/clans');
+    const brujah = clans.find(c => c.id === 'brujah');
+    const tremere = clans.find(c => c.id === 'tremere');
+    expect(aliceMark.textContent?.trim()).toBe(brujah?.icon);
+    expect(bobMark.textContent?.trim()).toBe(tremere?.icon);
+  });
+
+  it('watermark does not block the card click — opening the sheet still works', () => {
+    saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    setLanguage('en');
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    // Clicking anywhere on the card opens the sheet (the watermark is
+    // pointer-events-none, so the click hits the underlying Card).
+    fireEvent.click(screen.getByText('Alice'));
+    // Sheet view opens: the "Back" button appears.
+    expect(screen.getByRole('button', { name: /back/i })).toBeInTheDocument();
+  });
+
+  it('watermark coexists with the Batch AK favorite indicator (does not displace or hide it)', () => {
+    const alice = saveCharacter(createEmptyCharacter('V20', 'brujah', 'Alice'));
+    favorite('character', alice.id);
+    setLanguage('en');
+    render(
+      <AppContextProvider>
+        <CharacterPage />
+      </AppContextProvider>
+    );
+
+    // Both the favorite pip AND the watermark render on the same card,
+    // and they don't collide because the pip lives in the top-right
+    // action cluster while the watermark hugs the bottom-right.
+    expect(screen.getByTestId(`card-fav-indicator-character-${alice.id}`)).toBeInTheDocument();
+    expect(screen.getByTestId(`char-card-watermark-${alice.id}`)).toBeInTheDocument();
+  });
+});
+
 describe('favorite indicator label is localized (Batch AK)', () => {
   it('Spanish "Favorito" / English "Favorite"', async () => {
     const { UI_STRINGS } = await import('@/i18n/ui');

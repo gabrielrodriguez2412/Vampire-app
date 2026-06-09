@@ -318,6 +318,15 @@ export interface V5Character extends BaseCharacter {
   bloodPotency: number;
   hunger: number;
   humanity: number;
+  /**
+   * Batch AV — Generation is shown as a basic-info field on the V5 sheet.
+   * Kept optional (and intentionally NOT defaulted to 13 like the classic
+   * character) so existing V5 characters without it keep loading without a
+   * forced value being injected on read. Blood Potency is the V5 power tier
+   * — Generation here is purely informational and does not influence Blood
+   * Potency, Blood Pool max, or any other mechanic.
+   */
+  generation?: number;
   ambition?: string;
   desire?: string;
   predatorType?: string;

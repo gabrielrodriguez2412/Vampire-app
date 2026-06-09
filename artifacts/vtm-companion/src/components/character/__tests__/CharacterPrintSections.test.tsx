@@ -489,3 +489,31 @@ describe('print/PDF existing sections remain intact (Batch W regression guard)',
     expect(text).toContain(UI_STRINGS.en.sheet_section_social_moral);
   });
 });
+
+describe('print/PDF — V5 Generation row (Batch AV)', () => {
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('renders the V5 Generation identity row when the character has a generation', () => {
+    // Batch AV adds optional Generation to V5 characters; the print view
+    // mirrors the existing classic row and only emits it when set.
+    const char = makeV5({ generation: 12 });
+    const text = renderPrint(char, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_generation); // "Generation"
+    expect(text).toContain('12');
+  });
+
+  it('omits the V5 Generation row when the character has no generation', () => {
+    // The default V5 fixture has no generation. The print view must not
+    // surface a label-only row in that case.
+    const text = renderPrint(makeV5(), 'en');
+    // We can't assert the bare label is absent (it's a common word that
+    // could appear elsewhere), so check the row's value placement instead
+    // by confirming the screen has no "Generation" identity-row pair.
+    // Practically: with no generation set, the print view must not contain
+    // both "Generation" *and* a numeric value tied to it. Asserting
+    // absence of the i18n label is a stable proxy here because the only
+    // other place that label can appear is the row itself.
+    expect(text).not.toContain(UI_STRINGS.en.sheet_generation);
+  });
+});

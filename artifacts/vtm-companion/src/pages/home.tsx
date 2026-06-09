@@ -102,6 +102,158 @@ export default function Home() {
     return clans.find(c => c.id === clanId)?.icon || '🦇';
   };
 
+  // Batch AU — dynamic "Recommended Next" recommendations.
+  //
+  // Built as an ordered slot list so the layout stays predictable across
+  // empty / populated states and across editions. Each slot resolves to at
+  // most one card; the array is rendered in order.
+  //
+  // No usage tracking is involved — recommendations are derived purely from
+  // (a) which collections already have data, (b) the most-recent entry per
+  // collection, and (c) the active edition. The user explicitly asked us
+  // NOT to add new localStorage counters or analytics in this batch.
+  const recommendations = useMemo(() => {
+    const recentChronicle = recentChronicles[0];
+    const recentSession = recentSessions[0];
+    const isV5 = activeEdition === 'V5';
+
+    type Rec = {
+      key: string;
+      icon: string;
+      title: string;
+      subtitle: string;
+      onClick: () => void;
+    };
+    const out: Rec[] = [];
+
+    // Slot 1 — character context.
+    if (characters.length === 0) {
+      out.push({
+        key: 'create-character',
+        icon: 'person_add',
+        title: strings.home_rec_create_character_title || 'Create your first character',
+        subtitle: strings.home_rec_create_character_subtitle || 'Build a kindred from scratch.',
+        onClick: () => {
+          try { sessionStorage.removeItem('vtm-open-character-id'); } catch { /* ignore */ }
+          setLocation('/personaje');
+        },
+      });
+    } else if (continueCharacter) {
+      out.push({
+        key: 'continue-character',
+        icon: 'play_circle',
+        title: strings.home_rec_continue_character || 'Continue character',
+        subtitle: continueCharacter.name?.trim() || (strings.unnamed_character || 'Unnamed Character'),
+        onClick: () => openCharacter(continueCharacter.id),
+      });
+    }
+
+    // Slot 2 — chronicle context. Prefer "open last session" when sessions
+    // exist (more specific than the parent chronicle), then fall back to
+    // resuming the latest chronicle, then to the empty-state create card.
+    if (chronicles.length === 0) {
+      out.push({
+        key: 'create-chronicle',
+        icon: 'auto_stories',
+        title: strings.home_rec_create_chronicle_title || 'Create your first chronicle',
+        subtitle: strings.home_rec_create_chronicle_subtitle || 'Track your stories and sessions.',
+        onClick: () => {
+          try {
+            sessionStorage.removeItem('vtm-open-chronicle-id');
+            sessionStorage.removeItem('vtm-open-chronicle-tab');
+          } catch { /* ignore */ }
+          setLocation('/cronica');
+        },
+      });
+    } else if (recentSession) {
+      const chrName = chronicleNameById.get(recentSession.chronicleId) || '';
+      // Per-session deep links don't exist yet — routing into the parent
+      // chronicle's "sessions" tab is the closest the app currently
+      // supports. Per-session anchors are reported as deferred in the PR
+      // notes.
+      out.push({
+        key: 'open-session',
+        icon: 'event_note',
+        title: strings.home_rec_open_session || 'Open last session',
+        subtitle: chrName
+          ? `${recentSession.title} · ${chrName}`
+          : recentSession.title,
+        onClick: () => openChronicle(recentSession.chronicleId, 'sessions'),
+      });
+    } else if (recentChronicle) {
+      out.push({
+        key: 'resume-chronicle',
+        icon: 'auto_stories',
+        title: strings.home_rec_resume_chronicle || 'Resume chronicle',
+        subtitle: recentChronicle.name,
+        onClick: () => openChronicle(recentChronicle.id, 'overview'),
+      });
+    }
+
+    // Slot 3 — dice/tools. Always present; this is the most common play-time
+    // jump-off across both editions.
+    out.push({
+      key: 'dice-tools',
+      icon: 'casino',
+      title: strings.home_rec_dice_tools_title || 'Dice & tools',
+      subtitle: strings.home_rec_dice_tools_subtitle || 'Quick rolls, counters, and references.',
+      onClick: () => setLocation('/compendium/herramientas'),
+    });
+
+    // Slot 4 — edition-aware tip. Rouse Check is V5-only by design (it does
+    // not exist in V20/Revised/2nd/1st); classic editions get the Blood
+    // Pool reference instead.
+    if (isV5) {
+      out.push({
+        key: 'rouse-check',
+        icon: 'bloodtype',
+        title: strings.home_rec_rouse_title || 'Rouse Check',
+        subtitle: strings.home_rec_rouse_subtitle || 'Test the Blood when calling on V5 powers.',
+        onClick: () => setLocation('/compendium/herramientas'),
+      });
+    } else {
+      out.push({
+        key: 'blood-pool',
+        icon: 'bloodtype',
+        title: strings.home_rec_blood_pool_title || 'Blood Pool',
+        subtitle: strings.home_rec_blood_pool_subtitle || 'How Blood points are spent in classic editions.',
+        onClick: () => setLocation('/compendium/reglas/blood-pool'),
+      });
+    }
+
+    // Slot 5 — empty-state bonus. Only fires when the install has zero
+    // player data; otherwise the four slots above already cover the row
+    // (and the Clans card in the secondary rail is one click away).
+    if (characters.length === 0 && chronicles.length === 0) {
+      out.push({
+        key: 'explore-clans',
+        icon: 'groups',
+        title: strings.home_rec_explore_clans_title || 'Explore clans',
+        subtitle: strings.home_rec_explore_clans_subtitle || 'Tour the lineages and their gifts.',
+        onClick: () => setLocation('/compendium/clanes'),
+      });
+    }
+
+    return out;
+    // The `strings` object is rebuilt on every render but its identity is
+    // not used as a dep here — we want recommendations to refresh when the
+    // underlying data, edition, or active language change, all of which
+    // are captured by the listed deps. `activeLanguage` flows through
+    // `strings` and is included via that proxy through the parent render.
+  }, [
+    characters,
+    chronicles,
+    recentChronicles,
+    recentSessions,
+    continueCharacter,
+    activeEdition,
+    strings,
+    chronicleNameById,
+    openCharacter,
+    openChronicle,
+    setLocation,
+  ]);
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-4 flex flex-col gap-8">
 
@@ -470,38 +622,45 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Quick topic chips — frequent jump-offs into Rules. Edition-aware
-            ids mirror the existing `humanity-loss` vs `humanity-classic`
-            pattern from the prior bento card. */}
-        <div className="mt-5">
-          <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-2">
-            {strings.home_rules_quick_topics || 'Quick topics'}
+        {/* Batch AU — dynamic "Recommended Next" cards replace the previous
+            fixed quick-topic chip row.
+
+            Slot model (each slot yields exactly one card or is skipped):
+              1. Character slot — Continue last character, OR Create-first.
+              2. Chronicle slot — Open last session (if sessions exist), OR
+                 Resume last chronicle, OR Create-first chronicle.
+              3. Tools slot — always present (Dice & tools).
+              4. Edition slot — V5 → Rouse Check; classic → Blood Pool ref.
+              5. Empty-state bonus — only when no characters AND no chronicles
+                 exist, surface an "Explore clans" card so a brand-new install
+                 still shows useful next steps.
+
+            The slot order keeps the section balanced between 3 and 5 cards
+            and adapts to both empty and populated states without churn. */}
+        <div className="mt-5" data-testid="home-recommended">
+          <p className="text-[10px] font-sans font-semibold tracking-[0.2em] uppercase text-primary-container mb-1">
+            {strings.home_recommended_title || 'Recommended Next'}
           </p>
-          <div className="flex flex-wrap gap-2" data-testid="home-rules-topics">
-            {[
-              { id: 'combat-overview', label: strings.home_topic_combat || 'Combat' },
-              { id: 'dice-pools', label: strings.home_topic_dice || 'Dice' },
-              { id: activeEdition === 'V5' ? 'healing-v5' : 'healing-classic', label: strings.health || 'Health' },
-              { id: 'hunger-dice', label: strings.hunger || 'Hunger' },
-              { id: activeEdition === 'V5' ? 'willpower' : 'willpower-classic', label: strings.willpower || 'Willpower' },
-              { id: activeEdition === 'V5' ? 'humanity-loss' : 'humanity-classic', label: strings.humanity || 'Humanity' },
-              { id: 'blood-pool', label: strings.home_topic_blood_pool || 'Blood Pool' },
-            ].map(t => (
-              <button
-                key={t.label}
-                type="button"
-                onClick={() => setLocation(`/compendium/reglas/${t.id}`)}
-                className="text-xs font-sans uppercase tracking-widest border border-zinc-800 bg-zinc-950 hover:border-primary-container hover:text-primary-container text-zinc-300 px-3 py-1.5 transition-colors"
-              >
-                {t.label}
-              </button>
+          <p className="text-zinc-400 font-sans text-xs mb-3">
+            {strings.home_recommended_subtitle || 'Pick up where you left off, or explore something new.'}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {recommendations.map(rec => (
+              <RecommendationCard
+                key={rec.key}
+                icon={rec.icon}
+                title={rec.title}
+                subtitle={rec.subtitle}
+                onClick={rec.onClick}
+                testId={`home-rec-${rec.key}`}
+              />
             ))}
           </div>
         </div>
 
         {/* Mobile-only Open Compendium link — the header chip is hidden on
             narrow screens to keep the title/subtitle uncrowded, so we surface
-            it again below the chips. */}
+            it again at the bottom of this section. */}
         <button
           type="button"
           onClick={() => setLocation('/compendium')}
@@ -542,6 +701,39 @@ function SecondaryNavCard({ icon, title, description, onClick, testId }: Seconda
       <div className="min-w-0 flex-1">
         <h3 className="font-serif text-base sm:text-lg uppercase text-on-surface group-hover:text-primary-container transition-colors leading-tight">{title}</h3>
         <p className="text-zinc-400 font-sans text-xs mt-1 line-clamp-2">{description}</p>
+      </div>
+      <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-primary-container shrink-0 mt-1" aria-hidden="true" />
+    </button>
+  );
+}
+
+interface RecommendationCardProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+  testId?: string;
+}
+
+/**
+ * Compact recommendation card used by the Home "Recommended Next" row.
+ *
+ * Visually a sibling of `SecondaryNavCard` but lighter and tuned for the
+ * dense 4-up desktop grid; subtitles can carry a dynamic name (character /
+ * chronicle / session) and are clamped to two lines to keep the row even.
+ */
+function RecommendationCard({ icon, title, subtitle, onClick, testId }: RecommendationCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-testid={testId}
+      className="text-left bg-zinc-950 border border-zinc-900 p-3 hover:border-primary-container hover:bg-zinc-900/60 transition-colors group flex items-start gap-2.5 min-h-[68px]"
+    >
+      <span className="material-symbols-outlined text-primary-container text-xl shrink-0 mt-0.5" aria-hidden="true">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <h4 className="font-serif text-sm text-on-surface group-hover:text-primary-container transition-colors leading-tight truncate">{title}</h4>
+        <p className="text-zinc-400 font-sans text-[11px] mt-0.5 line-clamp-2">{subtitle}</p>
       </div>
       <ArrowRight className="w-3.5 h-3.5 text-zinc-700 group-hover:text-primary-container shrink-0 mt-1" aria-hidden="true" />
     </button>

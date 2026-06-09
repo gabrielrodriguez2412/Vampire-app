@@ -85,27 +85,14 @@ describe('Home — Rules Quick Access (Batch AT)', () => {
     expect(memory.history[memory.history.length - 1]).toBe('/compendium/herramientas');
   });
 
-  it('renders quick topic chips and links them into the rules deep routes', () => {
-    const { memory } = renderHome();
-    const topics = screen.getByTestId('home-rules-topics');
-    expect(topics).toBeInTheDocument();
-
-    // Every requested topic chip should be present (label match, case-insensitive).
-    for (const label of ['Combat', 'Dice', 'Health', 'Hunger', 'Willpower', 'Humanity', 'Blood Pool']) {
-      expect(topics).toHaveTextContent(new RegExp(label, 'i'));
-    }
-
-    const combatChip = screen.getByRole('button', { name: /^combat$/i });
-    fireEvent.click(combatChip);
-    expect(memory.history[memory.history.length - 1]).toBe('/compendium/reglas/combat-overview');
-
-    const diceChip = screen.getByRole('button', { name: /^dice$/i });
-    fireEvent.click(diceChip);
-    expect(memory.history[memory.history.length - 1]).toBe('/compendium/reglas/dice-pools');
-
-    const bloodPoolChip = screen.getByRole('button', { name: /^blood pool$/i });
-    fireEvent.click(bloodPoolChip);
-    expect(memory.history[memory.history.length - 1]).toBe('/compendium/reglas/blood-pool');
+  it('replaces the prior static quick-topic chip row with the Recommended Next section', () => {
+    // Batch AU rework: the static Combat / Dice / Health / Hunger / Willpower
+    // / Humanity / Blood Pool chip row was removed in favor of dynamic
+    // "Recommended Next" cards. The recommendations section must render in
+    // its place; the old `home-rules-topics` container must be gone.
+    renderHome();
+    expect(screen.queryByTestId('home-rules-topics')).not.toBeInTheDocument();
+    expect(screen.getByTestId('home-recommended')).toBeInTheDocument();
   });
 
   it('keeps the Core Rules description short and original (no long rulebook prose)', () => {

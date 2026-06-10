@@ -1092,6 +1092,34 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
     onChange(updated);
   };
 
+  // Batch BG — opt-in Vitae tracker for classic-edition Ghouls. Mirrors
+  // the Morality toggle pattern but gates on `kind === 'ghoul'` AND a
+  // non-V5 edition (V5 ghoul vitae is deferred per the BF audit §3).
+  // Independent from `trackMorality` — both flags can be on, off, or
+  // mixed without interacting. Seeds `{ current: 3, max: 3 }` on opt-in
+  // when no `bloodPool` value is already stored; preserves any dormant
+  // pre-Batch-BA value (e.g. the legacy 10/10 from when ghouls flowed
+  // through the vampire-shaped pipeline) verbatim if one exists.
+  const isGhoulClassic = characterKind === 'ghoul' && character.edition !== 'V5';
+  const trackVitaeEnabled = isGhoulClassic && character.trackVitae === true;
+
+  const toggleTrackVitae = (next: boolean) => {
+    if (!isGhoulClassic) return;
+    if (readonly) return;
+    let updated: Character = { ...character, trackVitae: next } as Character;
+    if (next) {
+      const existing = (character as { bloodPool?: unknown }).bloodPool;
+      const isPoolObject =
+        typeof existing === 'object' && existing !== null &&
+        typeof (existing as { current?: unknown }).current === 'number' &&
+        typeof (existing as { max?: unknown }).max === 'number';
+      if (!isPoolObject) {
+        updated = setProperty(updated, 'bloodPool', { current: 3, max: 3 }) as Character;
+      }
+    }
+    onChange(updated);
+  };
+
   // Safely handle missing schema
   if (!schema || !schema.sections) {
     return <div className="text-center text-muted-foreground p-8">Unable to load character sheet schema</div>;
@@ -1503,6 +1531,49 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                   </div>
                 )}
               </section>
+              {/* Batch BG — Vitae card sits alongside the Morality card
+                  for classic-edition Ghouls. The two flags are
+                  independent: a ghoul can opt into either, both, or
+                  neither. The card is absent for Humans, Vampires, and
+                  V5 ghouls. */}
+              {isGhoulClassic && (
+                <section
+                  data-testid="sheet-vitae-section"
+                  aria-label={strings.sheet_track_vitae || "Track vitae"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="sheet-track-vitae"
+                      className="text-sm text-foreground font-serif"
+                    >
+                      {strings.sheet_track_vitae || "Track vitae"}
+                    </label>
+                    <Switch
+                      id="sheet-track-vitae"
+                      checked={trackVitaeEnabled}
+                      onCheckedChange={toggleTrackVitae}
+                      disabled={readonly}
+                      aria-label={strings.sheet_track_vitae || "Track vitae"}
+                      data-testid="sheet-track-vitae-toggle"
+                    />
+                  </div>
+                  {trackVitaeEnabled && (
+                    <div
+                      data-testid="sheet-vitae-tracker"
+                      className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
+                    >
+                      {renderField({
+                        id: 'bloodPool',
+                        labelKey: 'sheet_vitae',
+                        type: 'special-health',
+                        special: 'bloodPool',
+                        gameplay: true,
+                      })}
+                    </div>
+                  )}
+                </section>
+              )}
             </React.Fragment>
           );
         }

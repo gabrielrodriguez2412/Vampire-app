@@ -696,10 +696,24 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
       )}
 
       {/* Disciplines — only when populated. Each discipline row is the atomic
-          break-inside unit so name and its powers stay together. */}
-      {isVampire && disciplineEntries.length > 0 && (
+          break-inside unit so name and its powers stay together.
+          Batch BI-2 — classic Ghouls can opt into the same section via
+          BI-1's `trackGhoulPowers` flag. The vampire branch stays
+          byte-for-byte unchanged (label / row shape / dotsString output);
+          the new mortal branch uses the BI-1 `sheet_section_ghoul_powers`
+          label ("Powers" / "Poderes") so the printed heading reads as
+          ghoul-specific rather than vampire-only. V5 Ghouls and humans
+          never enter the branch. An opted-in ghoul with no entries still
+          prints no section — same convention vampires use for an empty
+          disciplines map. */}
+      {((isVampire) || (!isV5 && kind === 'ghoul' && character.trackGhoulPowers === true))
+        && disciplineEntries.length > 0 && (
         <section>
-          <SectionHeading>{strings.sheet_section_disciplines || "Disciplines"}</SectionHeading>
+          <SectionHeading>
+            {isVampire
+              ? (strings.sheet_section_disciplines || "Disciplines")
+              : (strings.sheet_section_ghoul_powers || "Powers")}
+          </SectionHeading>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-0">
             {disciplineEntries.map(([id, raw]) => {
               const { rating, powers } = readDisciplineEntry(raw);

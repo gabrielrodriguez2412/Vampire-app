@@ -1098,3 +1098,181 @@ describe('print/PDF — V20 Ghoul opt-in Vitae tracker (Batch BH)', () => {
     expect(summary?.textContent).toMatch(/0\s*\/\s*0/);
   });
 });
+
+describe('print/PDF — V20 Ghoul opt-in Powers section (Batch BI-2)', () => {
+  // BI-2 mirrors the BI-1 live-sheet opt-in onto the print path. Vampires
+  // keep their existing Disciplines section byte-for-byte (same label,
+  // same row shape); classic Ghoul Powers print only when
+  // `trackGhoulPowers === true` and there's at least one entry; dormant
+  // pre-AX `disciplines` values on opt-out ghouls must NOT leak. The
+  // ghoul branch uses the new BI-1 section label ("Powers" / "Poderes"),
+  // never "Disciplines".
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V20 Ghoul print hides Powers when trackGhoulPowers is missing', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      disciplines: { potence: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('V20 Ghoul print hides Powers when trackGhoulPowers is explicitly false', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackGhoulPowers: false,
+      disciplines: { potence: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('V20 Ghoul print shows the Powers section labelled "Powers" when opted-in with entries', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackGhoulPowers: true,
+      disciplines: { potence: 1, celerity: 2 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'en');
+    // Powers label appears...
+    expect(text).toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    // ...and the row shows the discipline names + dot string.
+    expect(text).toContain('Potence');
+    expect(text).toContain('Celerity');
+    // The vampire Disciplines label is NEVER used for ghouls.
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('Revised Ghoul print also shows Powers when opted-in with entries', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere', edition: 'REVISED' }),
+      kind: 'ghoul',
+      trackGhoulPowers: true,
+      disciplines: { dominate: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+  });
+
+  it('V20 Ghoul opted-in with empty disciplines map prints NO Powers section', () => {
+    // Matches the convention vampires already follow: an empty disciplines
+    // map → no section. The decision is documented in the BI-2 brief as
+    // an explicit choice — empty sections don't fit the existing print
+    // style.
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackGhoulPowers: true,
+      disciplines: {} as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('does NOT leak a dormant disciplines map into print on a Ghoul opted-out', () => {
+    // Pre-AX dormant data: { celerity: 2 } still on disk from when the
+    // character was created as a vampire. The ghoul has not opted into
+    // Powers, so print must stay silent.
+    const dormant: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      disciplines: { celerity: 2 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (dormant as { humanity?: number }).humanity;
+    delete (dormant as { generation?: number }).generation;
+    delete (dormant as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(dormant, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+    expect(text).not.toContain('Celerity');
+  });
+
+  it('V5 Ghoul print does NOT show Powers even with trackGhoulPowers true (deferred per BI audit §3)', () => {
+    const ghoul: V5Character = {
+      ...makeV5({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackGhoulPowers: true,
+      disciplines: { auspex: 1 } as Record<string, number>,
+    } as V5Character;
+    delete (ghoul as { hunger?: number }).hunger;
+    delete (ghoul as { bloodPotency?: number }).bloodPotency;
+    delete (ghoul as { humanity?: number }).humanity;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('Human print does NOT show Powers even with trackGhoulPowers true and stored disciplines', () => {
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'human',
+      trackGhoulPowers: true,
+      disciplines: { potence: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (human as { humanity?: number }).humanity;
+    delete (human as { generation?: number }).generation;
+    delete (human as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_section_disciplines);
+  });
+
+  it('Vampire print still shows Disciplines regardless of trackGhoulPowers (no regression)', () => {
+    // V20 vampire — schema-driven Disciplines section is unchanged.
+    const v20Vamp = makeClassic({ disciplines: { dominate: 3 } as Record<string, number> });
+    (v20Vamp as Character).trackGhoulPowers = true; // stray flag ignored on vampires
+    const v20Text = renderPrint(v20Vamp, 'en');
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_section_disciplines);
+    // Vampires never use the ghoul Powers label.
+    expect(v20Text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    // V5 vampire — schema-driven Disciplines section is unchanged.
+    const v5Vamp = makeV5({ disciplines: { auspex: 2 } as Record<string, number> });
+    (v5Vamp as Character).trackGhoulPowers = true;
+    const v5Text = renderPrint(v5Vamp, 'en');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_section_disciplines);
+    expect(v5Text).not.toContain(UI_STRINGS.en.sheet_section_ghoul_powers);
+  });
+
+  it('Spanish V20 Ghoul print uses the localized "Poderes" label', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackGhoulPowers: true,
+      disciplines: { potence: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    const text = renderPrint(ghoul, 'es');
+    expect(text).toContain(UI_STRINGS.es.sheet_section_ghoul_powers);
+    // Spanish vampire label "Disciplinas" must NOT appear on a ghoul.
+    expect(text).not.toContain(UI_STRINGS.es.sheet_section_disciplines);
+  });
+});

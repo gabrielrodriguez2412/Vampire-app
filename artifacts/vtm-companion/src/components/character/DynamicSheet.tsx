@@ -9,6 +9,7 @@ import { ClassicPoolTracker } from "./ClassicPoolTracker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Plus, X, ChevronDown, ExternalLink, Pencil, Trash2, Check,
   Sword, Shield, Wrench, Backpack, FileText, Car, Sparkles, Heart, Coins, Package2, Package,
@@ -1062,6 +1063,35 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
     onChange(updated);
   };
 
+  // Batch BE-1 — opt-in morality tracker, Human / Ghoul only. The toggle
+  // lives outside the schema so the existing renderer doesn't need a new
+  // field type; turning it on / off only flips `trackMorality` and (the
+  // first time it's enabled) seeds a default `humanity: 7` when no
+  // dormant value is already on the character. Disabling preserves the
+  // stored `humanity` so a future opt-in doesn't lose play state.
+  const characterKind = character.kind ?? 'vampire';
+  const isMortalKind = characterKind === 'human' || characterKind === 'ghoul';
+  const trackMoralityEnabled = isMortalKind && character.trackMorality === true;
+  const moralityLabelKey = character.edition === 'V5' ? 'sheet_humanity' : 'sheet_humanity_path';
+
+  const toggleTrackMorality = (next: boolean) => {
+    if (!isMortalKind) return;
+    // The toggle is a build-time choice, not a gameplay tracker, so it
+    // honors the View-Mode lock the same way Predator Type / Concept do.
+    if (readonly) return;
+    let updated: Character = { ...character, trackMorality: next } as Character;
+    if (next) {
+      // Seed a safe default only when no value is already present. A
+      // dormant `humanity` from earlier batches (AX / AY) survives this
+      // path untouched.
+      const existing = (character as { humanity?: unknown }).humanity;
+      if (typeof existing !== 'number' || !Number.isFinite(existing)) {
+        updated = setProperty(updated, 'humanity', 7) as Character;
+      }
+    }
+    onChange(updated);
+  };
+
   // Safely handle missing schema
   if (!schema || !schema.sections) {
     return <div className="text-center text-muted-foreground p-8">Unable to load character sheet schema</div>;
@@ -1407,7 +1437,13 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
         const isCollapsed = !!collapsed[sectionId];
         const sectionLabel = strings[section.labelKey] || section.labelKey;
         const bodyId = `sheet-section-body-${sectionId}`;
-        return (
+        // Batch BE-1 polish — the mortal "Track morality" toggle now lives
+        // in its own small card directly after Basic Info, so it reads as
+        // controlling an optional morality tracker rather than the whole
+        // sheet. The card holds the toggle on its own when off, and the
+        // toggle + Humanity / Path field when on. Vampires never enter
+        // this branch.
+        const renderedSection = (
           <section key={sectionId} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3">
             <button
               type="button"
@@ -1432,6 +1468,46 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
             </div>
           </section>
         );
+
+        if (section.id === 'basic_info' && isMortalKind) {
+          return (
+            <React.Fragment key={sectionId}>
+              {renderedSection}
+              <section
+                data-testid="sheet-morality-section"
+                aria-label={strings.sheet_track_morality || "Track morality"}
+                className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="sheet-track-morality"
+                    className="text-sm text-foreground font-serif"
+                  >
+                    {strings.sheet_track_morality || "Track morality"}
+                  </label>
+                  <Switch
+                    id="sheet-track-morality"
+                    checked={trackMoralityEnabled}
+                    onCheckedChange={toggleTrackMorality}
+                    disabled={readonly}
+                    aria-label={strings.sheet_track_morality || "Track morality"}
+                    data-testid="sheet-track-morality-toggle"
+                  />
+                </div>
+                {trackMoralityEnabled && (
+                  <div
+                    data-testid="sheet-morality-tracker"
+                    className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
+                  >
+                    {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
+                  </div>
+                )}
+              </section>
+            </React.Fragment>
+          );
+        }
+
+        return renderedSection;
       })}
     </div>
   );

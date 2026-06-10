@@ -221,7 +221,13 @@ function DynamicDotList({ value, label, max, fieldId, isReadOnly, handleUpdate, 
   );
 }
 
-function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character }: any) {
+function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character, mode }: any) {
+  // Batch BI-1 — `mode: 'ghoul'` constrains the vampire-shaped UI for the
+  // classic-Ghoul Powers card. The only behavior change is hiding the
+  // "Add all suggested" bulk action: ghouls should pick powers
+  // deliberately. Default ('vampire') leaves the existing UI byte-for-byte
+  // unchanged.
+  const isGhoulMode = mode === 'ghoul';
   // Batch U: pull the active language so discipline names render in
   // the selected locale (e.g. Obfuscate → Ofuscación in Spanish)
   // through the shared `getDisciplineDisplayName` helper, instead of
@@ -349,10 +355,11 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
               {getDisplayName(id)}
             </button>
           ))}
-          {suggestedIds.length > 1 && (
+          {suggestedIds.length > 1 && !isGhoulMode && (
             <button
               type="button"
               onClick={addAllSuggested}
+              data-testid="disciplines-add-all-suggested"
               className="text-xs px-2 py-1 rounded border border-primary/40 bg-primary/15 text-foreground hover:bg-primary/25 transition-colors"
             >
               {strings.disciplines_add_all_suggested || "Add all"}
@@ -1120,6 +1127,21 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
     onChange(updated);
   };
 
+  // Batch BI-1 — opt-in Powers section for classic-edition Ghouls. Gated
+  // on the same `isGhoulClassic` predicate as Vitae (kind === 'ghoul' AND
+  // edition !== 'V5'); independent of `trackMorality` and `trackVitae`.
+  // Pure visibility flag: enabling does NOT seed any `disciplines` data
+  // (the dormant map is left verbatim, including the empty {} that
+  // createEmptyCharacter seeds for every kind); disabling does NOT erase
+  // it, so re-enabling later restores the same entries.
+  const trackGhoulPowersEnabled = isGhoulClassic && character.trackGhoulPowers === true;
+
+  const toggleTrackGhoulPowers = (next: boolean) => {
+    if (!isGhoulClassic) return;
+    if (readonly) return;
+    onChange({ ...character, trackGhoulPowers: next } as Character);
+  };
+
   // Safely handle missing schema
   if (!schema || !schema.sections) {
     return <div className="text-center text-muted-foreground p-8">Unable to load character sheet schema</div>;
@@ -1570,6 +1592,55 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                         special: 'bloodPool',
                         gameplay: true,
                       })}
+                    </div>
+                  )}
+                </section>
+              )}
+              {/* Batch BI-1 — Powers card sits after the Vitae card for
+                  classic-edition Ghouls. Uses the same DisciplineList UI
+                  vampires use, but in `mode="ghoul"` so the "Add all
+                  suggested" bulk action is hidden — ghouls pick powers
+                  deliberately. The card is absent for Humans, Vampires,
+                  and V5 ghouls. Section label is "Powers" / "Poderes",
+                  NOT "Disciplines" — keeps the printed/visible header
+                  distinct from the vampire surface. */}
+              {isGhoulClassic && (
+                <section
+                  data-testid="sheet-ghoul-powers-section"
+                  aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <label
+                      htmlFor="sheet-track-ghoul-powers"
+                      className="text-sm text-foreground font-serif"
+                    >
+                      {strings.sheet_track_ghoul_powers || "Track powers"}
+                    </label>
+                    <Switch
+                      id="sheet-track-ghoul-powers"
+                      checked={trackGhoulPowersEnabled}
+                      onCheckedChange={toggleTrackGhoulPowers}
+                      disabled={readonly}
+                      aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
+                      data-testid="sheet-track-ghoul-powers-toggle"
+                    />
+                  </div>
+                  {trackGhoulPowersEnabled && (
+                    <div
+                      data-testid="sheet-ghoul-powers-list"
+                      className="mt-6 short-landscape:mt-3"
+                    >
+                      <DisciplineList
+                        value={(character as { disciplines?: unknown }).disciplines}
+                        label={strings.sheet_section_ghoul_powers || "Powers"}
+                        fieldId="disciplines"
+                        isReadOnly={readonly}
+                        handleUpdate={handleUpdate}
+                        strings={strings}
+                        character={character}
+                        mode="ghoul"
+                      />
                     </div>
                   )}
                 </section>

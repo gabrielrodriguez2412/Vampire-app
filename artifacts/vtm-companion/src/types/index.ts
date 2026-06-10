@@ -352,6 +352,21 @@ export interface BaseCharacter {
    * Additive and backward-compatible.
    */
   trackVitae?: boolean;
+  /**
+   * Batch BI-1 — opt-in Powers section visibility for classic-edition
+   * Ghoul sheets. Defaults to `false` (or absent → treated as `false`).
+   * When `true` and `kind === 'ghoul'` and `edition !== 'V5'`, the
+   * sheet exposes the existing `disciplines` map under a distinct
+   * "Powers" section header that uses a constrained variant of the
+   * existing DisciplineList UI (no "Add all suggested" bulk action).
+   * Has no effect on vampires (their Disciplines is schema-driven), on
+   * humans (no powers, ever), or on V5 ghouls (deferred per the BI
+   * audit). Independent of `trackMorality` and `trackVitae`. The flag
+   * controls visibility only — enabling does NOT seed any data,
+   * disabling does NOT erase the `disciplines` map. Additive and
+   * backward-compatible.
+   */
+  trackGhoulPowers?: boolean;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

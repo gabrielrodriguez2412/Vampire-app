@@ -507,12 +507,28 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
     });
   }
   // Batch BA — Humanity / Blood Potency are vampire-only print rows.
-  // Mortal sheets explicitly omit Humanity (see audit §5.9 — humanity
-  // for mortals is a deferred opt-in toggle); Blood Potency never
+  // Mortal sheets explicitly omit Humanity by default (see audit §5.9 —
+  // humanity for mortals is an opt-in toggle); Blood Potency never
   // applies to non-vampires.
+  //
+  // Batch BE-2 — Humans / Ghouls can opt into the same Humanity / Path
+  // print row by flipping `trackMorality` on their character. The
+  // vampire branch above stays byte-for-byte unchanged (always uses
+  // `sheet_humanity` regardless of edition — that's a pre-existing
+  // label decision, intentionally NOT revisited here). The mortal
+  // branch is edition-aware so V20 mortals get "Humanity / Path"
+  // parity with their live sheet, matching BE-1.
   if (isVampire) {
     trackerRows.push({
       label: strings.sheet_humanity || "Humanity",
+      value: <span className="font-mono">{dotsString((character as { humanity?: number }).humanity || 0, 10)}</span>,
+    });
+  } else if ((kind === 'human' || kind === 'ghoul') && character.trackMorality === true) {
+    const moralityLabel = isV5
+      ? (strings.sheet_humanity || "Humanity")
+      : (strings.sheet_humanity_path || "Humanity / Path");
+    trackerRows.push({
+      label: moralityLabel,
       value: <span className="font-mono">{dotsString((character as { humanity?: number }).humanity || 0, 10)}</span>,
     });
   }

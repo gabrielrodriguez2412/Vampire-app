@@ -763,3 +763,177 @@ describe('print/PDF — vampire-only identity rows are gated by kind (Batch BA p
     expect(text).not.toMatch(/\bRegnant\b/);
   });
 });
+
+describe('print/PDF — Human / Ghoul opt-in morality tracker (Batch BE-2)', () => {
+  // BE-2 mirrors the BE-1 live-sheet opt-in onto the print path. Vampires
+  // are unchanged (their Humanity always prints from the schema). Mortal
+  // morality only prints when `trackMorality === true`; dormant
+  // `humanity` values on opt-out mortals must NOT leak into print.
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V5 Human print hides Humanity when trackMorality is missing', () => {
+    const human: V5Character = { ...makeV5({ clan: '' }), kind: 'human' } as V5Character;
+    delete (human as { hunger?: number }).hunger;
+    delete (human as { bloodPotency?: number }).bloodPotency;
+    delete (human as { humanity?: number }).humanity;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('V5 Human print hides Humanity when trackMorality is explicitly false', () => {
+    const human: V5Character = {
+      ...makeV5({ clan: '' }),
+      kind: 'human',
+      trackMorality: false,
+    } as V5Character;
+    delete (human as { humanity?: number }).humanity;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('V20 Ghoul print hides Humanity / Path when trackMorality is missing', () => {
+    const ghoul: ClassicCharacter = { ...makeClassic({ clan: 'tremere' }), kind: 'ghoul' } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('V5 Human print shows Humanity when trackMorality is true', () => {
+    const human: V5Character = {
+      ...makeV5({ clan: '' }),
+      kind: 'human',
+      trackMorality: true,
+      humanity: 5,
+    } as V5Character;
+    delete (human as { hunger?: number }).hunger;
+    delete (human as { bloodPotency?: number }).bloodPotency;
+    const text = renderPrint(human, 'en');
+    // V5 mortal uses the same "Humanity" label vampires use on V5.
+    expect(text).toContain(UI_STRINGS.en.sheet_humanity);
+  });
+
+  it('V5 Ghoul print shows Humanity when trackMorality is true', () => {
+    const ghoul: V5Character = {
+      ...makeV5({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackMorality: true,
+      humanity: 6,
+    } as V5Character;
+    delete (ghoul as { hunger?: number }).hunger;
+    delete (ghoul as { bloodPotency?: number }).bloodPotency;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_humanity);
+  });
+
+  it('V20 Human print shows Humanity / Path when trackMorality is true', () => {
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'human',
+      trackMorality: true,
+      humanity: 4,
+    } as ClassicCharacter;
+    delete (human as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (human as { generation?: number }).generation;
+    const text = renderPrint(human, 'en');
+    // V20 mortal uses the edition-aware "Humanity / Path" label so the
+    // print stays consistent with the BE-1 live sheet.
+    expect(text).toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('V20 Ghoul print shows Humanity / Path when trackMorality is true', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackMorality: true,
+      humanity: 7,
+    } as ClassicCharacter;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('does NOT leak a dormant humanity value into print on a Human opted-out (regression of BE-1 audit §3.9)', () => {
+    // Pre-Batch-BA dormant data: humanity is still on disk, but the
+    // user has not enabled tracking. Print must keep the row hidden.
+    const dormantHuman: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'human',
+      humanity: 7,
+    } as ClassicCharacter;
+    delete (dormantHuman as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (dormantHuman as { generation?: number }).generation;
+    const text = renderPrint(dormantHuman, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('does NOT leak a dormant humanity value on a Ghoul with trackMorality:false', () => {
+    const dormantGhoul: V5Character = {
+      ...makeV5({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackMorality: false,
+      humanity: 8,
+    } as V5Character;
+    delete (dormantGhoul as { hunger?: number }).hunger;
+    delete (dormantGhoul as { bloodPotency?: number }).bloodPotency;
+    const text = renderPrint(dormantGhoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_humanity_path);
+  });
+
+  it('renders a 0-dot Humanity row for an opted-in mortal with no humanity value', () => {
+    // Mirrors the live-sheet fallback: when trackMorality is true but
+    // no humanity number lives on the character (uncommon — BE-1 seeds
+    // 7 on toggle — but possible via import or hand-edit), the row
+    // still renders so the printed sheet is internally consistent.
+    const human: V5Character = {
+      ...makeV5({ clan: '' }),
+      kind: 'human',
+      trackMorality: true,
+    } as V5Character;
+    delete (human as { hunger?: number }).hunger;
+    delete (human as { bloodPotency?: number }).bloodPotency;
+    delete (human as { humanity?: number }).humanity;
+    const text = renderPrint(human, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_humanity);
+  });
+
+  it('Vampire print still shows Humanity / Path regardless of trackMorality (no regression)', () => {
+    // Vampires never opt in or out — the schema-driven row always
+    // renders. Stray trackMorality values on a vampire are ignored.
+    const v5Vamp = makeV5({ humanity: 6 });
+    const v5Text = renderPrint(v5Vamp, 'en');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_humanity);
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    const v20Vamp = makeClassic({ humanity: 5 });
+    // Forcibly stamp a stray flag — vampires should ignore it.
+    (v20Vamp as Character).trackMorality = false;
+    const v20Text = renderPrint(v20Vamp, 'en');
+    // The classic vampire branch keeps using `sheet_humanity` (the
+    // pre-BE-2 label decision is intentionally NOT revisited here).
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_humanity);
+  });
+
+  it('Spanish print uses the localized labels for mortals', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackMorality: true,
+      humanity: 4,
+    } as ClassicCharacter;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'es');
+    expect(text).toContain(UI_STRINGS.es.sheet_humanity_path);
+  });
+});

@@ -339,6 +339,19 @@ export interface BaseCharacter {
    * field continue to render exactly as before.
    */
   trackMorality?: boolean;
+  /**
+   * Batch BG — opt-in Vitae tracker visibility for classic-edition
+   * Ghoul sheets. Defaults to `false` (or absent → treated as `false`).
+   * When `true` and `kind === 'ghoul'` and `edition !== 'V5'`, the
+   * sheet exposes the existing optional `bloodPool` field as a "Vitae"
+   * tracker (labelled distinctly from the vampire's "Blood Pool" but
+   * reusing the same `ClassicPoolTracker` visual). Has no effect on
+   * vampires (their Blood Pool is schema-driven), on humans (no vitae,
+   * ever), or on V5 ghouls (deferred per the BF audit §3). Independent
+   * of `trackMorality` — a ghoul can opt into either, both, or neither.
+   * Additive and backward-compatible.
+   */
+  trackVitae?: boolean;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

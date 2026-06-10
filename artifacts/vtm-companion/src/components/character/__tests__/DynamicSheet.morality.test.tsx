@@ -126,7 +126,10 @@ function renderWithContext(ui: React.ReactElement) {
 }
 
 // Real schemas (not stubs) so we exercise the same field shape mortals get
-// in the app. The trackers section is where the toggle injects the row.
+// in the app. The toggle lives in a dedicated mortal-only Morality card
+// rendered after Basic Info — it is NOT a sheet-level control next to
+// "Collapse all", which would conflate the optional tracker with global
+// sheet controls.
 
 const onChange = vi.fn();
 
@@ -324,5 +327,96 @@ describe('Batch BE-1 — schemas remain free of a hard-coded Humanity field on m
 
   it('ghoulClassicSchema does not include a hard-coded humanity field', () => {
     expect(ids(ghoulClassicSchema)).not.toContain('humanity');
+  });
+});
+
+describe('Batch BE-1 polish — placement of the morality toggle', () => {
+  // Locks in the placement contract:
+  //   1. The toggle lives inside its own dedicated Morality card
+  //      (`sheet-morality-section`), not at the sheet-level controls
+  //      area where "Collapse all" lives.
+  //   2. When the toggle is on, the Humanity / Path tracker renders
+  //      inside that same card, immediately below the toggle.
+  //   3. The Morality card sits AFTER the Basic Info section in DOM
+  //      order, so the toggle feels like it controls an optional
+  //      morality tracker rather than the whole sheet.
+  //   4. Vampires never render the Morality card.
+
+  it('renders the toggle inside the dedicated Morality card, not next to Collapse all', () => {
+    renderWithContext(
+      <DynamicSheet character={makeV5Mortal('human')} schema={humanV5Schema} onChange={onChange} />,
+    );
+    const moralitySection = screen.getByTestId('sheet-morality-section');
+    const toggle = screen.getByTestId('sheet-track-morality-toggle');
+    expect(moralitySection).toContainElement(toggle);
+
+    // No "Collapse all" button exists on a single-section sheet, but
+    // when one does exist (multi-section schemas like humanV5Schema),
+    // it must not contain the toggle. We check via the button's
+    // accessible name to avoid coupling to the existing label DOM.
+    const collapseAllButton = screen.queryByRole('button', { name: /collapse all|expand all|colapsar todo|expandir todo/i });
+    if (collapseAllButton) {
+      expect(collapseAllButton).not.toContainElement(toggle);
+      // The toggle is also not a sibling of the Collapse-all row.
+      expect(collapseAllButton.parentElement?.contains(toggle)).toBe(false);
+    }
+  });
+
+  it('renders the Humanity tracker inside the Morality card when enabled', () => {
+    renderWithContext(
+      <DynamicSheet
+        character={makeV5Mortal('human', { trackMorality: true, humanity: 5 })}
+        schema={humanV5Schema}
+        onChange={onChange}
+      />,
+    );
+    const moralitySection = screen.getByTestId('sheet-morality-section');
+    // The Humanity label resolves via i18n; it is rendered as part of
+    // the synthesized dots-10 field row inside the Morality card.
+    const humanityLabel = screen.getByText(HUMANITY_LABEL);
+    expect(moralitySection).toContainElement(humanityLabel);
+
+    // And the tracker row's container is also inside the Morality card.
+    const trackerContainer = screen.getByTestId('sheet-morality-tracker');
+    expect(moralitySection).toContainElement(trackerContainer);
+  });
+
+  it('renders only the toggle (no tracker) inside the Morality card when disabled', () => {
+    renderWithContext(
+      <DynamicSheet
+        character={makeClassicMortal('ghoul', { humanity: 4 })}
+        schema={ghoulClassicSchema}
+        onChange={onChange}
+      />,
+    );
+    const moralitySection = screen.getByTestId('sheet-morality-section');
+    expect(moralitySection).toContainElement(screen.getByTestId('sheet-track-morality-toggle'));
+    expect(screen.queryByTestId('sheet-morality-tracker')).toBeNull();
+    // Dormant humanity stays out of the DOM until the user opts in.
+    expect(screen.queryByText(HUMANITY_PATH_LABEL)).toBeNull();
+  });
+
+  it('places the Morality card AFTER the Basic Info section in DOM order', () => {
+    renderWithContext(
+      <DynamicSheet character={makeV5Mortal('human')} schema={humanV5Schema} onChange={onChange} />,
+    );
+    const moralitySection = screen.getByTestId('sheet-morality-section');
+    const basicInfoBody = document.getElementById('sheet-section-body-basic_info');
+    expect(basicInfoBody).not.toBeNull();
+    // `DOCUMENT_POSITION_PRECEDING` (0x02) is set on the second argument
+    // when the first node precedes it; we want Basic Info to precede
+    // Morality, i.e. the Morality card's compareDocumentPosition relative
+    // to Basic Info sets PRECEDING.
+    if (basicInfoBody) {
+      const relation = moralitySection.compareDocumentPosition(basicInfoBody);
+      // eslint-disable-next-line no-bitwise
+      expect(relation & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    }
+  });
+
+  it('does not render the Morality card on vampire sheets', () => {
+    renderWithContext(<DynamicSheet character={makeV5Vampire()} schema={v5Schema} onChange={onChange} />);
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-morality-toggle')).toBeNull();
   });
 });

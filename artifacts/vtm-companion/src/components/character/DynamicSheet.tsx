@@ -1415,27 +1415,6 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
        short-landscape clamps the sheet's vertical density without touching
        the font sizes or the per-field rows. */
     <div className="space-y-10 short-landscape:space-y-3 pb-12 short-landscape:pb-4">
-      {/* Batch BE-1 — opt-in morality tracker toggle. Visible only on
-          Human / Ghoul sheets; vampires keep their unconditional
-          Humanity field via the schema and never see this control. */}
-      {isMortalKind && (
-        <div className="flex items-center justify-end gap-3 -mb-4 short-landscape:-mb-2">
-          <label
-            htmlFor="sheet-track-morality"
-            className="text-xs uppercase tracking-widest text-muted-foreground"
-          >
-            {strings.sheet_track_morality || "Track morality"}
-          </label>
-          <Switch
-            id="sheet-track-morality"
-            checked={trackMoralityEnabled}
-            onCheckedChange={toggleTrackMorality}
-            disabled={readonly}
-            aria-label={strings.sheet_track_morality || "Track morality"}
-            data-testid="sheet-track-morality-toggle"
-          />
-        </div>
-      )}
       {sections.length > 1 && (
         <div className="flex justify-end -mb-4 short-landscape:-mb-2">
           <Button
@@ -1458,7 +1437,13 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
         const isCollapsed = !!collapsed[sectionId];
         const sectionLabel = strings[section.labelKey] || section.labelKey;
         const bodyId = `sheet-section-body-${sectionId}`;
-        return (
+        // Batch BE-1 polish — the mortal "Track morality" toggle now lives
+        // in its own small card directly after Basic Info, so it reads as
+        // controlling an optional morality tracker rather than the whole
+        // sheet. The card holds the toggle on its own when off, and the
+        // toggle + Humanity / Path field when on. Vampires never enter
+        // this branch.
+        const renderedSection = (
           <section key={sectionId} className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3">
             <button
               type="button"
@@ -1479,24 +1464,50 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
               id={bodyId}
               className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${isCollapsed ? "hidden" : "mt-6 short-landscape:mt-3"}`}
             >
-              {(() => {
-                const sectionFields = Array.isArray(section.fields) ? section.fields : [];
-                // Batch BE-1 — when the mortal morality toggle is on,
-                // inject the existing `humanity` field into the Trackers
-                // section without touching the underlying schema. Reuses
-                // the existing dots-10 renderer and the existing
-                // `sheet_humanity` / `sheet_humanity_path` strings.
-                const fieldsToRender: FieldDef[] = trackMoralityEnabled && section.id === 'trackers'
-                  ? [
-                      ...sectionFields,
-                      { id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' },
-                    ]
-                  : sectionFields;
-                return fieldsToRender.map(field => renderField(field));
-              })()}
+              {(Array.isArray(section.fields) ? section.fields : []).map(field => renderField(field))}
             </div>
           </section>
         );
+
+        if (section.id === 'basic_info' && isMortalKind) {
+          return (
+            <React.Fragment key={sectionId}>
+              {renderedSection}
+              <section
+                data-testid="sheet-morality-section"
+                aria-label={strings.sheet_track_morality || "Track morality"}
+                className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="sheet-track-morality"
+                    className="text-sm text-foreground font-serif"
+                  >
+                    {strings.sheet_track_morality || "Track morality"}
+                  </label>
+                  <Switch
+                    id="sheet-track-morality"
+                    checked={trackMoralityEnabled}
+                    onCheckedChange={toggleTrackMorality}
+                    disabled={readonly}
+                    aria-label={strings.sheet_track_morality || "Track morality"}
+                    data-testid="sheet-track-morality-toggle"
+                  />
+                </div>
+                {trackMoralityEnabled && (
+                  <div
+                    data-testid="sheet-morality-tracker"
+                    className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
+                  >
+                    {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
+                  </div>
+                )}
+              </section>
+            </React.Fragment>
+          );
+        }
+
+        return renderedSection;
       })}
     </div>
   );

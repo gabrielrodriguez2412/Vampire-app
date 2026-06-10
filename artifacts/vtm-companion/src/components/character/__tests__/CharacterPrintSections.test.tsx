@@ -937,3 +937,164 @@ describe('print/PDF — Human / Ghoul opt-in morality tracker (Batch BE-2)', () 
     expect(text).toContain(UI_STRINGS.es.sheet_humanity_path);
   });
 });
+
+describe('print/PDF — V20 Ghoul opt-in Vitae tracker (Batch BH)', () => {
+  // BH mirrors the BE-2 opt-in print contract for the BG Vitae toggle.
+  // Vampires keep their existing Blood Pool / Hunger rows byte-for-byte;
+  // classic Ghoul Vitae only prints when `trackVitae === true`; dormant
+  // pre-Batch-BA `bloodPool` values on opt-out ghouls must NOT leak.
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V20 Ghoul print hides Vitae when trackVitae is missing', () => {
+    const ghoul: ClassicCharacter = { ...makeClassic({ clan: 'tremere' }), kind: 'ghoul' } as ClassicCharacter;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_vitae);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+  });
+
+  it('V20 Ghoul print hides Vitae when trackVitae is explicitly false', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackVitae: false,
+    } as ClassicCharacter;
+    delete (ghoul as { bloodPool?: { current: number; max: number } }).bloodPool;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_vitae);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+  });
+
+  it('V20 Ghoul print shows Vitae when trackVitae is true and bloodPool is set', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackVitae: true,
+      bloodPool: { current: 2, max: 3 },
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    // Vitae label appears...
+    expect(text).toContain(UI_STRINGS.en.sheet_vitae);
+    // ...and the row's numeric summary appears via the print-vitae-summary span.
+    const summary = document.querySelector('[data-testid="print-vitae-summary"]');
+    expect(summary).not.toBeNull();
+    expect(summary?.textContent).toContain('2');
+    expect(summary?.textContent).toContain('3');
+    // The vampire label is NOT used for ghouls (this guards against the
+    // ghoul branch accidentally reusing `sheet_blood_pool`).
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+  });
+
+  it('Revised Ghoul print also shows Vitae when trackVitae is true (any classic edition)', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere', edition: 'REVISED' }),
+      kind: 'ghoul',
+      trackVitae: true,
+      bloodPool: { current: 1, max: 1 },
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_vitae);
+  });
+
+  it('does NOT leak a dormant bloodPool value into print on a Ghoul opted-out', () => {
+    // Pre-Batch-BA dormant data: { current: 10, max: 10 } still on disk
+    // from when ghouls flowed through the vampire-shaped pipeline. The
+    // ghoul has not opted into Vitae, so print must stay silent.
+    const dormant: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      bloodPool: { current: 10, max: 10 },
+    } as ClassicCharacter;
+    delete (dormant as { humanity?: number }).humanity;
+    delete (dormant as { generation?: number }).generation;
+    const text = renderPrint(dormant, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_vitae);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+  });
+
+  it('V5 Ghoul print does NOT show Vitae even with trackVitae true (deferred per BF audit §3)', () => {
+    const ghoul: V5Character = {
+      ...makeV5({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackVitae: true,
+    } as V5Character;
+    delete (ghoul as { hunger?: number }).hunger;
+    delete (ghoul as { bloodPotency?: number }).bloodPotency;
+    delete (ghoul as { humanity?: number }).humanity;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_vitae);
+  });
+
+  it('Human print does NOT show Vitae even with trackVitae true and dormant bloodPool', () => {
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      kind: 'human',
+      trackVitae: true,
+      bloodPool: { current: 5, max: 10 },
+    } as ClassicCharacter;
+    delete (human as { humanity?: number }).humanity;
+    delete (human as { generation?: number }).generation;
+    const text = renderPrint(human, 'en');
+    expect(text).not.toContain(UI_STRINGS.en.sheet_vitae);
+    expect(text).not.toContain(UI_STRINGS.en.sheet_blood_pool);
+  });
+
+  it('Vampire print still shows Blood Pool / Hunger regardless of trackVitae (no regression)', () => {
+    // V20 vampire — schema-driven Blood Pool row is unchanged.
+    const v20Vamp = makeClassic({ bloodPool: { current: 6, max: 10 }, humanity: 7, generation: 12 });
+    (v20Vamp as Character).trackVitae = true; // stray flag is ignored on vampires
+    const v20Text = renderPrint(v20Vamp, 'en');
+    expect(v20Text).toContain(UI_STRINGS.en.sheet_blood_pool);
+    // Vampires never use the ghoul Vitae label.
+    expect(v20Text).not.toContain(UI_STRINGS.en.sheet_vitae);
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    // V5 vampire — Hunger row is unchanged.
+    const v5Vamp = makeV5({ hunger: 3 });
+    (v5Vamp as Character).trackVitae = true;
+    const v5Text = renderPrint(v5Vamp, 'en');
+    expect(v5Text).toContain(UI_STRINGS.en.sheet_hunger);
+    expect(v5Text).not.toContain(UI_STRINGS.en.sheet_vitae);
+  });
+
+  it('Spanish V20 Ghoul print uses the localized Vitae label', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackVitae: true,
+      bloodPool: { current: 2, max: 3 },
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'es');
+    expect(text).toContain(UI_STRINGS.es.sheet_vitae);
+  });
+
+  it('renders a 0/0 Vitae summary for an opted-in Ghoul with bloodPool { current: 0, max: 0 }', () => {
+    // Edge case: user explicitly emptied the pool. The row should still
+    // render so the printed sheet reflects the live state.
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      trackVitae: true,
+      bloodPool: { current: 0, max: 0 },
+    } as ClassicCharacter;
+    delete (ghoul as { humanity?: number }).humanity;
+    delete (ghoul as { generation?: number }).generation;
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.sheet_vitae);
+    const summary = document.querySelector('[data-testid="print-vitae-summary"]');
+    expect(summary?.textContent).toMatch(/0\s*\/\s*0/);
+  });
+});

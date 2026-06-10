@@ -482,6 +482,14 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   // and ghouls do not get a Hunger drops row even on V5; classic
   // mortals do not get a Blood Pool row even when stale data is still
   // in storage from before Batch BA's createEmptyCharacter cleanup.
+  //
+  // Batch BH — classic Ghouls can opt into a Vitae print row by
+  // flipping `trackVitae` on their character (BG ships the toggle on
+  // the live sheet; this batch wires print parity). The vampire
+  // branches above stay byte-for-byte unchanged. The new Ghoul branch
+  // reuses the same `PrintBloodPoolDrops` visual but labels the row
+  // "Vitae" so the printed sheet reads as ghoul-specific rather than
+  // vampire-only. V5 Ghouls and humans never enter any branch here.
   if (isV5 && isVampire) {
     trackerRows.push({
       label: strings.sheet_hunger || "Hunger",
@@ -500,6 +508,26 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
         <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
           <PrintBloodPoolDrops boxes={boxes} label={bloodPoolLabel} />
           <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-blood-pool-summary">
+            {summary}
+          </span>
+        </span>
+      ),
+    });
+  } else if (
+    !isV5 &&
+    kind === 'ghoul' &&
+    character.trackVitae === true &&
+    cl?.bloodPool
+  ) {
+    const vitaeLabel = strings.sheet_vitae || "Vitae";
+    const boxes = buildClassicPoolBoxes(cl.bloodPool, 10);
+    const summary = `${cl.bloodPool.current ?? 0} / ${cl.bloodPool.max ?? 10}`;
+    trackerRows.push({
+      label: vitaeLabel,
+      value: (
+        <span className="inline-flex flex-wrap items-center justify-end gap-1.5">
+          <PrintBloodPoolDrops boxes={boxes} label={vitaeLabel} />
+          <span className="text-[8px] text-zinc-700 whitespace-nowrap" data-testid="print-vitae-summary">
             {summary}
           </span>
         </span>

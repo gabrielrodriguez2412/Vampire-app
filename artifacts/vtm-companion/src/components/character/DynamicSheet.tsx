@@ -25,6 +25,11 @@ import {
   isFieldAvailable,
   GeneratorField,
 } from "@/data/characterGenerator";
+import {
+  hasDormantHumanity,
+  hasDormantVitae,
+  hasDormantPowers,
+} from "@/utils/dormantData";
 
 /**
  * Batch AR — map the sheet's text-field ids to the GeneratorField the
@@ -481,6 +486,58 @@ function AddPowerInput({ placeholder, onAdd }: { placeholder: string; onAdd: (na
         <Plus className="w-3 h-3" />
       </button>
     </span>
+  );
+}
+
+/**
+ * Batch BJ — shared inline banner for the dormant-data prompts inside the
+ * Morality / Vitae / Powers opt-in cards. Renders above the matching
+ * toggle when the matching `hasDormantX` predicate is true AND the sheet
+ * is in Edit Mode. Two buttons: Enable (flips the matching `track*`
+ * flag on; the existing toggle handlers preserve the dormant value
+ * verbatim) and Dismiss (sets the matching dismissal flag — the dormant
+ * value stays on disk). All copy comes from i18n via the keys passed in.
+ */
+function DormantPromptBanner({
+  testId,
+  body,
+  enableLabel,
+  dismissLabel,
+  onEnable,
+  onDismiss,
+}: {
+  testId: string;
+  body: string;
+  enableLabel: string;
+  dismissLabel: string;
+  onEnable: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      data-testid={testId}
+      className="mb-3 rounded border border-amber-700/40 bg-amber-900/15 px-3 py-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <p className="text-xs text-amber-200/90 leading-snug">{body}</p>
+      <div className="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onClick={onEnable}
+          data-testid={`${testId}-enable`}
+          className="text-[11px] uppercase tracking-wider px-2 py-1 rounded border border-amber-600/50 bg-amber-700/30 text-foreground hover:bg-amber-700/50 transition-colors"
+        >
+          {enableLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onDismiss}
+          data-testid={`${testId}-dismiss`}
+          className="text-[11px] uppercase tracking-wider px-2 py-1 rounded border border-zinc-700 bg-zinc-950/40 text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-colors"
+        >
+          {dismissLabel}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -1142,6 +1199,31 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
     onChange({ ...character, trackGhoulPowers: next } as Character);
   };
 
+  // Batch BJ — inline dormant-data prompts. The three predicates are
+  // pure data checks (see `@/utils/dormantData`); the UI layer composes
+  // them with `!readonly` so the banners stay out of View Mode and
+  // print. Dismissals are per-character: clicking Dismiss flips a
+  // matching `dismissedDormant*Prompt` flag on storage so the prompt
+  // does not re-appear on future Edit Mode opens for this character.
+  // The dormant data itself is preserved verbatim — Dismiss is a
+  // visibility decision, not a delete action.
+  const showDormantMoralityPrompt = !readonly && hasDormantHumanity(character);
+  const showDormantVitaePrompt = !readonly && hasDormantVitae(character);
+  const showDormantPowersPrompt = !readonly && hasDormantPowers(character);
+
+  const dismissDormantMoralityPrompt = () => {
+    if (readonly) return;
+    onChange({ ...character, dismissedDormantMoralityPrompt: true } as Character);
+  };
+  const dismissDormantVitaePrompt = () => {
+    if (readonly) return;
+    onChange({ ...character, dismissedDormantVitaePrompt: true } as Character);
+  };
+  const dismissDormantPowersPrompt = () => {
+    if (readonly) return;
+    onChange({ ...character, dismissedDormantPowersPrompt: true } as Character);
+  };
+
   // Safely handle missing schema
   if (!schema || !schema.sections) {
     return <div className="text-center text-muted-foreground p-8">Unable to load character sheet schema</div>;
@@ -1528,6 +1610,16 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                 aria-label={strings.sheet_track_morality || "Track morality"}
                 className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
               >
+                {showDormantMoralityPrompt && (
+                  <DormantPromptBanner
+                    testId="sheet-dormant-morality-prompt"
+                    body={strings.dormant_morality_body || "This character has stored Humanity data. Track it on this sheet?"}
+                    enableLabel={strings.dormant_enable || "Enable"}
+                    dismissLabel={strings.dormant_dismiss || "Dismiss"}
+                    onEnable={() => toggleTrackMorality(true)}
+                    onDismiss={dismissDormantMoralityPrompt}
+                  />
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="sheet-track-morality"
@@ -1564,6 +1656,16 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                   aria-label={strings.sheet_track_vitae || "Track vitae"}
                   className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
                 >
+                  {showDormantVitaePrompt && (
+                    <DormantPromptBanner
+                      testId="sheet-dormant-vitae-prompt"
+                      body={strings.dormant_vitae_body || "This character has stored Vitae data. Track it on this sheet?"}
+                      enableLabel={strings.dormant_enable || "Enable"}
+                      dismissLabel={strings.dormant_dismiss || "Dismiss"}
+                      onEnable={() => toggleTrackVitae(true)}
+                      onDismiss={dismissDormantVitaePrompt}
+                    />
+                  )}
                   <div className="flex items-center justify-between gap-3">
                     <label
                       htmlFor="sheet-track-vitae"
@@ -1610,6 +1712,16 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                   aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
                   className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
                 >
+                  {showDormantPowersPrompt && (
+                    <DormantPromptBanner
+                      testId="sheet-dormant-powers-prompt"
+                      body={strings.dormant_powers_body || "This character has stored Powers data. Track it on this sheet?"}
+                      enableLabel={strings.dormant_enable || "Enable"}
+                      dismissLabel={strings.dormant_dismiss || "Dismiss"}
+                      onEnable={() => toggleTrackGhoulPowers(true)}
+                      onDismiss={dismissDormantPowersPrompt}
+                    />
+                  )}
                   <div className="flex items-center justify-between gap-3">
                     <label
                       htmlFor="sheet-track-ghoul-powers"

@@ -367,6 +367,18 @@ export interface BaseCharacter {
    * backward-compatible.
    */
   trackGhoulPowers?: boolean;
+  /**
+   * Batch BJ — per-character dismissal flags for the inline dormant-data
+   * prompts. Each flag suppresses the matching prompt on future Edit-Mode
+   * opens without touching the underlying dormant value: a user who
+   * dismisses can still opt-in later via the existing toggle, and the
+   * data on disk is preserved verbatim either way. Independent of the
+   * matching `track*` flag (a character may be dismissed-and-not-tracking,
+   * tracking-without-dismissal, etc.). Additive and backward-compatible.
+   */
+  dismissedDormantMoralityPrompt?: boolean;
+  dismissedDormantVitaePrompt?: boolean;
+  dismissedDormantPowersPrompt?: boolean;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

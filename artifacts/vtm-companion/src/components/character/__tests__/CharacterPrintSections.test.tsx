@@ -1276,3 +1276,47 @@ describe('print/PDF — V20 Ghoul opt-in Powers section (Batch BI-2)', () => {
     expect(text).not.toContain(UI_STRINGS.es.sheet_section_disciplines);
   });
 });
+
+describe('print/PDF — dormant-data prompts never appear in print (Batch BJ regression)', () => {
+  // The BJ banners live inside DynamicSheet; CharacterPrintView is a
+  // separate render path. This regression locks in that contract: a
+  // mortal whose every dormant flag is in the prompt-triggering state
+  // must produce zero banner testids in print output.
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  it('V20 Ghoul with dormant humanity + bloodPool + disciplines prints NO prompt banners', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      kind: 'ghoul',
+      humanity: 7,
+      bloodPool: { current: 10, max: 10 },
+      disciplines: { potence: 1 } as Record<string, number>,
+    } as ClassicCharacter;
+    delete (ghoul as { generation?: number }).generation;
+    renderPrint(ghoul, 'en');
+    // No banner testid in the print DOM, regardless of dormant flags.
+    expect(document.querySelector('[data-testid="sheet-dormant-morality-prompt"]')).toBeNull();
+    expect(document.querySelector('[data-testid="sheet-dormant-vitae-prompt"]')).toBeNull();
+    expect(document.querySelector('[data-testid="sheet-dormant-powers-prompt"]')).toBeNull();
+    // The body copy must not leak as plain text either.
+    const text = document.body.textContent ?? '';
+    expect(text).not.toContain(UI_STRINGS.en.dormant_morality_body);
+    expect(text).not.toContain(UI_STRINGS.en.dormant_vitae_body);
+    expect(text).not.toContain(UI_STRINGS.en.dormant_powers_body);
+  });
+
+  it('V5 Human with dormant humanity prints NO morality prompt banner', () => {
+    const human: V5Character = {
+      ...makeV5({ clan: '' }),
+      kind: 'human',
+      humanity: 7,
+    } as V5Character;
+    delete (human as { hunger?: number }).hunger;
+    delete (human as { bloodPotency?: number }).bloodPotency;
+    renderPrint(human, 'en');
+    expect(document.querySelector('[data-testid="sheet-dormant-morality-prompt"]')).toBeNull();
+    const text = document.body.textContent ?? '';
+    expect(text).not.toContain(UI_STRINGS.en.dormant_morality_body);
+  });
+});

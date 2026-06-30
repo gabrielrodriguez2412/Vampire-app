@@ -339,6 +339,57 @@ describe('Batch BJ — independence + i18n + round-trip', () => {
     expect(UI_STRINGS.es.dormant_powers_body).toContain('Poderes');
   });
 
+  it('does NOT call onChange while rendering a dormant-data character (no auto-enable, no auto-delete on mount)', () => {
+    const ghoul = makeClassicMortal('ghoul', {
+      humanity: 7,
+      bloodPool: { current: 10, max: 10 },
+      disciplines: { potence: 1 } as any,
+    } as any);
+    renderWithContext(<DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} />);
+    // The brief's "no auto-enable, no auto-delete" requirements imply
+    // that simply opening a sheet with dormant data must not trigger
+    // any storage write. The mount-phase onChange counter must be zero.
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('renders the localized EN body copy and action labels inside the banner', () => {
+    window.localStorage.setItem('vtm-language', 'en');
+    const human = makeClassicMortal('human', { humanity: 7 } as any);
+    renderWithContext(<DynamicSheet character={human} schema={humanClassicSchema} onChange={onChange} />);
+    const banner = screen.getByTestId('sheet-dormant-morality-prompt');
+    expect(within(banner).getByText(UI_STRINGS.en.dormant_morality_body)).toBeInTheDocument();
+    expect(within(banner).getByTestId('sheet-dormant-morality-prompt-enable')).toHaveTextContent(UI_STRINGS.en.dormant_enable);
+    expect(within(banner).getByTestId('sheet-dormant-morality-prompt-dismiss')).toHaveTextContent(UI_STRINGS.en.dormant_dismiss);
+    window.localStorage.removeItem('vtm-language');
+  });
+
+  it('renders the localized ES body copy and action labels inside the banner', () => {
+    // ES is the AppContextProvider default; no localStorage stamp needed.
+    const ghoul = makeClassicMortal('ghoul', { bloodPool: { current: 10, max: 10 } } as any);
+    renderWithContext(<DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} />);
+    const banner = screen.getByTestId('sheet-dormant-vitae-prompt');
+    expect(within(banner).getByText(UI_STRINGS.es.dormant_vitae_body)).toBeInTheDocument();
+    expect(within(banner).getByTestId('sheet-dormant-vitae-prompt-enable')).toHaveTextContent(UI_STRINGS.es.dormant_enable);
+    expect(within(banner).getByTestId('sheet-dormant-vitae-prompt-dismiss')).toHaveTextContent(UI_STRINGS.es.dormant_dismiss);
+  });
+
+  it('the banner is a plain inline div inside its section — not a modal / portal / overlay', () => {
+    // The brief explicitly rules out modals or blocking popups. Verify
+    // structurally: the banner must be a descendant of its section
+    // wrapper (no portal escape), and it must not carry the
+    // `position: fixed` / `position: absolute` semantics a modal would
+    // typically use.
+    const human = makeClassicMortal('human', { humanity: 7 } as any);
+    renderWithContext(<DynamicSheet character={human} schema={humanClassicSchema} onChange={onChange} />);
+    const section = screen.getByTestId('sheet-morality-section');
+    const banner = screen.getByTestId('sheet-dormant-morality-prompt');
+    expect(section).toContainElement(banner);
+    // jsdom doesn't run CSS, but we can sanity-check the className.
+    expect(banner.className).not.toMatch(/fixed|absolute|sticky/);
+    // And the banner is not portaled into document.body directly.
+    expect(document.body.firstElementChild).not.toBe(banner);
+  });
+
   it('the three dismissed flags survive a JSON round-trip', () => {
     const ghoul = makeClassicMortal('ghoul', {
       dismissedDormantMoralityPrompt: true,

@@ -1407,3 +1407,80 @@ describe('print/PDF — linked-regnant name in header (Batch BK-1)', () => {
     expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
   });
 });
+
+describe('print/PDF — dangling regnant fallback in header (Batch BK-2)', () => {
+  // BK-2 makes broken references visible on printed sheets: when the
+  // stored regnantCharacterId no longer resolves AND there is no
+  // manual clan fallback, the header prints an italic "Linked regnant
+  // unavailable" instead of silently dropping the row. When a manual
+  // clan does exist, the manual clan wins the fallback path (matches
+  // BK-1 semantics).
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  function seedCharacters(chars: Character[]) {
+    window.localStorage.setItem('vtm-characters', JSON.stringify(chars));
+  }
+
+  it('a dangling-link Ghoul with no manual clan prints "Linked regnant unavailable"', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      id: 'g1', name: 'Bonded', kind: 'ghoul',
+      regnantCharacterId: 'never-exists',
+    } as ClassicCharacter;
+    seedCharacters([ghoul]);
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain(UI_STRINGS.en.char_kind_regnant_unavailable);
+    const unavailable = document.querySelector('[data-testid="print-header-regnant-unavailable"]');
+    expect(unavailable).not.toBeNull();
+    // No linked-name testid — the vampire path never fires.
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+
+  it('a dangling-link Ghoul WITH a manual clan prints the manual clan (BK-1 fallback preserved)', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'brujah' }),
+      id: 'g1', name: 'Bonded', kind: 'ghoul',
+      regnantCharacterId: 'never-exists',
+    } as ClassicCharacter;
+    seedCharacters([ghoul]);
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain('Brujah');
+    expect(document.querySelector('[data-testid="print-header-regnant-unavailable"]')).toBeNull();
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+
+  it('Spanish print uses the localized unavailable label', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      id: 'g1', name: 'Bonded', kind: 'ghoul',
+      regnantCharacterId: 'never-exists',
+    } as ClassicCharacter;
+    seedCharacters([ghoul]);
+    const text = renderPrint(ghoul, 'es');
+    expect(text).toContain(UI_STRINGS.es.char_kind_regnant_unavailable);
+  });
+
+  it('Vampires and Humans never print the unavailable label even with a stray dangling regnantCharacterId', () => {
+    const vampire: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      id: 'v1', name: 'Aleksandra',
+    } as ClassicCharacter;
+    (vampire as Character).regnantCharacterId = 'ghost';
+    seedCharacters([vampire]);
+    renderPrint(vampire, 'en');
+    expect(document.querySelector('[data-testid="print-header-regnant-unavailable"]')).toBeNull();
+
+    cleanup();
+    document.body.innerHTML = '';
+
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      id: 'h1', name: 'Elena', kind: 'human',
+    } as ClassicCharacter;
+    (human as Character).regnantCharacterId = 'ghost';
+    seedCharacters([human]);
+    renderPrint(human, 'en');
+    expect(document.querySelector('[data-testid="print-header-regnant-unavailable"]')).toBeNull();
+  });
+});

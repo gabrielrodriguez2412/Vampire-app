@@ -192,6 +192,12 @@ export default function CharacterPage() {
   // Create Form State
   const [newName, setNewName] = useState("");
   const [newClan, setNewClan] = useState("");
+  // Batch BK-2 — optional linked regnant for ghoul creation. Stores a
+  // vampire character id; the ghoul saves `regnantCharacterId` from
+  // this state on submit. Independent of `newClan` (manual regnant
+  // clan) — the audit's precedence rule (linked wins, manual falls
+  // back) resolves them at read time via `resolveRegnantClan`.
+  const [newRegnantCharacterId, setNewRegnantCharacterId] = useState("");
   const [newEdition, setNewEdition] = useState<EditionId>(activeEdition);
   const [newCharacterType, setNewCharacterType] = useState<CharacterType>('player');
   // Batch AX Phase 1 — vampire / human / ghoul.
@@ -227,6 +233,7 @@ export default function CharacterPage() {
   const resetCreateForm = () => {
     setNewName("");
     setNewClan("");
+    setNewRegnantCharacterId("");
     setNewCharacterType('player');
     setNewKind('vampire');
     setNewChronicleId("");
@@ -576,6 +583,16 @@ export default function CharacterPage() {
     // Link to a Chronicle if one was selected and still exists in storage.
     if (newChronicleId && validChronicleIds.has(newChronicleId)) {
       char.chronicleId = newChronicleId;
+    }
+    // Batch BK-2 — link a ghoul to an existing vampire character as
+    // regnant / domitor. Only accepted for ghouls, and only when the
+    // referenced id is still a vampire at save time so we can never
+    // stamp a bad reference from stale creation-form state.
+    if (newKind === 'ghoul' && newRegnantCharacterId) {
+      const target = characters.find(c => c.id === newRegnantCharacterId);
+      if (target && (target.kind ?? 'vampire') === 'vampire') {
+        char.regnantCharacterId = newRegnantCharacterId;
+      }
     }
 
     // Batch AY (post-review) — vampire-only optional fields are only
@@ -1329,14 +1346,28 @@ export default function CharacterPage() {
                   // name instead of the manual clan display. Falls back
                   // to the existing clan display when the link is unset,
                   // dangling, or points at a non-vampire.
+                  // Batch BK-2 — when the link is present but dangling
+                  // AND there is no manual clan fallback, the row still
+                  // renders so we can surface a "Linked regnant
+                  // unavailable" message. That makes broken references
+                  // visible so the user can clean them up instead of
+                  // silently dropping the identity row.
                   const kind = char.kind ?? 'vampire';
                   const regnantResolution = kind === 'ghoul'
                     ? resolveRegnantClan(char, characters)
                     : null;
                   const hasLinkedRegnant = !!regnantResolution?.linkedRegnant;
+                  const hasDanglingRegnantLink =
+                    kind === 'ghoul' &&
+                    typeof char.regnantCharacterId === 'string' &&
+                    char.regnantCharacterId.length > 0 &&
+                    !hasLinkedRegnant;
                   const hasClanWatermarkAndColor = kind === 'vampire';
                   const hasClanIdentityRow =
-                    kind === 'vampire' || (kind === 'ghoul' && (!!clanData || hasLinkedRegnant));
+                    kind === 'vampire' ||
+                    (kind === 'ghoul' &&
+                      (!!clanData || hasLinkedRegnant ||
+                        (hasDanglingRegnantLink && !clanData)));
                   // Neutral zinc tone for non-vampire cards so the left
                   // accent and radial glow do not bleed the default
                   // crimson onto mortals / ghouls (regnant or not).
@@ -1483,7 +1514,13 @@ export default function CharacterPage() {
                                         name instead of the clan display.
                                         Manual clan fallback is used
                                         whenever the link is unset or
-                                        dangling. */}
+                                        dangling.
+                                        Batch BK-2 — when the link is
+                                        dangling AND no manual clan
+                                        exists, surface an "unavailable"
+                                        message so broken references
+                                        never silently disappear from
+                                        the card. */}
                                     <span
                                       data-testid={`char-card-regnant-prefix-${char.id}`}
                                       className="uppercase tracking-wider text-[10px] opacity-70 mr-1"
@@ -1493,6 +1530,13 @@ export default function CharacterPage() {
                                     {hasLinkedRegnant ? (
                                       <span data-testid={`char-card-regnant-name-${char.id}`}>
                                         {regnantResolution!.displayName}
+                                      </span>
+                                    ) : hasDanglingRegnantLink && !clanData ? (
+                                      <span
+                                        data-testid={`char-card-regnant-unavailable-${char.id}`}
+                                        className="italic text-amber-300/80"
+                                      >
+                                        {strings.char_kind_regnant_unavailable || 'Linked regnant unavailable'}
                                       </span>
                                     ) : (
                                       getClanName(char.clan, char.edition as EditionId)
@@ -1771,7 +1815,7 @@ export default function CharacterPage() {
                       fieldLabel={strings.sheet_name || 'Name'}
                     />
                   </div>
-                  <Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-background border-border" placeholder="e.g. Jeanette Voerman" />
+                  <Input value={newName} onChange={e => setNewName(e.target.value)} className="bg-background border-border" placeholder="e.g. Jeanette Voerman" data-testid="create-field-name" />
                   {suggestions.name && (
                     <SuggestionChip
                       field="name"
@@ -1904,6 +1948,48 @@ export default function CharacterPage() {
                     </select>
                   </div>
                 )}
+
+                {/* Batch BK-2 — optional linked-regnant selector for
+                    ghoul creation. Sits below the Regnant clan
+                    dropdown so the manual clan fallback stays
+                    discoverable when no vampires exist yet or the
+                    Storyteller runs regnants informally. */}
+                {newKind === 'ghoul' && (() => {
+                  const availableVampires = characters
+                    .filter(c => (c.kind ?? 'vampire') === 'vampire')
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  return (
+                    <div className="space-y-2" data-testid="create-regnant-row">
+                      <label className="text-sm font-medium" htmlFor="create-regnant-select">
+                        {strings.char_kind_regnant_character_label || 'Regnant'}
+                      </label>
+                      {availableVampires.length === 0 ? (
+                        <p
+                          className="text-xs text-muted-foreground italic"
+                          data-testid="create-regnant-empty-state"
+                        >
+                          {strings.char_kind_regnant_none_available || 'No vampires available'}
+                        </p>
+                      ) : (
+                        <select
+                          id="create-regnant-select"
+                          data-testid="create-regnant-select"
+                          value={newRegnantCharacterId}
+                          onChange={e => setNewRegnantCharacterId(e.target.value)}
+                          className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                        >
+                          <option value="">
+                            {strings.char_kind_regnant_character_none || 'None'}
+                          </option>
+                          {availableVampires.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Linked Chronicle — primary section, distinct from the legacy
                     free-text "Chronicle" note below. Sets `character.chronicleId`. */}
@@ -2113,7 +2199,7 @@ export default function CharacterPage() {
                   )}
                 </div>
 
-                <Button onClick={handleCreate} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-4">
+                <Button onClick={handleCreate} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground mt-4" data-testid="create-submit">
                   {strings.createCharacter}
                 </Button>
               </CardContent>

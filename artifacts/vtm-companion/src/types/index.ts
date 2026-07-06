@@ -379,6 +379,20 @@ export interface BaseCharacter {
   dismissedDormantMoralityPrompt?: boolean;
   dismissedDormantVitaePrompt?: boolean;
   dismissedDormantPowersPrompt?: boolean;
+  /**
+   * Batch BK-1 — optional reference to another character record that
+   * acts as this ghoul's regnant / domitor. Read-time only: setting
+   * this field never overwrites the manual `clan` fallback, which
+   * continues to store the "Regnant clan" chosen at creation time.
+   * When the id resolves to a `kind: 'vampire'` character in storage,
+   * the sheet / card / print derive the ghoul's displayed regnant clan
+   * from that character. When the id is absent, dangling, or points at
+   * a non-vampire, the ghoul falls back to the manual `clan` field
+   * (identical to pre-BK-1 behavior). Has no effect on non-ghoul
+   * characters. Additive and backward-compatible; nothing seeds this
+   * field on creation.
+   */
+  regnantCharacterId?: string;
   /** Inventory items. `getCharacters` normalizes missing/malformed values to `[]`. */
   inventory?: InventoryItem[];
   createdAt: string;

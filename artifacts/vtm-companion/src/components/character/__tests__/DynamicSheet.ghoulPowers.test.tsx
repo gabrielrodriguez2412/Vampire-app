@@ -384,11 +384,12 @@ describe('Batch BI-1 — vampire Disciplines compatibility', () => {
 });
 
 describe('Batch BI-1 — View Mode locks the Powers toggle', () => {
-  it('disables the toggle when the sheet is readonly', () => {
+  it('hides the entire Powers card in View Mode when tracking is off (BK-1 fix — was: disabled toggle)', () => {
     renderWithContext(
       <DynamicSheet character={makeClassicMortal('ghoul')} schema={ghoulClassicSchema} onChange={onChange} readonly />,
     );
-    expect(screen.getByTestId('sheet-track-ghoul-powers-toggle')).toBeDisabled();
+    expect(screen.queryByTestId('sheet-ghoul-powers-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-ghoul-powers-toggle')).toBeNull();
   });
 });
 

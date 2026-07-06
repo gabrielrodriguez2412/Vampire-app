@@ -9,6 +9,8 @@ import { UI_STRINGS } from "@/i18n/ui";
 import { getClanDisplayNameById } from "@/utils/content";
 import { getDisciplineDisplayName } from "@/utils/disciplineDisplay";
 import { readDisciplineEntry } from "./DynamicSheet";
+import { resolveRegnantClan } from "@/utils/regnant";
+import { getCharacters } from "@/services/characterStorage";
 
 /**
  * Render `rating` filled dots followed by `max - rating` empty dots,
@@ -343,7 +345,16 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
   // a regnant is set) but still drop the V5/blood-pool/etc. trackers.
   const kind = character.kind ?? 'vampire';
   const isVampire = kind === 'vampire';
-  const showClanInHeader = isVampire || (kind === 'ghoul' && !!character.clan);
+  // Batch BK-1 — resolve the ghoul's linked regnant so the print
+  // header can show the vampire's name instead of the manual clan
+  // display when a link resolves. Vampires and humans skip this
+  // resolution entirely; unlinked or dangling ghouls fall through to
+  // the pre-BK-1 clan-based header shape byte-for-byte.
+  const regnantResolution = kind === 'ghoul'
+    ? resolveRegnantClan(character, getCharacters())
+    : null;
+  const hasLinkedRegnant = !!regnantResolution?.linkedRegnant;
+  const showClanInHeader = isVampire || (kind === 'ghoul' && (!!character.clan || hasLinkedRegnant));
 
   const clanName = getClanDisplayNameById(
     character.clan,
@@ -637,7 +648,13 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
                   <span data-testid="print-header-regnant-prefix" className="uppercase tracking-wider">
                     {strings.char_kind_regnant_prefix || 'Regnant'}:
                   </span>{" "}
-                  {clanName}
+                  {hasLinkedRegnant ? (
+                    <span data-testid="print-header-regnant-name">
+                      {regnantResolution!.displayName}
+                    </span>
+                  ) : (
+                    clanName
+                  )}
                 </>
               )}
               {" "}· <span className="uppercase">{character.edition}</span>

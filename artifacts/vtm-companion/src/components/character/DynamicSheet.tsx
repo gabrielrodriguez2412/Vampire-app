@@ -30,6 +30,8 @@ import {
   hasDormantVitae,
   hasDormantPowers,
 } from "@/utils/dormantData";
+import { resolveRegnantClan } from "@/utils/regnant";
+import { getCharacters } from "@/services/characterStorage";
 
 /**
  * Batch AR — map the sheet's text-field ids to the GeneratorField the
@@ -122,6 +124,14 @@ interface DynamicSheetProps {
    * stored value, so a manual entry is always preserved.
    */
   linkedChronicleName?: string;
+  /**
+   * Batch BK-1 — optional character list used to render the ghoul
+   * Regnant selector and resolve any `regnantCharacterId` link. When
+   * omitted, the sheet falls back to `getCharacters()` at render time
+   * so the production page doesn't need any prop plumbing. Tests pass
+   * this in explicitly to avoid touching localStorage.
+   */
+  allCharacters?: Character[];
 }
 
 /**
@@ -1061,7 +1071,7 @@ function JournalList({ value, label, fieldId, isReadOnly, handleUpdate, strings 
   );
 }
 
-export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName }: DynamicSheetProps) {
+export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName, allCharacters }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
 
@@ -1222,6 +1232,40 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
   const dismissDormantPowersPrompt = () => {
     if (readonly) return;
     onChange({ ...character, dismissedDormantPowersPrompt: true } as Character);
+  };
+
+  // Batch BK-1 — resolve the ghoul's linked regnant. Only ghouls get
+  // the Regnant card (see `isGhoulKind`), and only classic ghouls
+  // participate in the resolver's clan derivation. The character list
+  // for lookup / selector-options comes from the optional prop, or
+  // from `getCharacters()` at render time so page-level plumbing stays
+  // untouched. Vampires available for linking: `kind === 'vampire'`
+  // characters excluding the ghoul's own record.
+  const isGhoulKind = characterKind === 'ghoul';
+  const regnantCharacterList = allCharacters ?? (isGhoulKind ? getCharacters() : []);
+  const regnantResolution = isGhoulKind
+    ? resolveRegnantClan(character, regnantCharacterList)
+    : { clanId: '', linkedRegnant: null, displayName: '' };
+  const availableVampires = isGhoulKind
+    ? regnantCharacterList.filter(c => (c.kind ?? 'vampire') === 'vampire' && c.id !== character.id)
+    : [];
+  const hasDanglingRegnantLink =
+    isGhoulKind &&
+    typeof character.regnantCharacterId === 'string' &&
+    character.regnantCharacterId.length > 0 &&
+    regnantResolution.linkedRegnant === null;
+
+  const setRegnantCharacterId = (nextId: string) => {
+    if (!isGhoulKind) return;
+    if (readonly) return;
+    const trimmed = nextId.trim();
+    const next = { ...character } as Character;
+    if (trimmed === '') {
+      delete (next as { regnantCharacterId?: string }).regnantCharacterId;
+    } else {
+      (next as { regnantCharacterId?: string }).regnantCharacterId = trimmed;
+    }
+    onChange(next);
   };
 
   // Safely handle missing schema
@@ -1605,52 +1649,154 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
           return (
             <React.Fragment key={sectionId}>
               {renderedSection}
-              <section
-                data-testid="sheet-morality-section"
-                aria-label={strings.sheet_track_morality || "Track morality"}
-                className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
-              >
-                {showDormantMoralityPrompt && (
-                  <DormantPromptBanner
-                    testId="sheet-dormant-morality-prompt"
-                    body={strings.dormant_morality_body || "This character has stored Humanity data. Track it on this sheet?"}
-                    enableLabel={strings.dormant_enable || "Enable"}
-                    dismissLabel={strings.dormant_dismiss || "Dismiss"}
-                    onEnable={() => toggleTrackMorality(true)}
-                    onDismiss={dismissDormantMoralityPrompt}
-                  />
-                )}
-                <div className="flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="sheet-track-morality"
-                    className="text-sm text-foreground font-serif"
-                  >
-                    {strings.sheet_track_morality || "Track morality"}
-                  </label>
-                  <Switch
-                    id="sheet-track-morality"
-                    checked={trackMoralityEnabled}
-                    onCheckedChange={toggleTrackMorality}
-                    disabled={readonly}
-                    aria-label={strings.sheet_track_morality || "Track morality"}
-                    data-testid="sheet-track-morality-toggle"
-                  />
-                </div>
-                {trackMoralityEnabled && (
-                  <div
-                    data-testid="sheet-morality-tracker"
-                    className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
-                  >
-                    {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
+              {/* Batch BK-1 — Ghoul-only Regnant card sits at the top of
+                  the mortal-cards flow, right after Basic Info. Displays
+                  the linked regnant's name (click-through to that
+                  character's sheet) and, in Edit Mode, a selector that
+                  lists every non-self vampire currently in storage. The
+                  manual `clan` field the create dialog fills in stays
+                  intact — the selector never overwrites it, and the
+                  resolver falls back to `clan` whenever the link is
+                  unset or dangling. Humans and vampires never see this
+                  card. */}
+              {isGhoulKind && (
+                <section
+                  data-testid="sheet-regnant-section"
+                  aria-label={strings.char_kind_regnant_character_label || "Regnant"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label
+                      htmlFor="sheet-regnant-select"
+                      className="text-sm text-foreground font-serif"
+                    >
+                      {strings.char_kind_regnant_character_label || "Regnant"}
+                    </label>
+                    {readonly ? (
+                      <div
+                        data-testid="sheet-regnant-display"
+                        className="text-sm text-foreground/90"
+                      >
+                        {/* Batch BK-1 fix — the app does not yet support
+                            a `/character/:id` deep-link route, so the
+                            linked regnant renders as plain text instead
+                            of a click-through button. Deep-link support
+                            is deferred to a future batch. */}
+                        {regnantResolution.linkedRegnant ? (
+                          <span data-testid="sheet-regnant-name">
+                            {regnantResolution.displayName}
+                          </span>
+                        ) : hasDanglingRegnantLink ? (
+                          <span className="text-amber-300/80 italic">
+                            {strings.char_kind_regnant_unavailable || "Linked regnant unavailable"}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    ) : availableVampires.length === 0 && !character.regnantCharacterId ? (
+                      <div
+                        data-testid="sheet-regnant-empty-state"
+                        className="text-xs text-muted-foreground italic"
+                      >
+                        {strings.char_kind_regnant_none_available || "No vampires available"}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <select
+                          id="sheet-regnant-select"
+                          data-testid="sheet-regnant-select"
+                          value={character.regnantCharacterId ?? ''}
+                          onChange={e => setRegnantCharacterId(e.target.value)}
+                          className="h-8 text-sm bg-zinc-950 border border-zinc-800 rounded px-2 text-foreground min-w-[12rem]"
+                        >
+                          <option value="">
+                            {strings.char_kind_regnant_character_none || "None"}
+                          </option>
+                          {availableVampires.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ))}
+                          {/* Preserve a dangling link's id in the select
+                              value even when the vampire isn't in the
+                              list, so re-render doesn't silently drop
+                              the stored id. */}
+                          {hasDanglingRegnantLink && (
+                            <option value={character.regnantCharacterId} disabled>
+                              {strings.char_kind_regnant_unavailable || "Linked regnant unavailable"}
+                            </option>
+                          )}
+                        </select>
+                        {regnantResolution.linkedRegnant && (
+                          <span
+                            data-testid="sheet-regnant-name"
+                            className="text-xs uppercase tracking-wider px-2 py-1 rounded border border-zinc-700 bg-zinc-950/40 text-muted-foreground"
+                          >
+                            {regnantResolution.displayName}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </section>
+                </section>
+              )}
+              {/* Batch BK-1 fix — in View Mode we only render the card
+                  when tracking is on: an untracked Morality card would
+                  show a "Track morality" toggle the user cannot toggle
+                  and no tracker underneath, which was confusing. In
+                  Edit Mode the card is always visible so the user can
+                  enable tracking. */}
+              {(!readonly || trackMoralityEnabled) && (
+                <section
+                  data-testid="sheet-morality-section"
+                  aria-label={strings.sheet_track_morality || "Track morality"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  {showDormantMoralityPrompt && (
+                    <DormantPromptBanner
+                      testId="sheet-dormant-morality-prompt"
+                      body={strings.dormant_morality_body || "This character has stored Humanity data. Track it on this sheet?"}
+                      enableLabel={strings.dormant_enable || "Enable"}
+                      dismissLabel={strings.dormant_dismiss || "Dismiss"}
+                      onEnable={() => toggleTrackMorality(true)}
+                      onDismiss={dismissDormantMoralityPrompt}
+                    />
+                  )}
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-morality"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_morality || "Track morality"}
+                      </label>
+                      <Switch
+                        id="sheet-track-morality"
+                        checked={trackMoralityEnabled}
+                        onCheckedChange={toggleTrackMorality}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_morality || "Track morality"}
+                        data-testid="sheet-track-morality-toggle"
+                      />
+                    </div>
+                  )}
+                  {trackMoralityEnabled && (
+                    <div
+                      data-testid="sheet-morality-tracker"
+                      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${
+                        !readonly ? 'mt-6 short-landscape:mt-3' : ''
+                      }`}
+                    >
+                      {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
+                    </div>
+                  )}
+                </section>
+              )}
               {/* Batch BG — Vitae card sits alongside the Morality card
                   for classic-edition Ghouls. The two flags are
                   independent: a ghoul can opt into either, both, or
                   neither. The card is absent for Humans, Vampires, and
                   V5 ghouls. */}
-              {isGhoulClassic && (
+              {isGhoulClassic && (!readonly || trackVitaeEnabled) && (
                 <section
                   data-testid="sheet-vitae-section"
                   aria-label={strings.sheet_track_vitae || "Track vitae"}
@@ -1666,26 +1812,30 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                       onDismiss={dismissDormantVitaePrompt}
                     />
                   )}
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="sheet-track-vitae"
-                      className="text-sm text-foreground font-serif"
-                    >
-                      {strings.sheet_track_vitae || "Track vitae"}
-                    </label>
-                    <Switch
-                      id="sheet-track-vitae"
-                      checked={trackVitaeEnabled}
-                      onCheckedChange={toggleTrackVitae}
-                      disabled={readonly}
-                      aria-label={strings.sheet_track_vitae || "Track vitae"}
-                      data-testid="sheet-track-vitae-toggle"
-                    />
-                  </div>
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-vitae"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_vitae || "Track vitae"}
+                      </label>
+                      <Switch
+                        id="sheet-track-vitae"
+                        checked={trackVitaeEnabled}
+                        onCheckedChange={toggleTrackVitae}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_vitae || "Track vitae"}
+                        data-testid="sheet-track-vitae-toggle"
+                      />
+                    </div>
+                  )}
                   {trackVitaeEnabled && (
                     <div
                       data-testid="sheet-vitae-tracker"
-                      className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
+                      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${
+                        !readonly ? 'mt-6 short-landscape:mt-3' : ''
+                      }`}
                     >
                       {renderField({
                         id: 'bloodPool',
@@ -1706,7 +1856,7 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                   and V5 ghouls. Section label is "Powers" / "Poderes",
                   NOT "Disciplines" — keeps the printed/visible header
                   distinct from the vampire surface. */}
-              {isGhoulClassic && (
+              {isGhoulClassic && (!readonly || trackGhoulPowersEnabled) && (
                 <section
                   data-testid="sheet-ghoul-powers-section"
                   aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
@@ -1722,26 +1872,28 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                       onDismiss={dismissDormantPowersPrompt}
                     />
                   )}
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="sheet-track-ghoul-powers"
-                      className="text-sm text-foreground font-serif"
-                    >
-                      {strings.sheet_track_ghoul_powers || "Track powers"}
-                    </label>
-                    <Switch
-                      id="sheet-track-ghoul-powers"
-                      checked={trackGhoulPowersEnabled}
-                      onCheckedChange={toggleTrackGhoulPowers}
-                      disabled={readonly}
-                      aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
-                      data-testid="sheet-track-ghoul-powers-toggle"
-                    />
-                  </div>
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-ghoul-powers"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_ghoul_powers || "Track powers"}
+                      </label>
+                      <Switch
+                        id="sheet-track-ghoul-powers"
+                        checked={trackGhoulPowersEnabled}
+                        onCheckedChange={toggleTrackGhoulPowers}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
+                        data-testid="sheet-track-ghoul-powers-toggle"
+                      />
+                    </div>
+                  )}
                   {trackGhoulPowersEnabled && (
                     <div
                       data-testid="sheet-ghoul-powers-list"
-                      className="mt-6 short-landscape:mt-3"
+                      className={!readonly ? 'mt-6 short-landscape:mt-3' : ''}
                     >
                       <DisciplineList
                         value={(character as { disciplines?: unknown }).disciplines}

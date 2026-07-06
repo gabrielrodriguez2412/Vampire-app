@@ -272,12 +272,16 @@ describe('Batch BE-1 — vampire compatibility', () => {
 });
 
 describe('Batch BE-1 — View Mode locks the toggle', () => {
-  it('disables the toggle when the sheet is readonly', () => {
+  it('hides the entire Morality card in View Mode when tracking is off (BK-1 fix — was: disabled toggle)', () => {
+    // Prior semantics rendered a disabled "Track morality" toggle in
+    // View Mode; that read as a broken control. BK-1 hides the card
+    // entirely when tracking is off, keeping the untoggleable toggle
+    // out of View Mode.
     renderWithContext(
       <DynamicSheet character={makeV5Mortal('human')} schema={humanV5Schema} onChange={onChange} readonly />,
     );
-    const toggle = screen.getByTestId('sheet-track-morality-toggle');
-    expect(toggle).toBeDisabled();
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-morality-toggle')).toBeNull();
   });
 });
 

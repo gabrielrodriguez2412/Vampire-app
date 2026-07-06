@@ -1955,8 +1955,31 @@ export default function CharacterPage() {
                     discoverable when no vampires exist yet or the
                     Storyteller runs regnants informally. */}
                 {newKind === 'ghoul' && (() => {
+                  // Batch BK-2 fix — align the Regnant selector's
+                  // candidate pool with what the character list view
+                  // considers "in play":
+                  //   - kind resolves to 'vampire' (legacy characters
+                  //     without a stored `kind` default to vampire per
+                  //     the AX audit; that's intentional and mirrors
+                  //     resolveRegnantClan's behavior).
+                  //   - status is not 'archived' — the list view
+                  //     defaults to `filterStatus === 'active'`, so an
+                  //     archived vampire is invisible on the list; we
+                  //     hide it from the selector too so users are not
+                  //     confused by names they cannot find on the list.
+                  //     Existing links to a currently-archived vampire
+                  //     continue to resolve via resolveRegnantClan —
+                  //     only NEW selections are gated.
+                  //   - id and name are present, non-empty strings so
+                  //     a corrupted storage record cannot leak in as
+                  //     a blank option.
                   const availableVampires = characters
-                    .filter(c => (c.kind ?? 'vampire') === 'vampire')
+                    .filter(c =>
+                      (c.kind ?? 'vampire') === 'vampire' &&
+                      c.status !== 'archived' &&
+                      typeof c.id === 'string' && c.id.length > 0 &&
+                      typeof c.name === 'string' && c.name.trim().length > 0
+                    )
                     .slice()
                     .sort((a, b) => a.name.localeCompare(b.name));
                   return (

@@ -44,10 +44,9 @@ function setLanguage(lang: 'en' | 'es') {
 }
 
 function seedCharacter(overrides: Partial<ClassicCharacter> & { id: string; name: string; kind: Character['kind']; edition?: Character['edition']; clan?: string }) {
+  // Defaults first, overrides last so caller-supplied id/name/kind win.
   const char = {
-    id: overrides.id, name: overrides.name,
-    clan: overrides.clan ?? '', edition: overrides.edition ?? 'V20',
-    kind: overrides.kind,
+    clan: '', edition: 'V20' as Character['edition'],
     attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
     virtues: { conscience: 1, selfControl: 1, courage: 1 },
     willpower: { current: 5, max: 5 },
@@ -124,6 +123,69 @@ describe('Batch BK-2 — create-form regnant selector option filter', () => {
     fireEvent.click(screen.getByTestId('create-kind-ghoul'));
     expect(screen.getByTestId('create-regnant-empty-state')).toBeInTheDocument();
     expect(screen.queryByTestId('create-regnant-select')).toBeNull();
+  });
+
+  it('excludes ARCHIVED vampires from the selector (BK-2 fix)', () => {
+    // Aligns with the list view, which defaults to `filterStatus:
+    // 'active'` and therefore hides archived characters. An archived
+    // vampire in the dropdown but not in the list was the manual-QA
+    // "extra names" symptom.
+    seedCharacter({ id: 'v1', name: 'Active Vamp', kind: 'vampire' });
+    seedCharacter({ id: 'v2', name: 'Retired Vamp', kind: 'vampire', status: 'archived' } as any);
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    const select = screen.getByTestId('create-regnant-select') as HTMLSelectElement;
+    const optionTexts = Array.from(select.options).map(o => o.textContent);
+    expect(optionTexts).toContain('Active Vamp');
+    expect(optionTexts).not.toContain('Retired Vamp');
+  });
+
+  it('excludes corrupt records with a missing / empty name (defensive)', () => {
+    seedCharacter({ id: 'v1', name: 'Real Vamp', kind: 'vampire' });
+    seedCharacter({ id: 'v2', name: '   ', kind: 'vampire' });      // whitespace name
+    seedCharacter({ id: 'v3', name: '', kind: 'vampire' } as any);  // empty name
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    const select = screen.getByTestId('create-regnant-select') as HTMLSelectElement;
+    const values = Array.from(select.options).map(o => o.value);
+    expect(values).toContain('v1');
+    expect(values).not.toContain('v2');
+    expect(values).not.toContain('v3');
+  });
+
+  it('sorts vampires by name (stable, understandable ordering)', () => {
+    seedCharacter({ id: 'v1', name: 'Zara', kind: 'vampire' });
+    seedCharacter({ id: 'v2', name: 'Aleksandra', kind: 'vampire' });
+    seedCharacter({ id: 'v3', name: 'Marcus', kind: 'vampire' });
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    const select = screen.getByTestId('create-regnant-select') as HTMLSelectElement;
+    // First non-"None" option should be Aleksandra; last should be Zara.
+    const optionTexts = Array.from(select.options).map(o => o.textContent);
+    // Drop the "None" placeholder to inspect the vampire order.
+    const vampireOrder = optionTexts.filter(t => t && t !== UI_STRINGS.en.char_kind_regnant_character_none);
+    expect(vampireOrder).toEqual(['Aleksandra', 'Marcus', 'Zara']);
+  });
+
+  it('legacy characters with no `kind` stored are treated as vampires (audit default)', () => {
+    // The AX / BK audits both default a missing `kind` to 'vampire',
+    // matching resolveRegnantClan and every other consumer. A legacy
+    // vampire without a stored `kind` field must still appear.
+    const legacy = {
+      id: 'legacy', name: 'Legacy Sire',
+      clan: 'brujah', edition: 'V20',
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 },
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      experience: 0, createdAt: '', updatedAt: '',
+    } as unknown as Character;
+    saveCharacter(legacy);
+    openCreateForm();
+    fireEvent.click(screen.getByTestId('create-kind-ghoul'));
+    const select = screen.getByTestId('create-regnant-select') as HTMLSelectElement;
+    const optionTexts = Array.from(select.options).map(o => o.textContent);
+    expect(optionTexts).toContain('Legacy Sire');
   });
 });
 

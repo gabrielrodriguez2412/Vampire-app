@@ -156,6 +156,48 @@ describe('Batch BK-1 — Selector behavior in Edit Mode', () => {
     expect(screen.queryByTestId('sheet-regnant-select')).toBeNull();
   });
 
+  it('excludes ARCHIVED vampires from the selector (BK-2 fix)', () => {
+    // Mirrors the character-list default filter (`status: 'active'`).
+    // An archived vampire is not selectable as a NEW regnant, matching
+    // the invisibility on the list view.
+    const g = makeGhoul();
+    const active = makeVampire('v1', 'Active Vamp', 'brujah');
+    const archived = makeVampire('v2', 'Retired Vamp', 'tremere');
+    (archived as { status?: string }).status = 'archived';
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g, active, archived]} />);
+    const select = screen.getByTestId('sheet-regnant-select') as HTMLSelectElement;
+    const optionTexts = Array.from(select.options).map(o => o.textContent);
+    expect(optionTexts).toContain('Active Vamp');
+    expect(optionTexts).not.toContain('Retired Vamp');
+  });
+
+  it('preserves display for an EXISTING link whose vampire is now archived (resolver still resolves)', () => {
+    // Selector hides archived candidates, but resolveRegnantClan
+    // continues to resolve them so an existing link never dangles just
+    // because someone archived the regnant. The sheet still shows the
+    // linked name, and the manual clan fallback is untouched.
+    const active = makeVampire('v1', 'Active Vamp', 'brujah');
+    const archived = makeVampire('v2', 'Retired Vamp', 'tremere');
+    (archived as { status?: string }).status = 'archived';
+    const g = makeGhoul({ regnantCharacterId: 'v2' } as any);
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g, active, archived]} />);
+    const nameSpan = screen.getByTestId('sheet-regnant-name');
+    expect(nameSpan).toHaveTextContent('Retired Vamp');
+  });
+
+  it('excludes corrupt records with a missing / empty name (defensive)', () => {
+    const g = makeGhoul();
+    const real = makeVampire('v1', 'Real Vamp', 'brujah');
+    const blank = makeVampire('v2', '   ', 'tremere');
+    const empty = makeVampire('v3', '', 'ventrue');
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g, real, blank, empty]} />);
+    const select = screen.getByTestId('sheet-regnant-select') as HTMLSelectElement;
+    const values = Array.from(select.options).map(o => o.value);
+    expect(values).toContain('v1');
+    expect(values).not.toContain('v2');
+    expect(values).not.toContain('v3');
+  });
+
   it('selecting a vampire calls onChange with the vampire id — manual clan is untouched', () => {
     const g = makeGhoul({ clan: 'brujah' } as any);
     const v = makeVampire('v1', 'Aleksandra', 'tremere');

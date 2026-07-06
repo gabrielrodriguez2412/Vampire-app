@@ -1246,8 +1246,23 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
   const regnantResolution = isGhoulKind
     ? resolveRegnantClan(character, regnantCharacterList)
     : { clanId: '', linkedRegnant: null, displayName: '' };
+  // Batch BK-2 fix — match the character-list "active vampires only"
+  // rule for the selector's candidate pool so users are not confused
+  // by names they cannot find on the list. See the same filter in
+  // pages/character.tsx for the full comment. Existing links to an
+  // archived vampire still resolve via `resolveRegnantClan`; only new
+  // selections are gated here.
   const availableVampires = isGhoulKind
-    ? regnantCharacterList.filter(c => (c.kind ?? 'vampire') === 'vampire' && c.id !== character.id)
+    ? regnantCharacterList
+        .filter(c =>
+          c.id !== character.id &&
+          (c.kind ?? 'vampire') === 'vampire' &&
+          c.status !== 'archived' &&
+          typeof c.id === 'string' && c.id.length > 0 &&
+          typeof c.name === 'string' && c.name.trim().length > 0
+        )
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
     : [];
   const hasDanglingRegnantLink =
     isGhoulKind &&

@@ -354,7 +354,20 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
     ? resolveRegnantClan(character, getCharacters())
     : null;
   const hasLinkedRegnant = !!regnantResolution?.linkedRegnant;
-  const showClanInHeader = isVampire || (kind === 'ghoul' && (!!character.clan || hasLinkedRegnant));
+  // Batch BK-2 — when a ghoul has a `regnantCharacterId` that no longer
+  // resolves to a vampire in storage AND there is no manual clan
+  // fallback, print the "Linked regnant unavailable" text in the
+  // header slot instead of dropping the row silently. Broken
+  // references become visible on the printed sheet the same way they
+  // are on the live card and the sheet Regnant section.
+  const hasDanglingRegnantLink =
+    kind === 'ghoul' &&
+    typeof character.regnantCharacterId === 'string' &&
+    character.regnantCharacterId.length > 0 &&
+    !hasLinkedRegnant;
+  const showClanInHeader =
+    isVampire ||
+    (kind === 'ghoul' && (!!character.clan || hasLinkedRegnant || hasDanglingRegnantLink));
 
   const clanName = getClanDisplayNameById(
     character.clan,
@@ -651,6 +664,10 @@ function CharacterPrintLayout({ character }: CharacterPrintLayoutProps) {
                   {hasLinkedRegnant ? (
                     <span data-testid="print-header-regnant-name">
                       {regnantResolution!.displayName}
+                    </span>
+                  ) : hasDanglingRegnantLink && !character.clan ? (
+                    <span data-testid="print-header-regnant-unavailable" className="italic">
+                      {strings.char_kind_regnant_unavailable || 'Linked regnant unavailable'}
                     </span>
                   ) : (
                     clanName

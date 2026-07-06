@@ -1074,10 +1074,6 @@ function JournalList({ value, label, fieldId, isReadOnly, handleUpdate, strings 
 export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName, allCharacters }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
-  // Batch BK-1 — routing for the "open linked regnant" link on the
-  // ghoul Regnant card. Kept next to the existing DisciplineList's
-  // similar navigation pattern.
-  const [, setLocation] = useLocation();
 
   /** Local-only collapsed state for sections. Not persisted; not in character data. */
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -1681,15 +1677,15 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                         data-testid="sheet-regnant-display"
                         className="text-sm text-foreground/90"
                       >
+                        {/* Batch BK-1 fix — the app does not yet support
+                            a `/character/:id` deep-link route, so the
+                            linked regnant renders as plain text instead
+                            of a click-through button. Deep-link support
+                            is deferred to a future batch. */}
                         {regnantResolution.linkedRegnant ? (
-                          <button
-                            type="button"
-                            data-testid="sheet-regnant-open-link"
-                            onClick={() => setLocation(`/character/${regnantResolution.linkedRegnant!.id}`)}
-                            className="underline underline-offset-2 hover:text-primary transition-colors"
-                          >
+                          <span data-testid="sheet-regnant-name">
                             {regnantResolution.displayName}
-                          </button>
+                          </span>
                         ) : hasDanglingRegnantLink ? (
                           <span className="text-amber-300/80 italic">
                             {strings.char_kind_regnant_unavailable || "Linked regnant unavailable"}
@@ -1731,66 +1727,76 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                           )}
                         </select>
                         {regnantResolution.linkedRegnant && (
-                          <button
-                            type="button"
-                            data-testid="sheet-regnant-open-link"
-                            onClick={() => setLocation(`/character/${regnantResolution.linkedRegnant!.id}`)}
-                            className="text-xs uppercase tracking-wider px-2 py-1 rounded border border-zinc-700 bg-zinc-950/40 text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-colors"
+                          <span
+                            data-testid="sheet-regnant-name"
+                            className="text-xs uppercase tracking-wider px-2 py-1 rounded border border-zinc-700 bg-zinc-950/40 text-muted-foreground"
                           >
                             {regnantResolution.displayName}
-                          </button>
+                          </span>
                         )}
                       </div>
                     )}
                   </div>
                 </section>
               )}
-              <section
-                data-testid="sheet-morality-section"
-                aria-label={strings.sheet_track_morality || "Track morality"}
-                className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
-              >
-                {showDormantMoralityPrompt && (
-                  <DormantPromptBanner
-                    testId="sheet-dormant-morality-prompt"
-                    body={strings.dormant_morality_body || "This character has stored Humanity data. Track it on this sheet?"}
-                    enableLabel={strings.dormant_enable || "Enable"}
-                    dismissLabel={strings.dormant_dismiss || "Dismiss"}
-                    onEnable={() => toggleTrackMorality(true)}
-                    onDismiss={dismissDormantMoralityPrompt}
-                  />
-                )}
-                <div className="flex items-center justify-between gap-3">
-                  <label
-                    htmlFor="sheet-track-morality"
-                    className="text-sm text-foreground font-serif"
-                  >
-                    {strings.sheet_track_morality || "Track morality"}
-                  </label>
-                  <Switch
-                    id="sheet-track-morality"
-                    checked={trackMoralityEnabled}
-                    onCheckedChange={toggleTrackMorality}
-                    disabled={readonly}
-                    aria-label={strings.sheet_track_morality || "Track morality"}
-                    data-testid="sheet-track-morality-toggle"
-                  />
-                </div>
-                {trackMoralityEnabled && (
-                  <div
-                    data-testid="sheet-morality-tracker"
-                    className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
-                  >
-                    {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
-                  </div>
-                )}
-              </section>
+              {/* Batch BK-1 fix — in View Mode we only render the card
+                  when tracking is on: an untracked Morality card would
+                  show a "Track morality" toggle the user cannot toggle
+                  and no tracker underneath, which was confusing. In
+                  Edit Mode the card is always visible so the user can
+                  enable tracking. */}
+              {(!readonly || trackMoralityEnabled) && (
+                <section
+                  data-testid="sheet-morality-section"
+                  aria-label={strings.sheet_track_morality || "Track morality"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  {showDormantMoralityPrompt && (
+                    <DormantPromptBanner
+                      testId="sheet-dormant-morality-prompt"
+                      body={strings.dormant_morality_body || "This character has stored Humanity data. Track it on this sheet?"}
+                      enableLabel={strings.dormant_enable || "Enable"}
+                      dismissLabel={strings.dormant_dismiss || "Dismiss"}
+                      onEnable={() => toggleTrackMorality(true)}
+                      onDismiss={dismissDormantMoralityPrompt}
+                    />
+                  )}
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-morality"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_morality || "Track morality"}
+                      </label>
+                      <Switch
+                        id="sheet-track-morality"
+                        checked={trackMoralityEnabled}
+                        onCheckedChange={toggleTrackMorality}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_morality || "Track morality"}
+                        data-testid="sheet-track-morality-toggle"
+                      />
+                    </div>
+                  )}
+                  {trackMoralityEnabled && (
+                    <div
+                      data-testid="sheet-morality-tracker"
+                      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${
+                        !readonly ? 'mt-6 short-landscape:mt-3' : ''
+                      }`}
+                    >
+                      {renderField({ id: 'humanity', labelKey: moralityLabelKey, type: 'dots-10' })}
+                    </div>
+                  )}
+                </section>
+              )}
               {/* Batch BG — Vitae card sits alongside the Morality card
                   for classic-edition Ghouls. The two flags are
                   independent: a ghoul can opt into either, both, or
                   neither. The card is absent for Humans, Vampires, and
                   V5 ghouls. */}
-              {isGhoulClassic && (
+              {isGhoulClassic && (!readonly || trackVitaeEnabled) && (
                 <section
                   data-testid="sheet-vitae-section"
                   aria-label={strings.sheet_track_vitae || "Track vitae"}
@@ -1806,26 +1812,30 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                       onDismiss={dismissDormantVitaePrompt}
                     />
                   )}
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="sheet-track-vitae"
-                      className="text-sm text-foreground font-serif"
-                    >
-                      {strings.sheet_track_vitae || "Track vitae"}
-                    </label>
-                    <Switch
-                      id="sheet-track-vitae"
-                      checked={trackVitaeEnabled}
-                      onCheckedChange={toggleTrackVitae}
-                      disabled={readonly}
-                      aria-label={strings.sheet_track_vitae || "Track vitae"}
-                      data-testid="sheet-track-vitae-toggle"
-                    />
-                  </div>
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-vitae"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_vitae || "Track vitae"}
+                      </label>
+                      <Switch
+                        id="sheet-track-vitae"
+                        checked={trackVitaeEnabled}
+                        onCheckedChange={toggleTrackVitae}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_vitae || "Track vitae"}
+                        data-testid="sheet-track-vitae-toggle"
+                      />
+                    </div>
+                  )}
                   {trackVitaeEnabled && (
                     <div
                       data-testid="sheet-vitae-tracker"
-                      className="mt-6 short-landscape:mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2"
+                      className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 short-landscape:gap-x-4 gap-y-5 short-landscape:gap-y-2 ${
+                        !readonly ? 'mt-6 short-landscape:mt-3' : ''
+                      }`}
                     >
                       {renderField({
                         id: 'bloodPool',
@@ -1846,7 +1856,7 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                   and V5 ghouls. Section label is "Powers" / "Poderes",
                   NOT "Disciplines" — keeps the printed/visible header
                   distinct from the vampire surface. */}
-              {isGhoulClassic && (
+              {isGhoulClassic && (!readonly || trackGhoulPowersEnabled) && (
                 <section
                   data-testid="sheet-ghoul-powers-section"
                   aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
@@ -1862,26 +1872,28 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                       onDismiss={dismissDormantPowersPrompt}
                     />
                   )}
-                  <div className="flex items-center justify-between gap-3">
-                    <label
-                      htmlFor="sheet-track-ghoul-powers"
-                      className="text-sm text-foreground font-serif"
-                    >
-                      {strings.sheet_track_ghoul_powers || "Track powers"}
-                    </label>
-                    <Switch
-                      id="sheet-track-ghoul-powers"
-                      checked={trackGhoulPowersEnabled}
-                      onCheckedChange={toggleTrackGhoulPowers}
-                      disabled={readonly}
-                      aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
-                      data-testid="sheet-track-ghoul-powers-toggle"
-                    />
-                  </div>
+                  {!readonly && (
+                    <div className="flex items-center justify-between gap-3">
+                      <label
+                        htmlFor="sheet-track-ghoul-powers"
+                        className="text-sm text-foreground font-serif"
+                      >
+                        {strings.sheet_track_ghoul_powers || "Track powers"}
+                      </label>
+                      <Switch
+                        id="sheet-track-ghoul-powers"
+                        checked={trackGhoulPowersEnabled}
+                        onCheckedChange={toggleTrackGhoulPowers}
+                        disabled={readonly}
+                        aria-label={strings.sheet_track_ghoul_powers || "Track powers"}
+                        data-testid="sheet-track-ghoul-powers-toggle"
+                      />
+                    </div>
+                  )}
                   {trackGhoulPowersEnabled && (
                     <div
                       data-testid="sheet-ghoul-powers-list"
-                      className="mt-6 short-landscape:mt-3"
+                      className={!readonly ? 'mt-6 short-landscape:mt-3' : ''}
                     >
                       <DisciplineList
                         value={(character as { disciplines?: unknown }).disciplines}

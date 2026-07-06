@@ -331,11 +331,12 @@ describe('Batch BG — vampire compatibility', () => {
 });
 
 describe('Batch BG — View Mode locks the Vitae toggle', () => {
-  it('disables the toggle when the sheet is readonly', () => {
+  it('hides the entire Vitae card in View Mode when tracking is off (BK-1 fix — was: disabled toggle)', () => {
     renderWithContext(
       <DynamicSheet character={makeClassicMortal('ghoul')} schema={ghoulClassicSchema} onChange={onChange} readonly />,
     );
-    expect(screen.getByTestId('sheet-track-vitae-toggle')).toBeDisabled();
+    expect(screen.queryByTestId('sheet-vitae-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-vitae-toggle')).toBeNull();
   });
 });
 

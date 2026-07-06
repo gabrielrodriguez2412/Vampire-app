@@ -179,15 +179,20 @@ describe('Batch BK-1 — Selector behavior in Edit Mode', () => {
 });
 
 describe('Batch BK-1 — Linked regnant display', () => {
-  it('shows the linked vampire`s name as a click-through button on the sheet card', () => {
+  it('shows the linked vampire`s name as plain text (no click-through — deep-link route not yet supported)', () => {
+    // The app's character page uses internal `activeChar` state rather
+    // than a `/character/:id` route (see App.tsx). Rendering the linked
+    // regnant as a button that routes to `/character/<id>` would 404.
+    // BK-1 fix — render plain text; deep-link support is deferred to a
+    // future batch.
     const g = makeGhoul({ regnantCharacterId: 'v1' } as any);
     const v = makeVampire('v1', 'Aleksandra', 'tremere');
     renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g, v]} />);
-    const openBtn = screen.getByTestId('sheet-regnant-open-link');
-    expect(openBtn).toHaveTextContent('Aleksandra');
-    fireEvent.click(openBtn);
-    // wouter's setLocation should route to /character/v1.
-    expect(window.location.pathname).toBe('/character/v1');
+    const nameSpan = screen.getByTestId('sheet-regnant-name');
+    expect(nameSpan).toHaveTextContent('Aleksandra');
+    // Not a button — nothing to click, nothing that can 404.
+    expect(nameSpan.tagName).not.toBe('BUTTON');
+    expect(screen.queryByTestId('sheet-regnant-open-link')).toBeNull();
   });
 
   it('shows the "Linked regnant unavailable" copy on a dangling link and preserves the stored id', () => {
@@ -203,7 +208,7 @@ describe('Batch BK-1 — Linked regnant display', () => {
     expect(dangling?.textContent).toBe(UI_STRINGS.es.char_kind_regnant_unavailable);
   });
 
-  it('View Mode hides the selector, shows the read-only name button, and still routes on click', () => {
+  it('View Mode hides the selector and shows the linked name as plain read-only text', () => {
     const g = makeGhoul({ regnantCharacterId: 'v1' } as any);
     const v = makeVampire('v1', 'Aleksandra', 'tremere');
     renderWithContext(
@@ -211,10 +216,11 @@ describe('Batch BK-1 — Linked regnant display', () => {
     );
     expect(screen.queryByTestId('sheet-regnant-select')).toBeNull();
     const display = screen.getByTestId('sheet-regnant-display');
-    const openBtn = within(display).getByTestId('sheet-regnant-open-link');
-    expect(openBtn).toHaveTextContent('Aleksandra');
-    fireEvent.click(openBtn);
-    expect(window.location.pathname).toBe('/character/v1');
+    const nameSpan = within(display).getByTestId('sheet-regnant-name');
+    expect(nameSpan).toHaveTextContent('Aleksandra');
+    // No click-through button anywhere on the sheet — deep-linking is
+    // deferred.
+    expect(screen.queryByTestId('sheet-regnant-open-link')).toBeNull();
   });
 
   it('View Mode renders an em-dash placeholder for a regnant-less ghoul', () => {
@@ -263,5 +269,122 @@ describe('Batch BK-1 — i18n + JSON round-trip', () => {
     const round = JSON.parse(JSON.stringify(g)) as ClassicCharacter;
     expect(round.regnantCharacterId).toBe('v1');
     expect(round.clan).toBe('brujah');
+  });
+});
+
+describe('Batch BK-1 fix — untracked optional cards hidden in View Mode', () => {
+  // BK-1 issue #2: in View Mode with tracking off, the Morality / Vitae
+  // / Powers cards used to render a "Track X" toggle that the user
+  // couldn't flip. That was confusing. Fix: when in View Mode and the
+  // matching track flag is not on, hide the whole card. Edit Mode
+  // preserves the pre-fix behavior — toggles always visible so the
+  // user can opt in.
+  it('View Mode + tracking off → Morality card is completely hidden', () => {
+    const g = makeGhoul();
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} readonly />);
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-morality-toggle')).toBeNull();
+  });
+
+  it('View Mode + tracking off → Vitae card is completely hidden', () => {
+    const g = makeGhoul();
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} readonly />);
+    expect(screen.queryByTestId('sheet-vitae-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-vitae-toggle')).toBeNull();
+  });
+
+  it('View Mode + tracking off → Powers card is completely hidden', () => {
+    const g = makeGhoul();
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} readonly />);
+    expect(screen.queryByTestId('sheet-ghoul-powers-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-ghoul-powers-toggle')).toBeNull();
+  });
+
+  it('Edit Mode + tracking off → all three cards visible with their toggles (regression)', () => {
+    const g = makeGhoul();
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} />);
+    expect(screen.getByTestId('sheet-morality-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-track-morality-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-vitae-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-track-vitae-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-ghoul-powers-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-track-ghoul-powers-toggle')).toBeInTheDocument();
+  });
+
+  it('View Mode + tracking on → active tracker visible, toggle hidden', () => {
+    const g = makeGhoul({
+      trackMorality: true, humanity: 6,
+      trackVitae: true, bloodPool: { current: 2, max: 3 },
+      trackGhoulPowers: true, disciplines: { potence: 1 } as any,
+    } as any);
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} readonly />);
+    // Sections and trackers render.
+    expect(screen.getByTestId('sheet-morality-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-morality-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-vitae-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-vitae-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-ghoul-powers-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-ghoul-powers-list')).toBeInTheDocument();
+    // But NOT the toggles — those are Edit-Mode-only.
+    expect(screen.queryByTestId('sheet-track-morality-toggle')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-vitae-toggle')).toBeNull();
+    expect(screen.queryByTestId('sheet-track-ghoul-powers-toggle')).toBeNull();
+  });
+
+  it('Edit Mode + tracking on → both toggle and tracker visible (regression)', () => {
+    const g = makeGhoul({
+      trackMorality: true, humanity: 6,
+      trackVitae: true, bloodPool: { current: 2, max: 3 },
+      trackGhoulPowers: true, disciplines: { potence: 1 } as any,
+    } as any);
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} />);
+    expect(screen.getByTestId('sheet-track-morality-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-morality-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-track-vitae-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-vitae-tracker')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-track-ghoul-powers-toggle')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-ghoul-powers-list')).toBeInTheDocument();
+  });
+
+  it('Dormant prompts do NOT appear in View Mode even when the predicate would fire', () => {
+    // Dormant humanity + View Mode + no tracking flag → the card is
+    // hidden entirely, so the dormant banner is unreachable.
+    const dormant = makeGhoul({ humanity: 7 } as any);
+    renderWithContext(<DynamicSheet character={dormant} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[dormant]} readonly />);
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-dormant-morality-prompt')).toBeNull();
+  });
+
+  it('does NOT auto-mutate any tracking flag when switching to View Mode', () => {
+    const g = makeGhoul({ humanity: 7 } as any);
+    renderWithContext(<DynamicSheet character={g} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[g]} readonly />);
+    // Simply rendering a dormant-data ghoul in View Mode must not
+    // trigger any storage writes. The dormant value is preserved on
+    // disk; the visibility rule is purely a UI decision.
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('View Mode Human sheet: Morality card visible only when trackMorality is on', () => {
+    // Humans are eligible for Morality only. Confirm the hide rule
+    // applies to Human sheets too.
+    const humanOff = makeHuman();
+    renderWithContext(<DynamicSheet character={humanOff} schema={humanClassicSchema} onChange={onChange} allCharacters={[humanOff]} readonly />);
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+
+    cleanup();
+
+    const humanOn = makeHuman({ trackMorality: true, humanity: 5 } as any);
+    renderWithContext(<DynamicSheet character={humanOn} schema={humanClassicSchema} onChange={onChange} allCharacters={[humanOn]} readonly />);
+    expect(screen.getByTestId('sheet-morality-section')).toBeInTheDocument();
+    expect(screen.getByTestId('sheet-morality-tracker')).toBeInTheDocument();
+    expect(screen.queryByTestId('sheet-track-morality-toggle')).toBeNull();
+  });
+
+  it('Vampire sheet is unchanged in View Mode (no opt-in cards ever appear)', () => {
+    const v = makeVampire('v', 'V', 'brujah');
+    renderWithContext(<DynamicSheet character={v} schema={classicSchema} onChange={onChange} allCharacters={[v]} readonly />);
+    expect(screen.queryByTestId('sheet-morality-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-vitae-section')).toBeNull();
+    expect(screen.queryByTestId('sheet-ghoul-powers-section')).toBeNull();
   });
 });

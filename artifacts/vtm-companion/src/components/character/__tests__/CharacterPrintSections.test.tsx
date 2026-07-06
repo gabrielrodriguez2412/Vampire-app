@@ -1320,3 +1320,90 @@ describe('print/PDF — dormant-data prompts never appear in print (Batch BJ reg
     expect(text).not.toContain(UI_STRINGS.en.dormant_morality_body);
   });
 });
+
+describe('print/PDF — linked-regnant name in header (Batch BK-1)', () => {
+  // The print view reads the character list from localStorage to
+  // resolve a ghoul's `regnantCharacterId`. Seed the store before
+  // renderPrint so the resolver has candidates; clear afterwards.
+  beforeEach(() => { window.localStorage.clear(); });
+  afterEach(() => { cleanup(); document.body.innerHTML = ''; window.localStorage.clear(); });
+
+  function seedCharacters(chars: Character[]) {
+    window.localStorage.setItem('vtm-characters', JSON.stringify(chars));
+  }
+
+  it('a linked V20 Ghoul prints the vampire`s name after the "Regnant:" prefix', () => {
+    const vampire: ClassicCharacter = { ...makeClassic({ clan: 'tremere' }), id: 'v1', name: 'Aleksandra' } as ClassicCharacter;
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'brujah' }),  // manual clan intentionally different from vampire's
+      id: 'g1',
+      name: 'Bonded',
+      kind: 'ghoul',
+      regnantCharacterId: 'v1',
+    } as ClassicCharacter;
+    seedCharacters([vampire, ghoul]);
+    const text = renderPrint(ghoul, 'en');
+    // The header shows the vampire's name in the regnant slot, not the
+    // manual "Brujah" clan display.
+    expect(text).toContain('Aleksandra');
+    const nameSpan = document.querySelector('[data-testid="print-header-regnant-name"]');
+    expect(nameSpan?.textContent).toBe('Aleksandra');
+  });
+
+  it('a dangling-link Ghoul falls back to the manual clan display in print', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'brujah' }),
+      id: 'g1',
+      name: 'Bonded',
+      kind: 'ghoul',
+      regnantCharacterId: 'never-exists',
+    } as ClassicCharacter;
+    seedCharacters([ghoul]);
+    const text = renderPrint(ghoul, 'en');
+    // Manual clan wins the fallback path.
+    expect(text).toContain('Brujah');
+    // Print does NOT render the linked-name testid when the link is dangling.
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+
+  it('an unlinked Ghoul prints exactly as before BK-1 (byte-for-byte fallback)', () => {
+    const ghoul: ClassicCharacter = {
+      ...makeClassic({ clan: 'brujah' }),
+      id: 'g1',
+      name: 'Bonded',
+      kind: 'ghoul',
+    } as ClassicCharacter;
+    seedCharacters([ghoul]);
+    const text = renderPrint(ghoul, 'en');
+    expect(text).toContain('Brujah');
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+
+  it('a Vampire print is unchanged by any stray `regnantCharacterId`', () => {
+    const vampire: ClassicCharacter = {
+      ...makeClassic({ clan: 'tremere' }),
+      id: 'v1',
+      name: 'Aleksandra',
+    } as ClassicCharacter;
+    (vampire as Character).regnantCharacterId = 'v9';  // stray
+    seedCharacters([vampire]);
+    const text = renderPrint(vampire, 'en');
+    // Vampire header still shows their own clan, no linked-name testid.
+    expect(text).toContain('Tremere');
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+
+  it('a Human print is unaffected by any stray `regnantCharacterId`', () => {
+    const human: ClassicCharacter = {
+      ...makeClassic({ clan: '' }),
+      id: 'h1',
+      name: 'Elena',
+      kind: 'human',
+    } as ClassicCharacter;
+    (human as Character).regnantCharacterId = 'v1';  // stray on a human, should not resolve
+    seedCharacters([makeClassic({ clan: 'tremere' }), human]);
+    renderPrint(human, 'en');
+    // No linked-name in the header at all — humans never enter the branch.
+    expect(document.querySelector('[data-testid="print-header-regnant-name"]')).toBeNull();
+  });
+});

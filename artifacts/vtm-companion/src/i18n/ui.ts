@@ -166,6 +166,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     // print header so a ghoul's stored `clan` reads as the regnant's
     // clan, not the ghoul's own clan. Rendered as "Regente: <clan>".
     char_kind_regnant_prefix: "Regente",
+    char_kind_regnant_character_label: "Regente",
+    char_kind_regnant_character_none: "Ninguno",
+    char_kind_regnant_unavailable: "Regente vinculado no disponible",
+    char_kind_regnant_none_available: "No hay Vampiros disponibles",
     name_required: "Se requiere un nombre.",
     char_mark_as_npc: "Marcar como PNJ", char_mark_as_player: "Marcar como Personaje",
     char_marked_npc: "Marcado como PNJ", char_marked_player: "Marcado como Personaje de Jugador",
@@ -690,6 +694,10 @@ export const UI_STRINGS: Record<LangCode, Record<string, string>> = {
     // print header so a ghoul's stored `clan` reads as the regnant's
     // clan, not the ghoul's own clan. Rendered as "Regnant: <clan>".
     char_kind_regnant_prefix: "Regnant",
+    char_kind_regnant_character_label: "Regnant",
+    char_kind_regnant_character_none: "None",
+    char_kind_regnant_unavailable: "Linked regnant unavailable",
+    char_kind_regnant_none_available: "No vampires available",
     name_required: "Name required.",
     char_mark_as_npc: "Mark as NPC", char_mark_as_player: "Mark as Player Character",
     char_marked_npc: "Marked as NPC", char_marked_player: "Marked as Player Character",

@@ -30,6 +30,8 @@ import {
   hasDormantVitae,
   hasDormantPowers,
 } from "@/utils/dormantData";
+import { resolveRegnantClan } from "@/utils/regnant";
+import { getCharacters } from "@/services/characterStorage";
 
 /**
  * Batch AR — map the sheet's text-field ids to the GeneratorField the
@@ -122,6 +124,14 @@ interface DynamicSheetProps {
    * stored value, so a manual entry is always preserved.
    */
   linkedChronicleName?: string;
+  /**
+   * Batch BK-1 — optional character list used to render the ghoul
+   * Regnant selector and resolve any `regnantCharacterId` link. When
+   * omitted, the sheet falls back to `getCharacters()` at render time
+   * so the production page doesn't need any prop plumbing. Tests pass
+   * this in explicitly to avoid touching localStorage.
+   */
+  allCharacters?: Character[];
 }
 
 /**
@@ -1061,9 +1071,13 @@ function JournalList({ value, label, fieldId, isReadOnly, handleUpdate, strings 
   );
 }
 
-export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName }: DynamicSheetProps) {
+export function DynamicSheet({ character, schema, onChange, readonly = false, linkedChronicleName, allCharacters }: DynamicSheetProps) {
   const { activeLanguage } = useAppContext();
   const strings = UI_STRINGS[activeLanguage] || UI_STRINGS['en'];
+  // Batch BK-1 — routing for the "open linked regnant" link on the
+  // ghoul Regnant card. Kept next to the existing DisciplineList's
+  // similar navigation pattern.
+  const [, setLocation] = useLocation();
 
   /** Local-only collapsed state for sections. Not persisted; not in character data. */
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -1222,6 +1236,40 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
   const dismissDormantPowersPrompt = () => {
     if (readonly) return;
     onChange({ ...character, dismissedDormantPowersPrompt: true } as Character);
+  };
+
+  // Batch BK-1 — resolve the ghoul's linked regnant. Only ghouls get
+  // the Regnant card (see `isGhoulKind`), and only classic ghouls
+  // participate in the resolver's clan derivation. The character list
+  // for lookup / selector-options comes from the optional prop, or
+  // from `getCharacters()` at render time so page-level plumbing stays
+  // untouched. Vampires available for linking: `kind === 'vampire'`
+  // characters excluding the ghoul's own record.
+  const isGhoulKind = characterKind === 'ghoul';
+  const regnantCharacterList = allCharacters ?? (isGhoulKind ? getCharacters() : []);
+  const regnantResolution = isGhoulKind
+    ? resolveRegnantClan(character, regnantCharacterList)
+    : { clanId: '', linkedRegnant: null, displayName: '' };
+  const availableVampires = isGhoulKind
+    ? regnantCharacterList.filter(c => (c.kind ?? 'vampire') === 'vampire' && c.id !== character.id)
+    : [];
+  const hasDanglingRegnantLink =
+    isGhoulKind &&
+    typeof character.regnantCharacterId === 'string' &&
+    character.regnantCharacterId.length > 0 &&
+    regnantResolution.linkedRegnant === null;
+
+  const setRegnantCharacterId = (nextId: string) => {
+    if (!isGhoulKind) return;
+    if (readonly) return;
+    const trimmed = nextId.trim();
+    const next = { ...character } as Character;
+    if (trimmed === '') {
+      delete (next as { regnantCharacterId?: string }).regnantCharacterId;
+    } else {
+      (next as { regnantCharacterId?: string }).regnantCharacterId = trimmed;
+    }
+    onChange(next);
   };
 
   // Safely handle missing schema
@@ -1605,6 +1653,98 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
           return (
             <React.Fragment key={sectionId}>
               {renderedSection}
+              {/* Batch BK-1 — Ghoul-only Regnant card sits at the top of
+                  the mortal-cards flow, right after Basic Info. Displays
+                  the linked regnant's name (click-through to that
+                  character's sheet) and, in Edit Mode, a selector that
+                  lists every non-self vampire currently in storage. The
+                  manual `clan` field the create dialog fills in stays
+                  intact — the selector never overwrites it, and the
+                  resolver falls back to `clan` whenever the link is
+                  unset or dangling. Humans and vampires never see this
+                  card. */}
+              {isGhoulKind && (
+                <section
+                  data-testid="sheet-regnant-section"
+                  aria-label={strings.char_kind_regnant_character_label || "Regnant"}
+                  className="bg-zinc-900/40 border border-zinc-800 rounded-lg p-6 md:p-8 short-landscape:p-3"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <label
+                      htmlFor="sheet-regnant-select"
+                      className="text-sm text-foreground font-serif"
+                    >
+                      {strings.char_kind_regnant_character_label || "Regnant"}
+                    </label>
+                    {readonly ? (
+                      <div
+                        data-testid="sheet-regnant-display"
+                        className="text-sm text-foreground/90"
+                      >
+                        {regnantResolution.linkedRegnant ? (
+                          <button
+                            type="button"
+                            data-testid="sheet-regnant-open-link"
+                            onClick={() => setLocation(`/character/${regnantResolution.linkedRegnant!.id}`)}
+                            className="underline underline-offset-2 hover:text-primary transition-colors"
+                          >
+                            {regnantResolution.displayName}
+                          </button>
+                        ) : hasDanglingRegnantLink ? (
+                          <span className="text-amber-300/80 italic">
+                            {strings.char_kind_regnant_unavailable || "Linked regnant unavailable"}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    ) : availableVampires.length === 0 && !character.regnantCharacterId ? (
+                      <div
+                        data-testid="sheet-regnant-empty-state"
+                        className="text-xs text-muted-foreground italic"
+                      >
+                        {strings.char_kind_regnant_none_available || "No vampires available"}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <select
+                          id="sheet-regnant-select"
+                          data-testid="sheet-regnant-select"
+                          value={character.regnantCharacterId ?? ''}
+                          onChange={e => setRegnantCharacterId(e.target.value)}
+                          className="h-8 text-sm bg-zinc-950 border border-zinc-800 rounded px-2 text-foreground min-w-[12rem]"
+                        >
+                          <option value="">
+                            {strings.char_kind_regnant_character_none || "None"}
+                          </option>
+                          {availableVampires.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ))}
+                          {/* Preserve a dangling link's id in the select
+                              value even when the vampire isn't in the
+                              list, so re-render doesn't silently drop
+                              the stored id. */}
+                          {hasDanglingRegnantLink && (
+                            <option value={character.regnantCharacterId} disabled>
+                              {strings.char_kind_regnant_unavailable || "Linked regnant unavailable"}
+                            </option>
+                          )}
+                        </select>
+                        {regnantResolution.linkedRegnant && (
+                          <button
+                            type="button"
+                            data-testid="sheet-regnant-open-link"
+                            onClick={() => setLocation(`/character/${regnantResolution.linkedRegnant!.id}`)}
+                            className="text-xs uppercase tracking-wider px-2 py-1 rounded border border-zinc-700 bg-zinc-950/40 text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-colors"
+                          >
+                            {regnantResolution.displayName}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
+              )}
               <section
                 data-testid="sheet-morality-section"
                 aria-label={strings.sheet_track_morality || "Track morality"}

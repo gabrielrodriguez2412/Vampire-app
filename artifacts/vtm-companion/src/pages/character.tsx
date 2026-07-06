@@ -16,6 +16,7 @@ import { Character, EditionId, LangCode, CharacterType, CharacterKind, Character
 import { clans } from "@/data/clans";
 import { EDITION_LIST } from "@/data/editions";
 import { getClanDisplayName, getClanDisplayNameById, filterByEdition } from "@/utils/content";
+import { resolveRegnantClan } from "@/utils/regnant";
 import {
   sortAndFilterCharacters,
   CharacterSortKey,
@@ -1321,10 +1322,21 @@ export default function CharacterPage() {
                   // bond can never read as "this character belongs to
                   // this clan". Vampires (and legacy characters with kind
                   // absent) keep the existing visuals unchanged.
+                  //
+                  // Batch BK-1 — when a ghoul has a resolved
+                  // `regnantCharacterId` linking to a vampire in the
+                  // list, the identity row shows the linked vampire's
+                  // name instead of the manual clan display. Falls back
+                  // to the existing clan display when the link is unset,
+                  // dangling, or points at a non-vampire.
                   const kind = char.kind ?? 'vampire';
+                  const regnantResolution = kind === 'ghoul'
+                    ? resolveRegnantClan(char, characters)
+                    : null;
+                  const hasLinkedRegnant = !!regnantResolution?.linkedRegnant;
                   const hasClanWatermarkAndColor = kind === 'vampire';
                   const hasClanIdentityRow =
-                    kind === 'vampire' || (kind === 'ghoul' && !!clanData);
+                    kind === 'vampire' || (kind === 'ghoul' && (!!clanData || hasLinkedRegnant));
                   // Neutral zinc tone for non-vampire cards so the left
                   // accent and radial glow do not bleed the default
                   // crimson onto mortals / ghouls (regnant or not).
@@ -1465,14 +1477,26 @@ export default function CharacterPage() {
                                   <>
                                     {/* Batch BB — surface the regnant
                                         clan as the regnant's, not the
-                                        ghoul's own clan. */}
+                                        ghoul's own clan.
+                                        Batch BK-1 — if a linked regnant
+                                        resolves, show the vampire's
+                                        name instead of the clan display.
+                                        Manual clan fallback is used
+                                        whenever the link is unset or
+                                        dangling. */}
                                     <span
                                       data-testid={`char-card-regnant-prefix-${char.id}`}
                                       className="uppercase tracking-wider text-[10px] opacity-70 mr-1"
                                     >
                                       {strings.char_kind_regnant_prefix || 'Regnant'}:
                                     </span>
-                                    {getClanName(char.clan, char.edition as EditionId)}
+                                    {hasLinkedRegnant ? (
+                                      <span data-testid={`char-card-regnant-name-${char.id}`}>
+                                        {regnantResolution!.displayName}
+                                      </span>
+                                    ) : (
+                                      getClanName(char.clan, char.edition as EditionId)
+                                    )}
                                   </>
                                 ) : (
                                   getClanName(char.clan, char.edition as EditionId)

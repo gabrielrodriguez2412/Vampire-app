@@ -423,3 +423,132 @@ describe('Batch BI-1 — storage round-trip preserves the flag', () => {
     expect(roundTripped.disciplines).toEqual({ celerity: 2 });
   });
 });
+
+describe('Batch BK-3 — Ghoul Powers suggestions read the linked regnant clan', () => {
+  // BK-1 wired resolveRegnantClan; BK-3 lets the Powers card consume
+  // the resolved clan for the suggestions strip. The linked vampire's
+  // clan wins over any manual `clan` field on the ghoul; a regnant-
+  // less ghoul with a manual clan still falls back to the manual clan;
+  // a fully regnant-less ghoul sees the fallback hint copy.
+
+  function makeVampire(id: string, clan: string): ClassicCharacter {
+    return {
+      id, name: `V-${id}`, clan, edition: 'V20', kind: 'vampire',
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 },
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      bloodPool: { current: 10, max: 10 }, generation: 13, humanity: 7,
+      experience: 0, createdAt: '', updatedAt: '',
+    } as ClassicCharacter;
+  }
+
+  it('a ghoul linked to a Tremere vampire sees Tremere suggestions (link overrides manual clan)', () => {
+    const vamp = makeVampire('v1', 'tremere');
+    // Manual clan is Brujah, but the linked regnant is Tremere. The
+    // resolver's precedence rule (linked wins) drives the suggestion.
+    const ghoul = makeClassicMortal('ghoul', {
+      clan: 'brujah',
+      trackGhoulPowers: true,
+      regnantCharacterId: 'v1',
+    } as Partial<ClassicCharacter>);
+    renderWithContext(
+      <DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[ghoul, vamp]} />,
+    );
+    const list = screen.getByTestId('sheet-ghoul-powers-list');
+    // The suggestion strip renders each id as a <button>. The manual-
+    // add dropdown ALSO lists every discipline as an <option>, so we
+    // filter to buttons only when asserting inclusion / exclusion.
+    const chipTexts = within(list).getAllByRole('button').map(b => (b.textContent ?? '').trim());
+    // Tremere V20 disciplines include Auspex, Dominate, Thaumaturgy.
+    // Expect at least one Tremere-flavoured localized chip; expect NO
+    // Brujah-flavoured localized chip.
+    expect(chipTexts.some(t => /Auspex|Dominar|Taumaturgia/i.test(t))).toBe(true);
+    expect(chipTexts.some(t => /Celeridad|Potencia|Presencia/i.test(t))).toBe(false);
+    // No fallback hint — a clan resolved.
+    expect(within(list).queryByTestId('ghoul-powers-no-regnant-hint')).toBeNull();
+  });
+
+  it('a ghoul with no link but a manual clan still sees that clan\'s suggestions (fallback)', () => {
+    const ghoul = makeClassicMortal('ghoul', {
+      clan: 'brujah',
+      trackGhoulPowers: true,
+    } as Partial<ClassicCharacter>);
+    renderWithContext(
+      <DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[ghoul]} />,
+    );
+    const list = screen.getByTestId('sheet-ghoul-powers-list');
+    expect(within(list).getAllByText(/Celeridad|Potencia|Presencia/i).length).toBeGreaterThan(0);
+    expect(within(list).queryByTestId('ghoul-powers-no-regnant-hint')).toBeNull();
+  });
+
+  it('a fully regnant-less ghoul shows the fallback hint copy in Edit Mode', () => {
+    const ghoul = makeClassicMortal('ghoul', {
+      clan: '',
+      trackGhoulPowers: true,
+    } as Partial<ClassicCharacter>);
+    renderWithContext(
+      <DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[ghoul]} />,
+    );
+    const list = screen.getByTestId('sheet-ghoul-powers-list');
+    const hint = within(list).getByTestId('ghoul-powers-no-regnant-hint');
+    expect(hint).toHaveTextContent(UI_STRINGS.es.ghoul_powers_no_regnant_hint);
+    // No suggestion strip either.
+    expect(within(list).queryByText(/Sugeridas/i)).toBeNull();
+  });
+
+  it('the fallback hint does NOT appear in View Mode (View Mode has no toggle either)', () => {
+    // Regnant-less + tracking on + readonly. In View Mode the toggle
+    // row is hidden and the fallback hint is Edit-Mode-only, so no
+    // hint appears — the tracker area is empty.
+    const ghoul = makeClassicMortal('ghoul', {
+      clan: '',
+      trackGhoulPowers: true,
+      disciplines: { potence: 1 } as any,
+    } as Partial<ClassicCharacter>);
+    renderWithContext(
+      <DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[ghoul]} readonly />,
+    );
+    expect(screen.queryByTestId('ghoul-powers-no-regnant-hint')).toBeNull();
+  });
+
+  it('a dangling regnant link falls back to the manual clan for suggestions', () => {
+    const ghoul = makeClassicMortal('ghoul', {
+      clan: 'brujah',
+      trackGhoulPowers: true,
+      regnantCharacterId: 'never-exists',
+    } as Partial<ClassicCharacter>);
+    renderWithContext(
+      <DynamicSheet character={ghoul} schema={ghoulClassicSchema} onChange={onChange} allCharacters={[ghoul]} />,
+    );
+    const list = screen.getByTestId('sheet-ghoul-powers-list');
+    // Dangling link → resolver falls back to manual `clan` → Brujah
+    // suggestions still appear (ES localized names).
+    expect(within(list).getAllByText(/Celeridad|Potencia|Presencia/i).length).toBeGreaterThan(0);
+    expect(within(list).queryByTestId('ghoul-powers-no-regnant-hint')).toBeNull();
+  });
+
+  it('vampire Disciplines suggestions are unchanged — no BK-3 hint, no BK-3 prop side effects', () => {
+    const vamp: ClassicCharacter = {
+      id: 'v', name: 'V', clan: 'brujah', edition: 'V20', kind: 'vampire',
+      attributes: {}, abilities: {}, disciplines: {}, backgrounds: {},
+      virtues: { conscience: 1, selfControl: 1, courage: 1 },
+      willpower: { current: 5, max: 5 },
+      health: { bashing: 0, lethal: 0, aggravated: 0, max: 7 },
+      bloodPool: { current: 10, max: 10 }, generation: 13, humanity: 7,
+      experience: 0, createdAt: '', updatedAt: '',
+    } as ClassicCharacter;
+    renderWithContext(
+      <DynamicSheet character={vamp} schema={classicSchema} onChange={onChange} allCharacters={[vamp]} />,
+    );
+    // Vampires do not get the ghoul hint, and they still see the "Add
+    // all suggested" bulk button that ghouls do not.
+    expect(screen.queryByTestId('ghoul-powers-no-regnant-hint')).toBeNull();
+    expect(screen.getByTestId('disciplines-add-all-suggested')).toBeInTheDocument();
+  });
+
+  it('i18n: EN + ES hint labels resolve from UI_STRINGS', () => {
+    expect(UI_STRINGS.en.ghoul_powers_no_regnant_hint).toBe('Select or link a regnant to tailor suggestions.');
+    expect(UI_STRINGS.es.ghoul_powers_no_regnant_hint).toBe('Selecciona o vincula un regente para adaptar las sugerencias.');
+  });
+});

@@ -236,13 +236,24 @@ function DynamicDotList({ value, label, max, fieldId, isReadOnly, handleUpdate, 
   );
 }
 
-function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character, mode }: any) {
+function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strings, character, mode, suggestionClanId }: any) {
   // Batch BI-1 — `mode: 'ghoul'` constrains the vampire-shaped UI for the
   // classic-Ghoul Powers card. The only behavior change is hiding the
   // "Add all suggested" bulk action: ghouls should pick powers
   // deliberately. Default ('vampire') leaves the existing UI byte-for-byte
   // unchanged.
+  //
+  // Batch BK-3 — the ghoul Powers card can override the clan id used
+  // for suggestion lookup via `suggestionClanId`. When passed, this
+  // string is the effective regnant clan resolved by
+  // `resolveRegnantClan` (linked vampire's clan wins, manual `clan`
+  // field falls back). Without the prop, suggestions read
+  // `character.clan` exactly as they did before — the vampire path is
+  // structurally unaffected.
   const isGhoulMode = mode === 'ghoul';
+  const effectiveSuggestionClanId = typeof suggestionClanId === 'string'
+    ? suggestionClanId
+    : character.clan;
   // Batch U: pull the active language so discipline names render in
   // the selected locale (e.g. Obfuscate → Ofuscación in Spanish)
   // through the shared `getDisciplineDisplayName` helper, instead of
@@ -256,7 +267,7 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
   const [, setLocation] = useLocation();
 
   const availableDisciplines = disciplines.filter(d => d.editions.includes(character.edition));
-  const suggestedIds: string[] = getSuggestedDisciplineIds(character.clan, character.edition, currentMap);
+  const suggestedIds: string[] = getSuggestedDisciplineIds(effectiveSuggestionClanId, character.edition, currentMap);
 
   /** A stored discipline key is "known" if it matches a discipline data id. */
   const isKnownDiscipline = (id: string) => disciplines.some(d => d.id === id);
@@ -354,6 +365,24 @@ function DisciplineList({ value, label, fieldId, isReadOnly, handleUpdate, strin
           </div>
         )}
       </div>
+      {/* Batch BK-3 — ghoul-mode fallback hint. Rendered in Edit Mode
+          when the ghoul has no effective regnant clan (link unset AND
+          manual `clan` blank), so there are no clan-based suggestions
+          to show. Points the user at the two ways to unlock better
+          suggestions: pick a manual regnant clan on this sheet, or
+          link a vampire character as regnant. Vampires (any mode
+          other than 'ghoul') never see this. */}
+      {!isReadOnly && isGhoulMode && suggestedIds.length === 0 && !effectiveSuggestionClanId && (
+        <div className="pb-1">
+          <span
+            data-testid="ghoul-powers-no-regnant-hint"
+            className="text-[11px] italic text-muted-foreground"
+          >
+            {strings.ghoul_powers_no_regnant_hint ||
+              'Select or link a regnant to tailor suggestions.'}
+          </span>
+        </div>
+      )}
       {!isReadOnly && suggestedIds.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pb-1">
           <span className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -1919,6 +1948,13 @@ export function DynamicSheet({ character, schema, onChange, readonly = false, li
                         strings={strings}
                         character={character}
                         mode="ghoul"
+                        /* Batch BK-3 — suggestions read the resolved
+                           regnant clan (linked vampire's clan wins,
+                           manual `clan` field falls back). Empty when
+                           the ghoul is regnant-less; the hint copy
+                           inside DisciplineList explains what to do
+                           to unlock suggestions. */
+                        suggestionClanId={regnantResolution.clanId}
                       />
                     </div>
                   )}
